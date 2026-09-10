@@ -7,12 +7,14 @@ import YaskawaManipulator from "./YaskawaManipulator";
 import UrdfModel from "./UrdfModel";
 import H1000dPositioner from "./H1000dPositioner";
 import RobotTrack from "./RobotTrack";
+import WeldScene from "./WeldScene";
 import type { Joints } from "./AxisSliders";
 import {
   ROBOT_MODELS,
   POSITIONER_MODELS,
   type PositionerModel,
 } from "@/lib/models";
+import type { WeldProgram } from "@/lib/weldProgram";
 
 export type SeamSegment = {
   start: [number, number, number];
@@ -137,6 +139,8 @@ export default function RobotWorkspace({
     { tilt: 0, rotate: 0 },
     { tilt: 0, rotate: 0 },
   ],
+  program = null,
+  simT = 0,
 }: {
   modelId: string;
   joints: Joints;
@@ -144,6 +148,8 @@ export default function RobotWorkspace({
   positionerId?: string | null;
   railTravel?: number;
   stations?: StationState[];
+  program?: WeldProgram | null;
+  simT?: number;
 }) {
   const positioner = positionerId
     ? POSITIONER_MODELS.find((p) => p.id === positionerId)
@@ -187,6 +193,9 @@ export default function RobotWorkspace({
             />
           </group>
         ))}
+
+      {/* Generated welding program (part, seam, torch frames, TCP marker) */}
+      {program && <WeldScene program={program} simT={simT} />}
 
       {seams.map((s, i) => (
         <Seam key={i} seg={s} />
