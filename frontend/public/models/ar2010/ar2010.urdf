@@ -1,0 +1,166 @@
+<?xml version="1.0" ?>
+<robot name="ar2010">
+<!-- link list -->
+    <link name="base_link">
+      <visual>
+        <geometry>
+          <mesh filename="visual/base_link.stl"/>
+        </geometry>
+        <material name="yaskawa_blue"><color rgba="0.0 0.1804 0.5451 1.0"/></material>
+      </visual>
+      <collision>
+        <geometry>
+          <mesh filename="visual/base_link.stl"/>
+        </geometry>
+      </collision>
+    </link>
+    <link name="link_1_s">
+      <visual>
+        <geometry>
+          <mesh filename="visual/link_1_s.stl"/>
+        </geometry>
+        <material name="yaskawa_blue"><color rgba="0.0 0.1804 0.5451 1.0"/></material>
+      </visual>
+      <collision>
+        <geometry>
+          <mesh filename="visual/link_1_s.stl"/>
+        </geometry>
+      </collision>
+    </link>
+    <link name="link_2_l">
+      <visual>
+        <geometry>
+          <mesh filename="visual/link_2_l.stl"/>
+        </geometry>
+        <material name="yaskawa_blue"><color rgba="0.0 0.1804 0.5451 1.0"/></material>
+      </visual>
+      <collision>
+        <geometry>
+          <mesh filename="visual/link_2_l.stl"/>
+        </geometry>
+      </collision>
+    </link>
+    <link name="link_3_u">
+      <visual>
+        <geometry>
+          <mesh filename="visual/link_3_u.stl"/>
+        </geometry>
+        <material name="yaskawa_blue"><color rgba="0.0 0.1804 0.5451 1.0"/></material>
+      </visual>
+      <collision>
+        <geometry>
+          <mesh filename="visual/link_3_u.stl"/>
+        </geometry>
+      </collision>
+    </link>
+    <link name="link_4_r">
+      <visual>
+        <geometry>
+          <mesh filename="visual/link_4_r.stl"/>
+        </geometry>
+        <material name="yaskawa_blue"><color rgba="0.0 0.1804 0.5451 1.0"/></material>
+      </visual>
+      <collision>
+        <geometry>
+          <mesh filename="visual/link_4_r.stl"/>
+        </geometry>
+      </collision>
+    </link>
+    <link name="link_5_b">
+      <visual>
+        <geometry>
+          <mesh filename="visual/link_5_b.stl"/>
+        </geometry>
+        <material name="yaskawa_blue"><color rgba="0.0 0.1804 0.5451 1.0"/></material>
+      </visual>
+      <collision>
+        <geometry>
+          <mesh filename="visual/link_5_b.stl"/>
+        </geometry>
+      </collision>
+    </link>
+    <link name="link_6_t">
+      <visual>
+        <geometry>
+          <mesh filename="visual/link_6_t.stl"/>
+        </geometry>
+        <material name="yaskawa_blue"><color rgba="0.0 0.1804 0.5451 1.0"/></material>
+      </visual>
+      <collision>
+        <geometry>
+          <mesh filename="visual/link_6_t.stl"/>
+        </geometry>
+      </collision>
+    </link>
+    <!-- end of link list -->
+
+    <!-- joint list -->
+    <!-- Joints are specified such that the driver rotates the joints about the positive Z axis. -->
+    <joint name="joint_1_s" type="revolute">
+      <parent link="base_link"/>
+      <child link="link_1_s"/>
+      <origin xyz="0 0 0.505" rpy="0 0 0"/>
+      <axis xyz="0 0 1"/>
+      <limit lower="-3.141592653589793" upper="3.141592653589793" effort="3087" velocity="3.6651914291880923"/>
+    </joint>
+    <joint name="joint_2_l" type="revolute">
+      <parent link="link_1_s"/>
+      <child link="link_2_l"/>
+      <origin xyz="0.150 0 0" rpy="1.5707963267948966 -1.5707963267948966 -3.141592653589793"/>
+      <axis xyz="0 0 1"/>
+      <limit lower="-1.8325957145940461" upper="2.705260340591211" effort="3087" velocity="3.6651914291880923"/>
+    </joint>
+    <joint name="joint_3_u" type="revolute">
+      <parent link="link_2_l"/>
+      <child link="link_3_u"/>
+      <origin xyz="0.760 0 0" rpy="3.141592653589793 0 0"/>
+      <axis xyz="0 0 1"/>
+      <limit lower="-1.5009831567151235" upper="2.792526803190927" effort="926.1" velocity="3.839724354387525"/>
+    </joint>
+    <joint name="joint_4_r" type="revolute">
+      <parent link="link_3_u"/>
+      <child link="link_4_r"/>
+      <origin xyz="0.200 -1.082 0" rpy="-1.5707963267948966 0 0"/>
+      <axis xyz="0 0 1"/>
+      <limit lower="-2.6179938779914944" upper="2.6179938779914944" effort="78.4" velocity="7.592182246175334"/>
+    </joint>
+    <joint name="joint_5_b" type="revolute">
+      <parent link="link_4_r"/>
+      <child link="link_5_b"/>
+      <origin xyz="0 0 0" rpy="1.5707963267948966 0 0"/>
+      <axis xyz="0 0 1"/>
+      <limit lower="-2.356194490192345" upper="1.5707963267948966" effort="67.03" velocity="7.592182246175334"/>
+    </joint>
+    <joint name="joint_6_t" type="revolute">
+      <parent link="link_5_b"/>
+      <child link="link_6_t"/>
+      <origin xyz="0 -0.100 0" rpy="-1.5707963267948966 0 0"/>
+      <axis xyz="0 0 1"/>
+      <limit lower="-3.6651914291880923" upper="3.6651914291880923" effort="33.3" velocity="12.217304763960307"/>
+    </joint>
+    <!-- end of joint list -->
+
+    <!-- ROS base_link to Robot Manufacturer World Coordinates transform -->
+    <link name="base"/>
+    <joint name="base_link-base" type="fixed">
+      <origin xyz="0 0 0.505" rpy="0 0 0"/>
+      <parent link="base_link"/>
+      <child link="base"/>
+    </joint>
+
+    <!-- ROS-Industrial 'flange' frame: attachment point for EEF models -->
+    <link name="flange"/>
+    <joint name="joint_6_t-flange" type="fixed">
+      <origin xyz="0 0 0" rpy="0 1.5707963267948966 0"/>
+      <parent link="link_6_t"/>
+      <child link="flange"/>
+    </joint>
+
+    <!-- ROS-Industrial 'tool0' frame: all-zeros tool frame -->
+    <link name="tool0"/>
+    <joint name="flange-tool0" type="fixed">
+      <origin xyz="0 0 0" rpy="3.141592653589793 -1.5707963267948966 0"/>
+      <parent link="flange"/>
+      <child link="tool0"/>
+    </joint>
+</robot>

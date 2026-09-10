@@ -1,0 +1,23 @@
+Third-party model attribution
+=============================
+
+The example 3D robot and positioner models bundled under
+`frontend/public/models/` are derived from the ROS-Industrial "motoman"
+repository:
+
+  https://github.com/ros-industrial/motoman
+  Licensed under the Apache License, Version 2.0.
+
+Specifically:
+  * frontend/public/models/ar2010/        <- motoman_ar2010_support
+  * frontend/public/models/motopos_d500/  <- motoman_motopos_d500_support
+
+The URDF files were generated from the packages' xacro sources using
+tools/xacro_to_urdf.py; the STL meshes are unmodified copies of the
+packages' visual meshes. A copy of the Apache-2.0 license is available at:
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+These CAD/mesh models are provided by ROS-Industrial for simulation and
+visualisation. They are approximate representations; for certified geometry and
+kinematics use the official Yaskawa CAD / MotoSim models (see docs/MODELS.md).

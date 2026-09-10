@@ -48,12 +48,20 @@ backend/    FastAPI + roboticstoolbox-python + spatialmath + trimesh
 ### Phase 1 — 3D frontend (`frontend/`)
 - `components/RobotWorkspace.tsx` — `<Canvas>` with `OrbitControls`, an
   infinite `Grid` floor, and multi-source lighting.
-- `components/YaskawaManipulator.tsx` — a **nested** kinematic chain
-  (base → S → L → U → R → B → T); each link is a child of the previous so a
-  joint rotates everything above it. Procedural primitives stand in for the
-  real geometry; swap in `useGLTF` per-link `.glb` files using the documented
-  pattern.
+- **Real example models** (see [`docs/MODELS.md`](docs/MODELS.md)): a "Robot
+  model" dropdown loads an articulated **Yaskawa MOTOMAN-AR2010** (URDF + STL,
+  6 axes) and a "Positioner" dropdown loads a **MotoPos D500** 2-axis rotary
+  positioner — both driven by the sliders. Models are vendored from
+  ROS-Industrial `motoman` (Apache-2.0) and served from `public/models/`.
+  `components/UrdfModel.tsx` loads them with `urdf-loader`.
+- `components/YaskawaManipulator.tsx` — a "Procedural placeholder" option: a
+  **nested** kinematic chain (base → S → L → U → R → B → T) built from
+  primitives, for when no mesh model is loaded.
 - `components/AxisSliders.tsx` — per-axis sliders bound to React state.
+
+To add your exact AR model or the H1000D positioner, follow
+[`docs/MODELS.md`](docs/MODELS.md) (download meshes + xacro, run
+`tools/xacro_to_urdf.py`, register in `frontend/lib/models.ts`).
 
 ### Phase 2 — Kinematics backend (`backend/app/kinematics_engine.py`)
 - Builds a `roboticstoolbox` `DHRobot` from `robot_config.ACTIVE_MODEL`.

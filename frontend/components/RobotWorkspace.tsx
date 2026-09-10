@@ -1,9 +1,16 @@
 "use client";
 
+import { Suspense } from "react";
 import { Canvas } from "@react-three/fiber";
-import { Grid, OrbitControls, Environment } from "@react-three/drei";
+import { Grid, OrbitControls, Environment, Html } from "@react-three/drei";
 import YaskawaManipulator from "./YaskawaManipulator";
+import UrdfModel from "./UrdfModel";
 import type { Joints } from "./AxisSliders";
+import {
+  ROBOT_MODELS,
+  POSITIONER_MODELS,
+  type PositionerModel,
+} from "@/lib/models";
 
 export type SeamSegment = {
   start: [number, number, number];
@@ -29,15 +36,79 @@ function Seam({ seg }: { seg: SeamSegment }) {
   );
 }
 
+function Loading() {
+  return (
+    <Html center>
+      <div className="rounded bg-slate-800/80 px-3 py-1 text-xs text-slate-200">
+        Loading model…
+      </div>
+    </Html>
+  );
+}
+
+function SelectedRobot({
+  modelId,
+  joints,
+}: {
+  modelId: string;
+  joints: Joints;
+}) {
+  const model = ROBOT_MODELS.find((m) => m.id === modelId) ?? ROBOT_MODELS[0];
+  if (model.kind === "procedural" || !model.url) {
+    return <YaskawaManipulator joints={joints} />;
+  }
+  const jointValuesDeg: Record<string, number> = {};
+  for (const [axis, jointName] of Object.entries(model.jointMap ?? {})) {
+    if (jointName) jointValuesDeg[jointName] = joints[axis as keyof Joints];
+  }
+  return (
+    <UrdfModel url={model.url} jointValuesDeg={jointValuesDeg} color={model.color} />
+  );
+}
+
+function SelectedPositioner({
+  positioner,
+  tilt,
+  rotate,
+}: {
+  positioner: PositionerModel;
+  tilt: number;
+  rotate: number;
+}) {
+  const jointValuesDeg: Record<string, number> = {};
+  if (positioner.axisMap.tilt) jointValuesDeg[positioner.axisMap.tilt] = tilt;
+  if (positioner.axisMap.rotate) jointValuesDeg[positioner.axisMap.rotate] = rotate;
+  return (
+    <UrdfModel
+      url={positioner.url}
+      jointValuesDeg={jointValuesDeg}
+      color={positioner.color}
+      position={[1.6, 0, 0]}
+    />
+  );
+}
+
 export default function RobotWorkspace({
+  modelId,
   joints,
   seams = [],
+  positionerId,
+  positionerTilt = 0,
+  positionerRotate = 0,
 }: {
+  modelId: string;
   joints: Joints;
   seams?: SeamSegment[];
+  positionerId?: string | null;
+  positionerTilt?: number;
+  positionerRotate?: number;
 }) {
+  const positioner = positionerId
+    ? POSITIONER_MODELS.find((p) => p.id === positionerId)
+    : undefined;
+
   return (
-    <Canvas shadows camera={{ position: [2.5, 2, 2.5], fov: 45 }}>
+    <Canvas shadows camera={{ position: [3, 2.5, 3], fov: 45 }}>
       <ambientLight intensity={0.4} />
       <directionalLight
         position={[5, 8, 5]}
@@ -56,17 +127,26 @@ export default function RobotWorkspace({
         sectionColor="#00a3e0"
         cellColor="#2a3746"
         infiniteGrid
-        fadeDistance={20}
+        fadeDistance={25}
       />
 
-      <YaskawaManipulator joints={joints} />
+      <Suspense fallback={<Loading />}>
+        <SelectedRobot modelId={modelId} joints={joints} />
+        {positioner && (
+          <SelectedPositioner
+            positioner={positioner}
+            tilt={positionerTilt}
+            rotate={positionerRotate}
+          />
+        )}
+      </Suspense>
 
       {seams.map((s, i) => (
         <Seam key={i} seg={s} />
       ))}
 
       <Environment preset="warehouse" />
-      <OrbitControls makeDefault enableDamping target={[0.3, 0.6, 0]} />
+      <OrbitControls makeDefault enableDamping target={[0.5, 0.8, 0]} />
     </Canvas>
   );
 }
