@@ -1,5 +1,7 @@
 # Yaskawa CAD/CAM Prototype (DX200 · AR series)
 
+[![CI](https://github.com/MQCIA/yaskawa-cadcam/actions/workflows/ci.yml/badge.svg)](https://github.com/MQCIA/yaskawa-cadcam/actions/workflows/ci.yml)
+
 A **prototype** welding CAD/CAM web application for a Yaskawa 6-axis welding
 cell: a 3D workspace (React-Three-Fiber), a kinematics backend
 (FastAPI + roboticstoolbox), a Yaskawa DX200 `.JBI` postprocessor, and a CAD
@@ -86,6 +88,34 @@ To add your exact AR model or the H1000D positioner, follow
   recognition really needs OpenCASCADE (`pythonocc-core`) — see limitations.
 
 ---
+
+## Quick start (Docker)
+
+```bash
+docker compose up --build
+# frontend -> http://localhost:3000   backend -> http://localhost:8000 (/docs)
+```
+
+Or use the Makefile: `make help` lists all targets (`backend-dev`,
+`frontend-dev`, `backend-test`, `pipeline`, `up`, …).
+
+## End-to-end pipeline demo
+
+Runs every phase without a server (CAD mesh → seam detection → path planning →
+inverse kinematics → DX200 `.JBI`) and writes `backend/out/WELD_AUTO.JBI`:
+
+```bash
+cd backend && . .venv/bin/activate && python pipeline_example.py
+```
+
+The combined `POST /api/plan-path` endpoint turns detected seams into an ordered
+TCP path (approach → welded points → retract) plus the weld ranges for ARCON/ARCOF.
+
+## Tests
+
+```bash
+cd backend && . .venv/bin/activate && pip install -r requirements-dev.txt && python -m pytest -q
+```
 
 ## Running locally
 

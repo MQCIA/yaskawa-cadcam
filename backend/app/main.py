@@ -16,6 +16,7 @@ from pydantic import BaseModel, Field
 
 from .kinematics_engine import forward_kinematics, get_robot, solve_ik_path
 from .dx200_postprocessor import PostprocessorConfig, WeldSegment, generate_jbi
+from .path_planning import plan_from_seams
 from .robot_config import ACTIVE_MODEL, ACTIVE_POSITIONER, AXIS_NAMES, MODELS
 from .welding_config import ACTIVE_POWER_SOURCE, LORCH_S8_SCHEDULES
 
@@ -58,6 +59,19 @@ class IkRequest(BaseModel):
 class WeldSegmentIn(BaseModel):
     start_index: int
     end_index: int
+    weld_speed: float = 10.0
+    arc_file: int = 1
+
+
+class SeamIn(BaseModel):
+    start: list[float]
+    end: list[float]
+
+
+class PlanRequest(BaseModel):
+    seams: list[SeamIn]
+    samples_per_seam: int = 5
+    approach_height: float = 0.05
     weld_speed: float = 10.0
     arc_file: int = 1
 
@@ -136,6 +150,28 @@ def calculate_ik(req: IkRequest):
         raise HTTPException(400, "No points supplied")
     points = [p.model_dump() for p in req.points]
     return solve_ik_path(points, q_seed_deg=req.q_seed_deg)
+
+
+@app.post("/api/plan-path")
+def plan_path(req: PlanRequest):
+    """Turn detected seams into an ordered TCP path + weld ranges."""
+    if not req.seams:
+        raise HTTPException(400, "No seams supplied")
+    planned = plan_from_seams(
+        [s.model_dump() for s in req.seams],
+        samples_per_seam=req.samples_per_seam,
+        approach_height=req.approach_height,
+        weld_speed=req.weld_speed,
+        arc_file=req.arc_file,
+    )
+    return {
+        "points": planned.points,
+        "weld_segments": [
+            {"start_index": w.start_index, "end_index": w.end_index,
+             "weld_speed": w.weld_speed, "arc_file": w.arc_file}
+            for w in planned.weld_segments
+        ],
+    }
 
 
 @app.post("/api/forward-kinematics")
