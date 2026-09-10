@@ -89,6 +89,21 @@ To add your exact AR model or the H1000D positioner, follow
 
 ---
 
+## Live preview (GitHub Pages)
+
+A static export of the 3D workspace is auto-deployed on every push to `main`:
+
+**https://mqcia.github.io/yaskawa-cadcam/**
+
+The preview runs entirely client-side: you can select the robot model
+(AR2010 URDF) and positioner (MotoPos D500), and jog all axes. Backend-powered
+features (CAD seam analysis, IK, `.JBI` generation) require the FastAPI server
+and are **not** available on the static preview — run the backend locally or
+deploy it separately, and point `NEXT_PUBLIC_API_URL` at it.
+
+The static build is produced with `STATIC_EXPORT=1 NEXT_PUBLIC_BASE_PATH=/yaskawa-cadcam
+npm run build` (see `.github/workflows/pages.yml`).
+
 ## Quick start (Docker)
 
 ```bash

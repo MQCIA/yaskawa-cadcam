@@ -1,5 +1,10 @@
 import type { Joints } from "@/components/AxisSliders";
 
+// Prepends the deploy base path (e.g. "/yaskawa-cadcam" on GitHub Pages) so
+// static assets under public/ resolve both locally and on a project site.
+const BASE = process.env.NEXT_PUBLIC_BASE_PATH || "";
+export const withBase = (p: string) => `${BASE}${p}`;
+
 export type BuiltinModel = {
   id: string;
   label: string;
@@ -22,7 +27,7 @@ export const ROBOT_MODELS: BuiltinModel[] = [
     id: "ar2010",
     label: "Yaskawa MOTOMAN-AR2010 (URDF)",
     kind: "urdf",
-    url: "/models/ar2010/ar2010.urdf",
+    url: withBase("/models/ar2010/ar2010.urdf"),
     color: 0x1f4fb0,
     jointMap: {
       S: "joint_1_s",
@@ -50,7 +55,7 @@ export const POSITIONER_MODELS: PositionerModel[] = [
   {
     id: "motopos_d500",
     label: "MotoPos D500 (2-axis rotary positioner)",
-    url: "/models/motopos_d500/motopos_d500.urdf",
+    url: withBase("/models/motopos_d500/motopos_d500.urdf"),
     color: 0x9aa4b2,
     axisMap: { tilt: "joint_1", rotate: "joint_2" },
     source: "ros-industrial/motoman · motoman_motopos_d500_support",
