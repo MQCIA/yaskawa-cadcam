@@ -44,19 +44,37 @@ export const ROBOT_MODELS: BuiltinModel[] = [
 export type PositionerModel = {
   id: string;
   label: string;
-  url: string;
+  kind: "urdf" | "procedural";
+  url?: string;
   color?: number;
-  // Rotary positioner axes -> URDF joint names.
-  axisMap: { tilt?: string; rotate?: string };
+  // Which control axes this positioner exposes.
+  hasTilt: boolean;
+  hasRotate: boolean;
+  // For URDF models: rotary axes -> URDF joint names.
+  axisMap?: { tilt?: string; rotate?: string };
   source?: string;
+  approximate?: boolean;
 };
 
 export const POSITIONER_MODELS: PositionerModel[] = [
   {
+    id: "h1000d",
+    label: "H1000D (1-axis horizontal rotary, ~1000 kg)",
+    kind: "procedural",
+    color: 0x9aa4b2,
+    hasTilt: false,
+    hasRotate: true,
+    source: "Procedural placeholder (no public CAD) — see docs/MODELS.md",
+    approximate: true,
+  },
+  {
     id: "motopos_d500",
     label: "MotoPos D500 (2-axis rotary positioner)",
+    kind: "urdf",
     url: withBase("/models/motopos_d500/motopos_d500.urdf"),
     color: 0x9aa4b2,
+    hasTilt: true,
+    hasRotate: true,
     axisMap: { tilt: "joint_1", rotate: "joint_2" },
     source: "ros-industrial/motoman · motoman_motopos_d500_support",
   },

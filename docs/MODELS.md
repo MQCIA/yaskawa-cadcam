@@ -9,8 +9,18 @@ bundled and load out of the box:
 | MOTOMAN-AR2010 | 6-axis welding robot | `frontend/public/models/ar2010/` | ROS-Industrial `motoman_ar2010_support` |
 | MotoPos D500 | 2-axis rotary positioner | `frontend/public/models/motopos_d500/` | ROS-Industrial `motoman_motopos_d500_support` |
 
-> The D500 is bundled as an **example rotary positioner**. Your actual **H1000D**
-> can be added the same way once you have its model (see below).
+Positioners available in the UI:
+
+| Positioner | Axes | Kind | Notes |
+|------------|------|------|-------|
+| **H1000D** (default) | 1 (horizontal rotary) | procedural | `frontend/components/H1000dPositioner.tsx` |
+| MotoPos D500 | 2 (tilt + rotate) | URDF | example, from ROS-Industrial |
+
+> **H1000D** has no public CAD/URDF, so it is drawn procedurally as a single-axis
+> horizontal-rotating headstock (~1000 kg class, ±360°, axis height ~0.99 m) —
+> matching the backend external-axis config (`S1E`) in `robot_config.py`.
+> Proportions are approximate; replace `H1000dPositioner.tsx` with a real
+> CAD/URDF when you have the manufacturer model (see "Adding a new model").
 
 ## Where to get official Yaskawa models
 

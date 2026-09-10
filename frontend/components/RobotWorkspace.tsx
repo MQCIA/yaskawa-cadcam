@@ -5,6 +5,7 @@ import { Canvas } from "@react-three/fiber";
 import { Grid, OrbitControls, Environment, Html } from "@react-three/drei";
 import YaskawaManipulator from "./YaskawaManipulator";
 import UrdfModel from "./UrdfModel";
+import H1000dPositioner from "./H1000dPositioner";
 import type { Joints } from "./AxisSliders";
 import {
   ROBOT_MODELS,
@@ -75,15 +76,21 @@ function SelectedPositioner({
   tilt: number;
   rotate: number;
 }) {
+  const pos: [number, number, number] = [1.6, 0, 0];
+  if (positioner.kind === "procedural") {
+    return (
+      <H1000dPositioner rotateDeg={rotate} position={pos} color={positioner.color} />
+    );
+  }
   const jointValuesDeg: Record<string, number> = {};
-  if (positioner.axisMap.tilt) jointValuesDeg[positioner.axisMap.tilt] = tilt;
-  if (positioner.axisMap.rotate) jointValuesDeg[positioner.axisMap.rotate] = rotate;
+  if (positioner.axisMap?.tilt) jointValuesDeg[positioner.axisMap.tilt] = tilt;
+  if (positioner.axisMap?.rotate) jointValuesDeg[positioner.axisMap.rotate] = rotate;
   return (
     <UrdfModel
-      url={positioner.url}
+      url={positioner.url!}
       jointValuesDeg={jointValuesDeg}
       color={positioner.color}
-      position={[1.6, 0, 0]}
+      position={pos}
     />
   );
 }
@@ -130,16 +137,18 @@ export default function RobotWorkspace({
         fadeDistance={25}
       />
 
-      <Suspense fallback={<Loading />}>
+      <Suspense key={`robot-${modelId}`} fallback={<Loading />}>
         <SelectedRobot modelId={modelId} joints={joints} />
-        {positioner && (
+      </Suspense>
+      {positioner && (
+        <Suspense key={`pos-${positioner.id}`} fallback={null}>
           <SelectedPositioner
             positioner={positioner}
             tilt={positionerTilt}
             rotate={positionerRotate}
           />
-        )}
-      </Suspense>
+        </Suspense>
+      )}
 
       {seams.map((s, i) => (
         <Seam key={i} seg={s} />

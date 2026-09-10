@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect } from "react";
 import { useLoader } from "@react-three/fiber";
 import * as THREE from "three";
 import { STLLoader } from "three/examples/jsm/loaders/STLLoader.js";
@@ -50,8 +50,10 @@ export default function UrdfModel({
     },
   ) as unknown as URDFRobot;
 
-  // Clone so multiple instances (e.g. robot + positioner) don't share state.
-  const instance = useMemo(() => robot.clone() as URDFRobot, [robot]);
+  // Render the loaded object directly (each model URL is used once, so no
+  // sharing). Avoids cloning before urdf-loader's async STL meshes attach,
+  // which caused an intermittent empty render when switching models.
+  const instance = robot;
 
   useEffect(() => {
     for (const [name, deg] of Object.entries(jointValuesDeg)) {
@@ -59,6 +61,7 @@ export default function UrdfModel({
         instance.setJointValue(name, deg2rad(deg));
       }
     }
+    instance.updateMatrixWorld(true);
   }, [instance, jointValuesDeg]);
 
   return (

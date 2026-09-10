@@ -18,7 +18,7 @@ export default function Home() {
   const [seams, setSeams] = useState<SeamSegment[]>([]);
   const [status, setStatus] = useState<string>("");
 
-  const [positionerId, setPositionerId] = useState<string | null>("motopos_d500");
+  const [positionerId, setPositionerId] = useState<string | null>("h1000d");
   const [tilt, setTilt] = useState(0);
   const [rotate, setRotate] = useState(0);
 
@@ -103,40 +103,44 @@ export default function Home() {
             </select>
             {activePositioner && (
               <div className="mt-3 space-y-3">
-                <div className="flex items-center gap-3">
-                  <span className="w-14 font-mono text-xs text-yaskawa-accent">
-                    Tilt
-                  </span>
-                  <input
-                    type="range"
-                    min={-135}
-                    max={135}
-                    step={0.5}
-                    value={tilt}
-                    onChange={(e) => setTilt(Number(e.target.value))}
-                    className="flex-1 accent-yaskawa-accent"
-                  />
-                  <span className="w-14 text-right font-mono text-xs">
-                    {tilt.toFixed(0)}&deg;
-                  </span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="w-14 font-mono text-xs text-yaskawa-accent">
-                    Rotate
-                  </span>
-                  <input
-                    type="range"
-                    min={-200}
-                    max={200}
-                    step={0.5}
-                    value={rotate}
-                    onChange={(e) => setRotate(Number(e.target.value))}
-                    className="flex-1 accent-yaskawa-accent"
-                  />
-                  <span className="w-14 text-right font-mono text-xs">
-                    {rotate.toFixed(0)}&deg;
-                  </span>
-                </div>
+                {activePositioner.hasTilt && (
+                  <div className="flex items-center gap-3">
+                    <span className="w-14 font-mono text-xs text-yaskawa-accent">
+                      Tilt
+                    </span>
+                    <input
+                      type="range"
+                      min={-135}
+                      max={135}
+                      step={0.5}
+                      value={tilt}
+                      onChange={(e) => setTilt(Number(e.target.value))}
+                      className="flex-1 accent-yaskawa-accent"
+                    />
+                    <span className="w-14 text-right font-mono text-xs">
+                      {tilt.toFixed(0)}&deg;
+                    </span>
+                  </div>
+                )}
+                {activePositioner.hasRotate && (
+                  <div className="flex items-center gap-3">
+                    <span className="w-14 font-mono text-xs text-yaskawa-accent">
+                      Rotate
+                    </span>
+                    <input
+                      type="range"
+                      min={-360}
+                      max={360}
+                      step={0.5}
+                      value={rotate}
+                      onChange={(e) => setRotate(Number(e.target.value))}
+                      className="flex-1 accent-yaskawa-accent"
+                    />
+                    <span className="w-14 text-right font-mono text-xs">
+                      {rotate.toFixed(0)}&deg;
+                    </span>
+                  </div>
+                )}
                 <p className="text-[10px] text-slate-500">
                   {activePositioner.source}
                 </p>
