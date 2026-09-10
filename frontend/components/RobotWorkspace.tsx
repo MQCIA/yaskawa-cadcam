@@ -116,6 +116,7 @@ export default function RobotWorkspace({
 
   return (
     <Canvas shadows camera={{ position: [3, 2.5, 3], fov: 45 }}>
+      <color attach="background" args={["#ffffff"]} />
       <ambientLight intensity={0.4} />
       <directionalLight
         position={[5, 8, 5]}
