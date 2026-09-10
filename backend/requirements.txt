@@ -1,0 +1,12 @@
+fastapi>=0.111
+uvicorn[standard]>=0.30
+numpy>=1.26
+roboticstoolbox-python>=1.1.1
+spatialmath-python>=1.1.10
+trimesh>=4.4
+shapely>=2.0
+mapbox_earcut>=1.0
+python-multipart>=0.0.9
+# Optional STEP support for /api/analyze-cad (choose one):
+#   pip install cascadio        # OpenCASCADE-based STEP -> mesh
+#   or install gmsh and use trimesh's gmsh backend
