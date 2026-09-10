@@ -8,15 +8,14 @@ import UrdfModel from "./UrdfModel";
 import H1000dPositioner from "./H1000dPositioner";
 import RobotTrack from "./RobotTrack";
 import WeldScene from "./WeldScene";
-import WeldRobot from "./WeldRobot";
+import WeldUrdfRobot from "./WeldUrdfRobot";
 import type { Joints } from "./AxisSliders";
 import {
   ROBOT_MODELS,
   POSITIONER_MODELS,
   type PositionerModel,
 } from "@/lib/models";
-import { sampleProgram, type WeldProgram } from "@/lib/weldProgram";
-import { computeWeldPose, weldHomeTarget } from "@/lib/weldRobot";
+import type { WeldProgram } from "@/lib/weldProgram";
 
 export type SeamSegment = {
   start: [number, number, number];
@@ -92,22 +91,19 @@ function SelectedRobot({
   simT: number;
 }) {
   const model = ROBOT_MODELS.find((m) => m.id === modelId) ?? ROBOT_MODELS[0];
-  if (model.kind === "weld") {
-    const sample = program ? sampleProgram(program, simT) : null;
-    const target = sample ? sample.pos : weldHomeTarget(base);
-    const pose = computeWeldPose(target, base);
-    return <WeldRobot pose={pose} arcOn={sample?.arcOn ?? false} />;
+  if (model.kind === "urdf" && model.url) {
+    // Real Yaskawa model with a torch, IK-driven to follow the weld path.
+    return (
+      <WeldUrdfRobot
+        url={model.url}
+        color={model.color}
+        program={program}
+        simT={simT}
+        base={base}
+      />
+    );
   }
-  if (model.kind === "procedural" || !model.url) {
-    return <YaskawaManipulator joints={joints} />;
-  }
-  const jointValuesDeg: Record<string, number> = {};
-  for (const [axis, jointName] of Object.entries(model.jointMap ?? {})) {
-    if (jointName) jointValuesDeg[jointName] = joints[axis as keyof Joints];
-  }
-  return (
-    <UrdfModel url={model.url} jointValuesDeg={jointValuesDeg} color={model.color} />
-  );
+  return <YaskawaManipulator joints={joints} />;
 }
 
 function SelectedPositioner({

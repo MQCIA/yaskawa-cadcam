@@ -70,7 +70,7 @@ function PanelHeader({ children }: { children: React.ReactNode }) {
 }
 
 export default function Home() {
-  const [modelId, setModelId] = useState<string>("weld");
+  const [modelId, setModelId] = useState<string>("ar2010");
   const [joints, setJoints] = useState<Joints>(defaultJoints());
   const [seams, setSeams] = useState<SeamSegment[]>([]);
   const [status, setStatus] = useState<string>("");
@@ -129,7 +129,7 @@ export default function Home() {
     setProgram(prog);
     setSimT(0);
     setSimPlaying(false);
-    setModelId("weld");
+    setModelId("ar2010");
     setRailTravel(Math.max(-1.6, Math.min(1.6, DEMO_MOUNT[2])));
     setStation(0, { rotate: 0 });
     setStatus(
@@ -418,10 +418,12 @@ export default function Home() {
               {activeModel?.source && (
                 <p className="mt-1 text-[10px] text-slate-500">{activeModel.source}</p>
               )}
-              {modelId === "weld" ? (
+              {activeModel?.kind === "urdf" ? (
                 <p className="mt-3 rounded bg-slate-800/60 p-2 text-[11px] text-slate-400">
-                  The animated weld robot is driven by the program path (inverse
-                  kinematics). Manual jog applies to the other models.
+                  Real AR2010 model with a torch on the flange. When a part is
+                  loaded it is driven by the weld path via inverse kinematics
+                  (CCD); otherwise it holds a ready pose. Manual jog applies to the
+                  procedural model.
                 </p>
               ) : (
                 <div className="mt-4">

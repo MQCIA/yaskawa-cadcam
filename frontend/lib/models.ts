@@ -8,7 +8,7 @@ export const withBase = (p: string) => `${BASE}${p}`;
 export type BuiltinModel = {
   id: string;
   label: string;
-  kind: "procedural" | "urdf" | "weld";
+  kind: "procedural" | "urdf";
   url?: string;
   color?: number;
   // Maps the S/L/U/R/B/T sliders to URDF joint names.
@@ -19,18 +19,8 @@ export type BuiltinModel = {
 // Example Yaskawa models vendored from ROS-Industrial `motoman` (Apache-2.0).
 export const ROBOT_MODELS: BuiltinModel[] = [
   {
-    id: "weld",
-    label: "Yaskawa AR + weld torch (animated)",
-    kind: "weld",
-  },
-  {
-    id: "procedural",
-    label: "Procedural placeholder",
-    kind: "procedural",
-  },
-  {
     id: "ar2010",
-    label: "Yaskawa MOTOMAN-AR2010 (URDF)",
+    label: "Yaskawa MOTOMAN-AR2010 (real model + torch)",
     kind: "urdf",
     url: withBase("/models/ar2010/ar2010.urdf"),
     color: 0x1f4fb0,
@@ -43,6 +33,11 @@ export const ROBOT_MODELS: BuiltinModel[] = [
       T: "joint_6_t",
     },
     source: "ros-industrial/motoman · motoman_ar2010_support",
+  },
+  {
+    id: "procedural",
+    label: "Procedural placeholder",
+    kind: "procedural",
   },
 ];
 
