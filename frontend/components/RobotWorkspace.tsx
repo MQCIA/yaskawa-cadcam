@@ -2,7 +2,7 @@
 
 import { Suspense } from "react";
 import { Canvas } from "@react-three/fiber";
-import { Grid, OrbitControls, Environment, Html } from "@react-three/drei";
+import { OrbitControls, Environment, Html } from "@react-three/drei";
 import YaskawaManipulator from "./YaskawaManipulator";
 import UrdfModel from "./UrdfModel";
 import H1000dPositioner from "./H1000dPositioner";
@@ -125,18 +125,6 @@ export default function RobotWorkspace({
         shadow-mapSize={[2048, 2048]}
       />
       <hemisphereLight intensity={0.3} groundColor="#101820" />
-
-      <Grid
-        args={[10, 10]}
-        cellSize={0.25}
-        cellThickness={0.5}
-        sectionSize={1}
-        sectionThickness={1}
-        sectionColor="#00a3e0"
-        cellColor="#2a3746"
-        infiniteGrid
-        fadeDistance={25}
-      />
 
       <Suspense key={`robot-${modelId}`} fallback={<Loading />}>
         <SelectedRobot modelId={modelId} joints={joints} />
