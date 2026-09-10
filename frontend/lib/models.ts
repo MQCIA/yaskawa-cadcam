@@ -8,7 +8,7 @@ export const withBase = (p: string) => `${BASE}${p}`;
 export type BuiltinModel = {
   id: string;
   label: string;
-  kind: "procedural" | "urdf";
+  kind: "procedural" | "urdf" | "weld";
   url?: string;
   color?: number;
   // Maps the S/L/U/R/B/T sliders to URDF joint names.
@@ -18,6 +18,11 @@ export type BuiltinModel = {
 
 // Example Yaskawa models vendored from ROS-Industrial `motoman` (Apache-2.0).
 export const ROBOT_MODELS: BuiltinModel[] = [
+  {
+    id: "weld",
+    label: "Yaskawa AR + weld torch (animated)",
+    kind: "weld",
+  },
   {
     id: "procedural",
     label: "Procedural placeholder",

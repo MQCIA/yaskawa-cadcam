@@ -8,13 +8,15 @@ import UrdfModel from "./UrdfModel";
 import H1000dPositioner from "./H1000dPositioner";
 import RobotTrack from "./RobotTrack";
 import WeldScene from "./WeldScene";
+import WeldRobot from "./WeldRobot";
 import type { Joints } from "./AxisSliders";
 import {
   ROBOT_MODELS,
   POSITIONER_MODELS,
   type PositionerModel,
 } from "@/lib/models";
-import type { WeldProgram } from "@/lib/weldProgram";
+import { sampleProgram, type WeldProgram } from "@/lib/weldProgram";
+import { computeWeldPose, weldHomeTarget } from "@/lib/weldRobot";
 
 export type SeamSegment = {
   start: [number, number, number];
@@ -27,8 +29,8 @@ export type StationState = { tilt: number; rotate: number };
 const CARRIAGE_TOP_Y = 0.26;
 // The two work-station positioner positions (robot faces +X, rail runs along Z).
 const STATION_POS: [number, number, number][] = [
-  [1.95, 0, -1.2],
-  [1.95, 0, 1.2],
+  [1.6, 0, -1.2],
+  [1.6, 0, 1.2],
 ];
 
 function Seam({ seg }: { seg: SeamSegment }) {
@@ -79,11 +81,23 @@ function StationLabel({
 function SelectedRobot({
   modelId,
   joints,
+  base,
+  program,
+  simT,
 }: {
   modelId: string;
   joints: Joints;
+  base: [number, number, number];
+  program: WeldProgram | null;
+  simT: number;
 }) {
   const model = ROBOT_MODELS.find((m) => m.id === modelId) ?? ROBOT_MODELS[0];
+  if (model.kind === "weld") {
+    const sample = program ? sampleProgram(program, simT) : null;
+    const target = sample ? sample.pos : weldHomeTarget(base);
+    const pose = computeWeldPose(target, base);
+    return <WeldRobot pose={pose} arcOn={sample?.arcOn ?? false} />;
+  }
   if (model.kind === "procedural" || !model.url) {
     return <YaskawaManipulator joints={joints} />;
   }
@@ -174,7 +188,13 @@ export default function RobotWorkspace({
       <RobotTrack length={4.6} carriage={railTravel} />
       <group position={[0, CARRIAGE_TOP_Y, railTravel]}>
         <Suspense key={`robot-${modelId}`} fallback={<Loading />}>
-          <SelectedRobot modelId={modelId} joints={joints} />
+          <SelectedRobot
+            modelId={modelId}
+            joints={joints}
+            base={[0, CARRIAGE_TOP_Y, railTravel]}
+            program={program}
+            simT={simT}
+          />
         </Suspense>
       </group>
 

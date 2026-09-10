@@ -75,6 +75,8 @@ export default function Home() {
     setProgram(prog);
     setSimT(0);
     setSimPlaying(false);
+    // Use the animated weld robot (with torch) so the arm follows the path.
+    setModelId("weld");
     // Slide the robot to work-station 1 (where the demo part is mounted).
     setRailTravel(Math.max(-1.6, Math.min(1.6, DEMO_MOUNT[2])));
     setStation(0, { rotate: 0 });

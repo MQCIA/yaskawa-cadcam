@@ -54,7 +54,7 @@ export const LORCH_S8_SCHEDULES: WeldScheduleRow[] = [
 ];
 
 // Mount point on work-station 1's positioner faceplate (world coords, metres).
-export const DEMO_MOUNT: Vec3 = [1.95, 0.98, -1.2];
+export const DEMO_MOUNT: Vec3 = [1.6, 0.98, -1.2];
 
 const add = (a: Vec3, b: Vec3): Vec3 => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
 const dist = (a: Vec3, b: Vec3) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
