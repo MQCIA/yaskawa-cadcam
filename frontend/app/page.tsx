@@ -19,8 +19,16 @@ export default function Home() {
   const [status, setStatus] = useState<string>("");
 
   const [positionerId, setPositionerId] = useState<string | null>("h1000d");
-  const [tilt, setTilt] = useState(0);
-  const [rotate, setRotate] = useState(0);
+  const [railTravel, setRailTravel] = useState(0);
+  const [stations, setStations] = useState([
+    { tilt: 0, rotate: 0 },
+    { tilt: 0, rotate: 0 },
+  ]);
+
+  const setStation = (i: number, patch: Partial<{ tilt: number; rotate: number }>) =>
+    setStations((prev) =>
+      prev.map((s, idx) => (idx === i ? { ...s, ...patch } : s)),
+    );
 
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -87,7 +95,30 @@ export default function Home() {
 
           <section>
             <h2 className="mb-2 text-sm font-semibold uppercase text-slate-400">
-              Positioner
+              Rail (travel axis)
+            </h2>
+            <div className="flex items-center gap-3">
+              <span className="w-14 font-mono text-xs text-yaskawa-accent">
+                Travel
+              </span>
+              <input
+                type="range"
+                min={-1.6}
+                max={1.6}
+                step={0.01}
+                value={railTravel}
+                onChange={(e) => setRailTravel(Number(e.target.value))}
+                className="flex-1 accent-yaskawa-accent"
+              />
+              <span className="w-14 text-right font-mono text-xs">
+                {railTravel.toFixed(2)} m
+              </span>
+            </div>
+          </section>
+
+          <section>
+            <h2 className="mb-2 text-sm font-semibold uppercase text-slate-400">
+              Positioners (2 stations)
             </h2>
             <select
               value={positionerId ?? ""}
@@ -102,45 +133,56 @@ export default function Home() {
               ))}
             </select>
             {activePositioner && (
-              <div className="mt-3 space-y-3">
-                {activePositioner.hasTilt && (
-                  <div className="flex items-center gap-3">
-                    <span className="w-14 font-mono text-xs text-yaskawa-accent">
-                      Tilt
-                    </span>
-                    <input
-                      type="range"
-                      min={-135}
-                      max={135}
-                      step={0.5}
-                      value={tilt}
-                      onChange={(e) => setTilt(Number(e.target.value))}
-                      className="flex-1 accent-yaskawa-accent"
-                    />
-                    <span className="w-14 text-right font-mono text-xs">
-                      {tilt.toFixed(0)}&deg;
-                    </span>
+              <div className="mt-3 space-y-4">
+                {stations.map((st, i) => (
+                  <div key={i} className="space-y-2">
+                    <p className="text-xs font-semibold text-slate-300">
+                      Stół {i + 1}
+                    </p>
+                    {activePositioner.hasTilt && (
+                      <div className="flex items-center gap-3">
+                        <span className="w-14 font-mono text-xs text-yaskawa-accent">
+                          Tilt
+                        </span>
+                        <input
+                          type="range"
+                          min={-135}
+                          max={135}
+                          step={0.5}
+                          value={st.tilt}
+                          onChange={(e) =>
+                            setStation(i, { tilt: Number(e.target.value) })
+                          }
+                          className="flex-1 accent-yaskawa-accent"
+                        />
+                        <span className="w-14 text-right font-mono text-xs">
+                          {st.tilt.toFixed(0)}&deg;
+                        </span>
+                      </div>
+                    )}
+                    {activePositioner.hasRotate && (
+                      <div className="flex items-center gap-3">
+                        <span className="w-14 font-mono text-xs text-yaskawa-accent">
+                          Rotate
+                        </span>
+                        <input
+                          type="range"
+                          min={-360}
+                          max={360}
+                          step={0.5}
+                          value={st.rotate}
+                          onChange={(e) =>
+                            setStation(i, { rotate: Number(e.target.value) })
+                          }
+                          className="flex-1 accent-yaskawa-accent"
+                        />
+                        <span className="w-14 text-right font-mono text-xs">
+                          {st.rotate.toFixed(0)}&deg;
+                        </span>
+                      </div>
+                    )}
                   </div>
-                )}
-                {activePositioner.hasRotate && (
-                  <div className="flex items-center gap-3">
-                    <span className="w-14 font-mono text-xs text-yaskawa-accent">
-                      Rotate
-                    </span>
-                    <input
-                      type="range"
-                      min={-360}
-                      max={360}
-                      step={0.5}
-                      value={rotate}
-                      onChange={(e) => setRotate(Number(e.target.value))}
-                      className="flex-1 accent-yaskawa-accent"
-                    />
-                    <span className="w-14 text-right font-mono text-xs">
-                      {rotate.toFixed(0)}&deg;
-                    </span>
-                  </div>
-                )}
+                ))}
                 <p className="text-[10px] text-slate-500">
                   {activePositioner.source}
                 </p>
@@ -168,8 +210,8 @@ export default function Home() {
             joints={joints}
             seams={seams}
             positionerId={positionerId}
-            positionerTilt={tilt}
-            positionerRotate={rotate}
+            railTravel={railTravel}
+            stations={stations}
           />
         </div>
       </div>

@@ -6,6 +6,7 @@ import { OrbitControls, Environment, Html } from "@react-three/drei";
 import YaskawaManipulator from "./YaskawaManipulator";
 import UrdfModel from "./UrdfModel";
 import H1000dPositioner from "./H1000dPositioner";
+import RobotTrack from "./RobotTrack";
 import type { Joints } from "./AxisSliders";
 import {
   ROBOT_MODELS,
@@ -17,6 +18,16 @@ export type SeamSegment = {
   start: [number, number, number];
   end: [number, number, number];
 };
+
+export type StationState = { tilt: number; rotate: number };
+
+// Height of the rail carriage top the robot base mounts on.
+const CARRIAGE_TOP_Y = 0.26;
+// The two work-station positioner positions (robot faces +X, rail runs along Z).
+const STATION_POS: [number, number, number][] = [
+  [1.95, 0, -1.2],
+  [1.95, 0, 1.2],
+];
 
 function Seam({ seg }: { seg: SeamSegment }) {
   const [x0, y0, z0] = seg.start;
@@ -47,6 +58,22 @@ function Loading() {
   );
 }
 
+function StationLabel({
+  text,
+  position,
+}: {
+  text: string;
+  position: [number, number, number];
+}) {
+  return (
+    <Html position={position} center distanceFactor={8}>
+      <div className="whitespace-nowrap rounded bg-slate-900/80 px-2 py-0.5 text-xs font-medium text-slate-100">
+        {text}
+      </div>
+    </Html>
+  );
+}
+
 function SelectedRobot({
   modelId,
   joints,
@@ -69,17 +96,22 @@ function SelectedRobot({
 
 function SelectedPositioner({
   positioner,
+  position,
   tilt,
   rotate,
 }: {
   positioner: PositionerModel;
+  position: [number, number, number];
   tilt: number;
   rotate: number;
 }) {
-  const pos: [number, number, number] = [1.6, 0, 0];
   if (positioner.kind === "procedural") {
     return (
-      <H1000dPositioner rotateDeg={rotate} position={pos} color={positioner.color} />
+      <H1000dPositioner
+        rotateDeg={rotate}
+        position={position}
+        color={positioner.color}
+      />
     );
   }
   const jointValuesDeg: Record<string, number> = {};
@@ -90,7 +122,7 @@ function SelectedPositioner({
       url={positioner.url!}
       jointValuesDeg={jointValuesDeg}
       color={positioner.color}
-      position={pos}
+      position={position}
     />
   );
 }
@@ -100,22 +132,25 @@ export default function RobotWorkspace({
   joints,
   seams = [],
   positionerId,
-  positionerTilt = 0,
-  positionerRotate = 0,
+  railTravel = 0,
+  stations = [
+    { tilt: 0, rotate: 0 },
+    { tilt: 0, rotate: 0 },
+  ],
 }: {
   modelId: string;
   joints: Joints;
   seams?: SeamSegment[];
   positionerId?: string | null;
-  positionerTilt?: number;
-  positionerRotate?: number;
+  railTravel?: number;
+  stations?: StationState[];
 }) {
   const positioner = positionerId
     ? POSITIONER_MODELS.find((p) => p.id === positionerId)
     : undefined;
 
   return (
-    <Canvas shadows camera={{ position: [3, 2.5, 3], fov: 45 }}>
+    <Canvas shadows camera={{ position: [4.5, 3, 4.5], fov: 45 }}>
       <color attach="background" args={["#ffffff"]} />
       <ambientLight intensity={0.4} />
       <directionalLight
@@ -126,25 +161,39 @@ export default function RobotWorkspace({
       />
       <hemisphereLight intensity={0.3} groundColor="#101820" />
 
-      <Suspense key={`robot-${modelId}`} fallback={<Loading />}>
-        <SelectedRobot modelId={modelId} joints={joints} />
-      </Suspense>
-      {positioner && (
-        <Suspense key={`pos-${positioner.id}`} fallback={null}>
-          <SelectedPositioner
-            positioner={positioner}
-            tilt={positionerTilt}
-            rotate={positionerRotate}
-          />
+      {/* Dedicated Yaskawa travel rail with the robot mounted on the carriage */}
+      <RobotTrack length={4.6} carriage={railTravel} />
+      <group position={[0, CARRIAGE_TOP_Y, railTravel]}>
+        <Suspense key={`robot-${modelId}`} fallback={<Loading />}>
+          <SelectedRobot modelId={modelId} joints={joints} />
         </Suspense>
-      )}
+      </group>
+
+      {/* Two work stations, each with its own positioner */}
+      {positioner &&
+        STATION_POS.map((pos, i) => (
+          <group key={`station-${i}`}>
+            <Suspense key={`pos-${positioner.id}-${i}`} fallback={null}>
+              <SelectedPositioner
+                positioner={positioner}
+                position={pos}
+                tilt={stations[i]?.tilt ?? 0}
+                rotate={stations[i]?.rotate ?? 0}
+              />
+            </Suspense>
+            <StationLabel
+              text={`Stół ${i + 1}`}
+              position={[pos[0], 1.7, pos[2]]}
+            />
+          </group>
+        ))}
 
       {seams.map((s, i) => (
         <Seam key={i} seg={s} />
       ))}
 
       <Environment preset="warehouse" />
-      <OrbitControls makeDefault enableDamping target={[0.5, 0.8, 0]} />
+      <OrbitControls makeDefault enableDamping target={[1, 0.7, 0]} />
     </Canvas>
   );
 }
