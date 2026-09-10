@@ -107,25 +107,28 @@ function SelectedPositioner({
   tilt: number;
   rotate: number;
 }) {
+  // Turn the positioner 90° about Y so its pedestal axis runs parallel to the
+  // rail (rail runs along Z).
+  const yaw: [number, number, number] = [0, Math.PI / 2, 0];
+
   if (positioner.kind === "procedural") {
     return (
-      <H1000dPositioner
-        rotateDeg={rotate}
-        position={position}
-        color={positioner.color}
-      />
+      <group position={position} rotation={yaw}>
+        <H1000dPositioner rotateDeg={rotate} color={positioner.color} />
+      </group>
     );
   }
   const jointValuesDeg: Record<string, number> = {};
   if (positioner.axisMap?.tilt) jointValuesDeg[positioner.axisMap.tilt] = tilt;
   if (positioner.axisMap?.rotate) jointValuesDeg[positioner.axisMap.rotate] = rotate;
   return (
-    <UrdfModel
-      url={positioner.url!}
-      jointValuesDeg={jointValuesDeg}
-      color={positioner.color}
-      position={position}
-    />
+    <group position={position} rotation={yaw}>
+      <UrdfModel
+        url={positioner.url!}
+        jointValuesDeg={jointValuesDeg}
+        color={positioner.color}
+      />
+    </group>
   );
 }
 
