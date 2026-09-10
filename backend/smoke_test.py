@@ -5,6 +5,20 @@ import trimesh
 from app.kinematics_engine import forward_kinematics, solve_ik_path, get_robot
 from app.dx200_postprocessor import generate_jbi, WeldSegment, PostprocessorConfig
 from app.cad_analysis import detect_seams
+from app.robot_config import ACTIVE_MODEL, ACTIVE_POSITIONER, MODELS
+from app.welding_config import ACTIVE_POWER_SOURCE, LORCH_S8_SCHEDULES
+
+
+def test_config():
+    print(f"Active robot: {ACTIVE_MODEL.name} "
+          f"(reach {ACTIVE_MODEL.reach_mm} mm, payload {ACTIVE_MODEL.payload_kg} kg)")
+    print(f"Available AR models: {', '.join(MODELS)}")
+    print(f"Positioner: {ACTIVE_POSITIONER.name}, axes={len(ACTIVE_POSITIONER.axes)}")
+    print(f"Power source: {ACTIVE_POWER_SOURCE.name}, "
+          f"schedules={sorted(LORCH_S8_SCHEDULES)}")
+    assert ACTIVE_MODEL.name.startswith("AR")
+    assert ACTIVE_POSITIONER.name == "H1000D"
+    assert ACTIVE_POWER_SOURCE.name == "Lorch S8"
 
 
 def test_fk_ik_roundtrip():
@@ -34,12 +48,18 @@ def test_jbi():
         {"x": 1.0, "y": 0.2, "z": 0.5, "rx": 180, "ry": 0, "rz": 0},
     ]
     segs = [WeldSegment(start_index=1, end_index=2, weld_speed=8.0, arc_file=3)]
-    jbi = generate_jbi(pts, segs, PostprocessorConfig(job_name="WELD_AUTO"))
-    print("\n--- Generated JBI ---")
+    # With H1000D positioner (station axis) -> coordinated SMOVL job.
+    jbi = generate_jbi(
+        pts, segs, PostprocessorConfig(job_name="WELD_AUTO"), station_deg=[0.0, 45.0, 90.0]
+    )
+    print("\n--- Generated JBI (AR + H1000D + Lorch S8) ---")
     print(jbi)
     assert jbi.startswith("/JOB")
     assert "//NAME WELD_AUTO" in jbi
     assert "ARCON" in jbi and "ARCOF" in jbi
+    assert "SMOVL" in jbi          # coordinated move with positioner
+    assert "ST1" in jbi            # station axis group
+    assert "Lorch S8" in jbi       # weld schedule annotation
     assert jbi.strip().endswith("END")
 
 
@@ -59,6 +79,7 @@ def test_cad():
 
 
 if __name__ == "__main__":
+    test_config()
     test_fk_ik_roundtrip()
     test_jbi()
     test_cad()

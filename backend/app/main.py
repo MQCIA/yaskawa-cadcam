@@ -16,7 +16,8 @@ from pydantic import BaseModel, Field
 
 from .kinematics_engine import forward_kinematics, get_robot, solve_ik_path
 from .dx200_postprocessor import PostprocessorConfig, WeldSegment, generate_jbi
-from .robot_config import ACTIVE_MODEL, AXIS_NAMES
+from .robot_config import ACTIVE_MODEL, ACTIVE_POSITIONER, AXIS_NAMES, MODELS
+from .welding_config import ACTIVE_POWER_SOURCE, LORCH_S8_SCHEDULES
 
 app = FastAPI(
     title="Yaskawa CAD/CAM prototype API",
@@ -67,6 +68,9 @@ class JbiRequest(BaseModel):
     job_name: str = "WELD_AUTO"
     tool_no: int = 0
     move_speed: float = 10.0
+    station_deg: list[float] | None = Field(
+        default=None, description="Optional per-point H1000D positioner angle (deg)."
+    )
 
 
 # --------------------------------------------------------------------------- #
@@ -77,17 +81,52 @@ def robot_info():
     robot = get_robot()
     return {
         "name": ACTIVE_MODEL.name,
+        "reach_mm": ACTIVE_MODEL.reach_mm,
+        "payload_kg": ACTIVE_MODEL.payload_kg,
         "dof": robot.n,
         "axis_names": AXIS_NAMES,
+        "approximate_params": ACTIVE_MODEL.approximate,
         "joint_limits_deg": [
             [round(j.qlim[0] * 57.29577951308232, 3),
              round(j.qlim[1] * 57.29577951308232, 3)]
             for j in ACTIVE_MODEL.joints
         ],
         "warning": (
-            "Placeholder kinematics. Replace robot_config.ACTIVE_MODEL with "
-            "certified values for your exact robot before any real use."
+            "Approximate/placeholder kinematics. Replace robot_config.ACTIVE_MODEL "
+            "with certified values for your exact AR model before any real use."
         ),
+    }
+
+
+@app.get("/api/config")
+def cell_config():
+    """Full cell configuration: robot catalogue, positioner, power source."""
+    return {
+        "active_robot": ACTIVE_MODEL.name,
+        "available_robots": [
+            {"name": m.name, "reach_mm": m.reach_mm, "payload_kg": m.payload_kg}
+            for m in MODELS.values()
+        ],
+        "positioner": {
+            "name": ACTIVE_POSITIONER.name,
+            "payload_kg": ACTIVE_POSITIONER.payload_kg,
+            "axes": [
+                {"name": a.name, "kind": a.kind, "label": a.axis_label,
+                 "qlim_deg": a.qlim_deg}
+                for a in ACTIVE_POSITIONER.axes
+            ],
+        },
+        "power_source": {
+            "name": ACTIVE_POWER_SOURCE.name,
+            "interface": ACTIVE_POWER_SOURCE.interface,
+            "schedules": [
+                {"condition_no": s.condition_no, "lorch_job": s.lorch_job,
+                 "current_a": s.current_a, "voltage_v": s.voltage_v,
+                 "wire_speed": s.wire_speed, "process": s.process, "gas": s.gas}
+                for s in LORCH_S8_SCHEDULES.values()
+            ],
+        },
+        "warning": "Placeholder/example values. Validate against your real cell.",
     }
 
 
@@ -122,7 +161,12 @@ def generate_job(req: JbiRequest):
         )
         for s in req.weld_segments
     ]
-    return generate_jbi([p.model_dump() for p in req.points], segments, cfg)
+    return generate_jbi(
+        [p.model_dump() for p in req.points],
+        segments,
+        cfg,
+        station_deg=req.station_deg,
+    )
 
 
 @app.post("/api/analyze-cad")

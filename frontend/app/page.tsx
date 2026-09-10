@@ -35,7 +35,7 @@ export default function Home() {
         <h1 className="text-lg font-semibold">
           Yaskawa CAD/CAM Prototype{" "}
           <span className="text-xs font-normal text-yaskawa-accent">
-            DX200 · AR/MA series
+            DX200 · AR series · H1000D · Lorch S8
           </span>
         </h1>
       </header>

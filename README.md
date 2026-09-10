@@ -1,9 +1,15 @@
-# Yaskawa CAD/CAM Prototype (DX200 · AR/MA series)
+# Yaskawa CAD/CAM Prototype (DX200 · AR series)
 
-A **prototype** welding CAD/CAM web application for Yaskawa 6-axis welding
-robots: a 3D workspace (React-Three-Fiber), a kinematics backend
+A **prototype** welding CAD/CAM web application for a Yaskawa 6-axis welding
+cell: a 3D workspace (React-Three-Fiber), a kinematics backend
 (FastAPI + roboticstoolbox), a Yaskawa DX200 `.JBI` postprocessor, and a CAD
 seam-detection endpoint.
+
+**Configured cell** (see [`docs/HARDWARE.md`](docs/HARDWARE.md)):
+- Robot: **Yaskawa AR series** on DX200 (selectable: AR900 / AR1440 / AR1730 /
+  AR2010 / AR3120 — default AR1440 via `ROBOT_MODEL`)
+- Positioner: **H1000D** external / station axis (coordinated `SMOVL`)
+- Power source: **Lorch S8** (weld schedules → `ARCON`)
 
 > ## ⚠️ SAFETY — READ BEFORE DOING ANYTHING WITH REAL HARDWARE
 >
@@ -108,3 +114,20 @@ npm run dev                              # http://localhost:3000
 
 These are the pieces that must be filled in with your real data and validated
 in simulation before any production use.
+
+---
+
+## Publishing this repository
+
+This repository was initialised locally (branch
+`cursor/yaskawa-cadcam-prototype-868a`). To publish it to your own remote:
+
+```bash
+# from the repo root
+git remote add origin <your-repo-url>     # e.g. git@github.com:you/yaskawa-cadcam.git
+git push -u origin cursor/yaskawa-cadcam-prototype-868a
+# or publish it as main:
+git branch -M main && git push -u origin main
+```
+
+Create the empty remote repo first (e.g. `gh repo create yaskawa-cadcam --private`).
