@@ -25,6 +25,11 @@ ROBOT_MODEL=AR2010 uvicorn app.main:app --reload
 > values from the Yaskawa data sheet / MotoSim model / DX200 parameter file for
 > your exact unit, then verify FK against the pendant.
 
+Planner behaviour (weld names, 12 mm CTWD, home interpolation, 3-state
+touch) is taken from Verbotics Weld 2026 session logs — see
+[`docs/VERBOTICS_LOGS.md`](VERBOTICS_LOGS.md). That is not a substitute for
+the signed workcell URDF/SRDF still sitting on the Windows install.
+
 To finish the model correctly, please provide:
 - the exact AR model number (e.g. AR1440 / AR2010 / …),
 - its data sheet (P-point / reach diagram) or the MotoSim robot definition,

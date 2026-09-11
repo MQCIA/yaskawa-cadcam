@@ -20,6 +20,7 @@ import { analyzeCad } from "@/lib/api";
 import { ROBOT_MODELS, POSITIONER_MODELS } from "@/lib/models";
 import {
   buildDemoProgram,
+  buildProgramFromSeams,
   sampleProgram,
   generateJbi,
   DEMO_MOUNT,
@@ -27,6 +28,8 @@ import {
   ensureTouchSense,
   optimizeSequence,
   planMotions,
+  CTWD_WELD_MM,
+  GENERATOR_LABEL,
   type WeldProgram,
 } from "@/lib/weldProgram";
 
@@ -128,12 +131,25 @@ export default function Home() {
   }
 
   function identifyWelds() {
+    if (seams.length > 0) {
+      const prog = buildProgramFromSeams(
+        seams.map((s) => ({ start: s.start, end: s.end })),
+        DEMO_MOUNT,
+        weldCondition,
+      );
+      setProgram(prog);
+      setSimT(0);
+      setSimPlaying(false);
+      setLeftTab("welds");
+      setStatus(t("status.identifyCad", { n: seams.length }));
+      return;
+    }
     if (!program) {
       makeProgram(weldCondition);
       setStatus(t("status.identifyDemo"));
     } else {
       setLeftTab("welds");
-      setStatus(t("status.identifyExisting", { n: program.seam.length }));
+      setStatus(t("status.identifyExisting", { n: program.welds?.length ?? 1 }));
     }
   }
 
@@ -512,6 +528,15 @@ export default function Home() {
                     <>
                       <div className="font-medium text-slate-800">{program.name}</div>
                       <div className="text-[11px] text-slate-500">{t("workspace.mountedOn")}</div>
+                      <div className="mt-1 font-mono text-[10px] text-slate-400">
+                        {t("workspace.workcell")}
+                        <div className="truncate" title={program.workcellId}>
+                          {program.workcellId}
+                        </div>
+                      </div>
+                      <div className="text-[10px] text-slate-400">
+                        {t("workspace.generator")}: {GENERATOR_LABEL}
+                      </div>
                     </>
                   ) : (
                     <span className="text-slate-500">{t("workspace.noPart")}</span>
@@ -528,14 +553,33 @@ export default function Home() {
             {leftTab === "welds" && (
               <div className="space-y-2">
                 {program ? (
-                  <div className="rounded border border-slate-200 bg-slate-50 p-2">
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium">{t("welds.seam1")}</span>
-                      <span className="rounded bg-orange-50 px-1.5 py-0.5 text-[10px] text-orange-700">{t("welds.fillet")}</span>
-                    </div>
-                    <div className="mt-1 text-[11px] text-slate-500">
-                      {t("welds.length", { mm: program.weldLenMm.toFixed(0), n: program.waypoints.length })}
-                    </div>
+                  <>
+                    {(program.welds?.length
+                      ? program.welds
+                      : [
+                          {
+                            name: t("welds.seam1"),
+                            lengthMm: program.weldLenMm,
+                            states: program.waypoints.length,
+                            cost: 0,
+                          },
+                        ]
+                    ).map((w) => (
+                      <div key={w.name} className="rounded border border-slate-200 bg-slate-50 p-2">
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium">{w.name}</span>
+                          <span className="rounded bg-orange-50 px-1.5 py-0.5 text-[10px] text-orange-700">
+                            {t("welds.fillet")}
+                          </span>
+                        </div>
+                        <div className="mt-1 text-[11px] text-slate-500">
+                          {t("welds.length", { mm: w.lengthMm.toFixed(0), n: w.states })}
+                        </div>
+                        <div className="text-[10px] text-slate-400">
+                          {t("welds.ctwd", { mm: CTWD_WELD_MM })} · {t("welds.cost", { cost: w.cost })}
+                        </div>
+                      </div>
+                    ))}
                     <label className="mt-2 block text-[10px] text-slate-500">{t("welds.process")}</label>
                     <select
                       value={weldCondition}
@@ -548,7 +592,7 @@ export default function Home() {
                         </option>
                       ))}
                     </select>
-                  </div>
+                  </>
                 ) : (
                   <p className="px-1 text-xs text-slate-500">{t("welds.empty")}</p>
                 )}
@@ -683,8 +727,13 @@ export default function Home() {
                   />
                   ARC {sample.arcOn ? "ON" : "OFF"}
                   <span className="text-slate-500">·</span>
+                  CTWD {sample.ctwdMm ?? 0}mm
+                  <span className="text-slate-500">·</span>
                   {sample.elapsedSec.toFixed(1)}/{program.cycleSec.toFixed(1)}s
                 </div>
+                {sample.weldName && (
+                  <div className="text-[10px] text-slate-500">{sample.weldName}</div>
+                )}
               </div>
             )}
           </div>
@@ -829,6 +878,7 @@ export default function Home() {
                       ["arcnc.touchSense", program.meta.touchSense],
                       ["arcnc.sequence", program.meta.sequenceOptimized],
                       ["arcnc.singularity", program.meta.singularitySafe],
+                      ["arcnc.homeVia", program.meta.homeBetweenActions],
                     ] as const
                   ).map(([k, ok]) => (
                     <li key={k} className="flex items-center justify-between gap-2">
@@ -841,6 +891,20 @@ export default function Home() {
                 </ul>
               </div>
             )}
+
+            {program?.plannerLog?.length ? (
+              <details className="mt-3 rounded border border-slate-200 bg-slate-50 p-2">
+                <summary className="cursor-pointer text-[10px] font-semibold uppercase text-slate-500">
+                  {t("planner.log")}
+                </summary>
+                <pre className="mt-1 max-h-40 overflow-auto whitespace-pre-wrap font-mono text-[9px] leading-snug text-slate-600">
+                  {program.plannerLog
+                    .slice(0, 80)
+                    .map((l) => `[${l.level}] ${l.msg}`)
+                    .join("\n")}
+                </pre>
+              </details>
+            ) : null}
 
             <p className="mt-2 text-[10px] leading-snug text-slate-500">
               {t("robot.help")}

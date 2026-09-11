@@ -64,17 +64,54 @@ export default function WeldScene({
   simT: number;
 }) {
   const s = sampleProgram(program, simT);
-  const approach = program.waypoints[0].pos;
-  const retract = program.waypoints[program.waypoints.length - 1].pos;
-  const seamStart = program.seam[0];
-  const seamEnd = program.seam[program.seam.length - 1];
+  const seams = program.welds?.length
+    ? program.welds.map((w) => w.seam)
+    : program.seam.length
+      ? [program.seam]
+      : [];
+  const primarySeam = seams[0] ?? program.seam;
 
-  // Weld-phase progress fraction (excludes the approach/retract air moves).
-  const approachDur = program.segDurations[0] ?? 0;
-  const retractDur = program.segDurations[program.segDurations.length - 1] ?? 0;
-  const weldDur = Math.max(1e-6, program.cycleSec - approachDur - retractDur);
-  const f = Math.max(0, Math.min(1, (s.elapsedSec - approachDur) / weldDur));
-  const bead = beadPoints(program.seam, f);
+  // Weld-phase progress fraction (excludes air / home / touch).
+  const weldDurations = program.waypoints.slice(0, -1).map((wp, i) =>
+    wp.kind === "weld" && program.waypoints[i + 1]?.kind === "weld"
+      ? program.segDurations[i] ?? 0
+      : 0,
+  );
+  const weldDur = Math.max(1e-6, weldDurations.reduce((a, b) => a + b, 0));
+  let weldElapsed = 0;
+  let acc = 0;
+  const target = s.elapsedSec;
+  for (let i = 0; i < program.segDurations.length; i++) {
+    const d = program.segDurations[i];
+    const isWeld =
+      program.waypoints[i]?.kind === "weld" && program.waypoints[i + 1]?.kind === "weld";
+    if (target >= acc + d) {
+      if (isWeld) weldElapsed += d;
+    } else if (isWeld) {
+      weldElapsed += Math.max(0, target - acc);
+      break;
+    } else if (target < acc + d) {
+      break;
+    }
+    acc += d;
+  }
+  const f = Math.max(0, Math.min(1, weldElapsed / weldDur));
+  const bead = beadPoints(primarySeam, f);
+
+  const airRuns: Vec3[][] = [];
+  let run: Vec3[] = [];
+  const flush = () => {
+    if (run.length >= 2) airRuns.push(run);
+    run = [];
+  };
+  program.waypoints.forEach((wp) => {
+    if (wp.kind === "weld") {
+      flush();
+      return;
+    }
+    run.push(wp.pos);
+  });
+  flush();
 
   return (
     <group>
@@ -86,8 +123,21 @@ export default function WeldScene({
         </mesh>
       ))}
 
-      {/* Weld seam — solid orange line on the geometry */}
-      <Line points={program.seam} color="#ff7a1a" lineWidth={5} />
+      {/* All identified seams — Weld 1-N */}
+      {seams.map((seam, i) => (
+        <Line key={`seam-${i}`} points={seam} color="#ff7a1a" lineWidth={5} />
+      ))}
+
+      {/* Home (action 1) */}
+      {program.waypoints
+        .filter((w) => w.kind === "home")
+        .slice(0, 1)
+        .map((w) => (
+          <mesh key={w.id} position={w.pos}>
+            <octahedronGeometry args={[0.025, 0]} />
+            <meshStandardMaterial color="#64748b" emissive="#334155" emissiveIntensity={0.35} />
+          </mesh>
+        ))}
 
       {/* TouchSense search points */}
       {program.waypoints
@@ -114,23 +164,18 @@ export default function WeldScene({
         </mesh>
       ))}
 
-      {/* Approach / retract — dashed cyan air-moves */}
-      <Line
-        points={[approach, seamStart]}
-        color="#39d0ff"
-        lineWidth={2}
-        dashed
-        dashSize={0.03}
-        gapSize={0.02}
-      />
-      <Line
-        points={[seamEnd, retract]}
-        color="#39d0ff"
-        lineWidth={2}
-        dashed
-        dashSize={0.03}
-        gapSize={0.02}
-      />
+      {/* Home ↔ touch ↔ weld air-moves (dashed) */}
+      {airRuns.map((pts, i) => (
+        <Line
+          key={`air-${i}`}
+          points={pts}
+          color="#39d0ff"
+          lineWidth={2}
+          dashed
+          dashSize={0.03}
+          gapSize={0.02}
+        />
+      ))}
 
       {/* Torch-orientation frames along the seam */}
       {program.torchFrames.map((frm, i) => {
