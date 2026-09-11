@@ -88,18 +88,34 @@ higher fidelity than ROS tessellations. For this learning/personal prototype,
 drop STEP/STL into `frontend/public/models/` and register them in
 `frontend/lib/models.ts` — do not run a decimator.
 
-A **cloud agent cannot read** `C:\Program Files\Verbotics Weld 2026`. On that
-Windows PC run:
+A **cloud agent on Cursor’s Linux VM cannot read** `C:\Program Files\...`.
+Your self-hosted worker (`verbotics-pc`) must either run the dump itself or host
+a **new** Cloud Agent session whose environment is that machine.
+
+### Option A — dump the whole Verbotics app locally (fastest)
+
+On the Windows PC (repo checkout):
 
 ```powershell
 powershell -File tools/verbotics_local_inventory.ps1
 ```
 
-That writes `frontend/public/models/from-verbotics/inventory.json` (and
-extracted `model.json` from `.vbmodel` zips, including torch TCP). Commit those
-files so the cloud agent can match the Verbotics tool tip. To let a cloud agent
-read `C:\` directly, start a Cursor **self-hosted worker** on that PC
-(`cursor worker start`) and keep it connected.
+This inventories install + AppData + Documents: workcells (`.vbmodel`),
+presets, generators, settings, projects, URDF/TCP, and optional torch meshes.
+Output: `frontend/public/models/from-verbotics/` (`inventory.json`, `SUMMARY.md`,
+`extracted-json/`, …). Commit/push that folder, then ask the cloud agent to
+ingest it.
+
+### Option B — Cloud Agent running ON your PC
+
+1. Keep `agent worker start --name "verbotics-pc"` running.
+2. Open [cursor.com/agents](https://cursor.com/agents).
+3. Start a **new** agent and set environment / machine to **`verbotics-pc`**
+   (not the default cloud VM).
+4. Prompt it to run `tools/verbotics_local_inventory.ps1` and mine the install.
+
+This chat stays on the cloud VM even when the worker is online — only a session
+that selected `verbotics-pc` executes tools on `C:\`.
 
 ## Adding a new model (e.g. your exact AR model or the H1000D)
 
