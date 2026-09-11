@@ -59,13 +59,63 @@ from source (1) is usually the faster path to an articulated model.
 
 ## How the bundled models were produced
 
-The ROS xacro files were converted to plain, browser-loadable URDF with
-[`tools/xacro_to_urdf.py`](../tools/xacro_to_urdf.py), which:
-- instantiates the `<xacro:macro>` and drops `${prefix}`,
-- evaluates `${…}` math (`pi`, `radians()`),
-- replaces the materials include with a concrete Yaskawa-blue material,
-- rewrites `package://…/meshes/{visual,collision}/…` to relative `visual/…`
-  paths (only visual meshes are vendored).
+## Fidelity — what is (and is not) simplified
+
+The 3D viewer **does not decimate, remesh, or scale** CAD. `urdf-loader`
+loads the STL triangles as-is (`parseVisual=true`, `parseCollision=false`),
+so the on-screen robot is the visual mesh, never the collision hull.
+
+| Asset | Source | Simplified? |
+|-------|--------|-------------|
+| **MOTOMAN-AR2010** visual STL | ROS-Industrial `motoman_ar2010_support` (Apache-2.0), copied byte-for-byte | **Not by us.** SHA-256 must match upstream (`python3 tools/verify_vendor_meshes.py`). ROS-Industrial already tessellated these from Yaskawa CAD; they are coarser than official STEP / MotoSim / Verbotics library models. |
+| AR2010 **collision** STL | Same package, `meshes/collision/` | Yes — these are the ROS hulls (~10× fewer triangles). Vendored for a faithful URDF, **not rendered**. |
+| **MotoPos D500** | `motoman_motopos_d500_support` visual + collision | Same split as AR2010. |
+| **H1000D**, travel rail, Lorch S8, welding torch | Procedural primitives in React-Three-Fiber | **Yes — placeholders.** There is no public URDF/STEP we can legally vendor. Drop in manufacturer CAD per “Adding a new model” below. |
+
+`tools/xacro_to_urdf.py` only rewrites `package://` paths and evaluates
+`${…}` joint math. It does **not** touch triangle data, and it no longer
+points `<collision>` at the visual meshes.
+
+To confirm nothing has been rewritten on disk:
+
+```bash
+python3 tools/verify_vendor_meshes.py
+python3 tools/verify_vendor_meshes.py --fetch-upstream   # live GitHub compare
+```
+
+Official Yaskawa STEP/IGES (e-mechatronics / MotoSim / Verbotics library) is
+higher fidelity than ROS tessellations. For this learning/personal prototype,
+drop STEP/STL into `frontend/public/models/` and register them in
+`frontend/lib/models.ts` — do not run a decimator.
+
+A **cloud agent on Cursor’s Linux VM cannot read** `C:\Program Files\...`.
+Your self-hosted worker (`verbotics-pc`) must either run the dump itself or host
+a **new** Cloud Agent session whose environment is that machine.
+
+### Option A — dump the whole Verbotics app locally (fastest)
+
+On the Windows PC (repo checkout):
+
+```powershell
+powershell -File tools/verbotics_local_inventory.ps1
+```
+
+This inventories install + AppData + Documents: workcells (`.vbmodel`),
+presets, generators, settings, projects, URDF/TCP, and optional torch meshes.
+Output: `frontend/public/models/from-verbotics/` (`inventory.json`, `SUMMARY.md`,
+`extracted-json/`, …). Commit/push that folder, then ask the cloud agent to
+ingest it.
+
+### Option B — Cloud Agent running ON your PC
+
+1. Keep `agent worker start --name "verbotics-pc"` running.
+2. Open [cursor.com/agents](https://cursor.com/agents).
+3. Start a **new** agent and set environment / machine to **`verbotics-pc`**
+   (not the default cloud VM).
+4. Prompt it to run `tools/verbotics_local_inventory.ps1` and mine the install.
+
+This chat stays on the cloud VM even when the worker is online — only a session
+that selected `verbotics-pc` executes tools on `C:\`.
 
 ## Adding a new model (e.g. your exact AR model or the H1000D)
 
