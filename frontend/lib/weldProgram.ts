@@ -169,6 +169,8 @@ export function checkCollisionFree(prog: WeldProgram): boolean {
     const b = prog.waypoints[i + 1];
     if (a.kind === "weld" && b.kind === "weld") continue;
     if (a.kind === "sense" || b.kind === "sense") continue;
+    // Home air-moves are planned separately (Verbotics: home ↔ touches / toolpath).
+    if (a.kind === "home" || b.kind === "home") continue;
     for (const box of obstacles) {
       if (segmentHitsAabb(a.pos, b.pos, box)) return false;
     }
