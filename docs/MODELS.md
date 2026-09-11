@@ -83,10 +83,23 @@ python3 tools/verify_vendor_meshes.py
 python3 tools/verify_vendor_meshes.py --fetch-upstream   # live GitHub compare
 ```
 
-Official Yaskawa STEP/IGES (e-mechatronics / MotoSim Model Library) is the
-geometry Verbotics uses. Those files require a Yaskawa login and are **not**
-redistributable here. If you have them, convert per-link and register them
-in `frontend/lib/models.ts` — do not run a decimator.
+Official Yaskawa STEP/IGES (e-mechatronics / MotoSim / Verbotics library) is
+higher fidelity than ROS tessellations. For this learning/personal prototype,
+drop STEP/STL into `frontend/public/models/` and register them in
+`frontend/lib/models.ts` — do not run a decimator.
+
+A **cloud agent cannot read** `C:\Program Files\Verbotics Weld 2026`. On that
+Windows PC run:
+
+```powershell
+powershell -File tools/verbotics_local_inventory.ps1
+```
+
+That writes `frontend/public/models/from-verbotics/inventory.json` (and
+extracted `model.json` from `.vbmodel` zips, including torch TCP). Commit those
+files so the cloud agent can match the Verbotics tool tip. To let a cloud agent
+read `C:\` directly, start a Cursor **self-hosted worker** on that PC
+(`cursor worker start`) and keep it connected.
 
 ## Adding a new model (e.g. your exact AR model or the H1000D)
 
