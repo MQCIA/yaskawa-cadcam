@@ -67,11 +67,16 @@ const pl: Dict = {
   "workspace.mountedOn": "Zamocowano na Stole 1 · próbka T-fillet",
   "workspace.extraSeams": "Dodatkowe spoiny z CAD: {n}",
   "workspace.positioner": "pozycjoner",
+  "workspace.workcell": "Komórka Verbotics",
+  "workspace.generator": "Generator",
 
   // Welds
   "welds.seam1": "Spoina 1",
+  "welds.named": "{name}",
   "welds.fillet": "pachwinowa",
   "welds.length": "Długość {mm} mm · {n} punktów",
+  "welds.ctwd": "CTWD {mm} mm",
+  "welds.cost": "koszt {cost}",
   "welds.process": "Proces spawania",
   "welds.empty": "Brak spoin. Użyj Plan → Wykryj spoiny.",
 
@@ -132,9 +137,11 @@ const pl: Dict = {
   "status.programReady":
     "Program gotowy: T-fillet · {mm} mm · cykl ≈ {sec} s",
   "status.identifyDemo":
-    "Wykryj spoiny (demo): utworzono 1 spoinę pachwinową z próbki T.",
+    "Wykryj spoiny (demo): utworzono Weld 1-1 (pachwinowa, próbka T).",
   "status.identifyExisting":
-    "Wykryj spoiny: spoina z {n} punktami już jest w projekcie.",
+    "Wykryj spoiny: {n} spoin(y) w projekcie.",
+  "status.identifyCad":
+    "Wykryj spoiny: {n} segment(ów) CAD → Weld 1-1 … Weld 1-{n}.",
   "status.planNeedPart": "Zaimportuj / załaduj część przed planowaniem.",
   "status.planDone": "Plan ruchu gotowy · bez kolizji: {collision}. Otwórz Program i naciśnij Odtwórz.",
   "status.home": "Robot → pozycja bazowa (wszystkie osie 0°).",
@@ -166,9 +173,13 @@ const pl: Dict = {
   "status.sequenceOptimized": "Zoptymalizowano kolejność spawania.",
   "status.touchSenseAdded": "Dodano punkty TouchSense przed spoiną.",
   "arcnc.planMotion": "Planuj ruchy (auto)",
+  "arcnc.homeVia": "Przez bazę",
   "welds.tagTouch": "TOUCH",
   "program.kind.sense": "TouchSense",
   "program.kind.travel": "Dojazd",
+  "program.kind.home": "Baza",
+  "planner.log": "Dziennik planera (Weld 2026)",
+  "planner.seed": "5000 stanów z pozycji bazowej",
 
 };
 
@@ -216,10 +227,15 @@ const en: Dict = {
   "workspace.mountedOn": "Mounted on Table 1 · T-fillet coupon",
   "workspace.extraSeams": "Extra CAD seams: {n}",
   "workspace.positioner": "positioner",
+  "workspace.workcell": "Verbotics workcell",
+  "workspace.generator": "Generator",
 
   "welds.seam1": "Seam 1",
+  "welds.named": "{name}",
   "welds.fillet": "fillet",
   "welds.length": "Length {mm} mm · {n} waypoints",
+  "welds.ctwd": "CTWD {mm} mm",
+  "welds.cost": "cost {cost}",
   "welds.process": "Weld process",
   "welds.empty": "No welds yet. Use Plan → Identify Welds.",
 
@@ -274,9 +290,11 @@ const en: Dict = {
   "status.programReady":
     "Program ready: T-fillet · {mm} mm · cycle ≈ {sec} s",
   "status.identifyDemo":
-    "Identify Welds (demo): 1 fillet seam created from T-coupon.",
+    "Identify Welds (demo): created Weld 1-1 (fillet, T-coupon).",
   "status.identifyExisting":
-    "Identify Welds: seam with {n} points already in project.",
+    "Identify Welds: {n} weld(s) already in the project.",
+  "status.identifyCad":
+    "Identify Welds: {n} CAD segment(s) → Weld 1-1 … Weld 1-{n}.",
   "status.planNeedPart": "Import / load a part before planning.",
   "status.planDone": "Motion plan ready · collision-free: {collision}. Open Program and press Play.",
   "status.home": "Robot → Home pose (all axes 0°).",
@@ -303,9 +321,13 @@ const en: Dict = {
   "arcnc.optimizeSeq": "Optimize sequence",
   "arcnc.addSense": "Add TouchSense",
   "arcnc.planMotion": "Plan motions (auto)",
+  "arcnc.homeVia": "Via home",
   "welds.tagTouch": "TOUCH",
   "program.kind.sense": "TouchSense",
   "program.kind.travel": "Travel",
+  "program.kind.home": "Home",
+  "planner.log": "Planner log (Weld 2026)",
+  "planner.seed": "5000 states from home",
   "status.touchSenseAdded": "Added TouchSense points before the seam.",
   "status.sequenceOptimized": "Optimized weld sequence.",
   "program.kind.approach": "Approach",

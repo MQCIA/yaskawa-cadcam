@@ -1,0 +1,315 @@
+{
+  "source": "Verbotics Weld 2026 desktop logs (user-supplied)",
+  "app_version": "2026.1.2",
+  "app_rev": "e178f425127c452db06adc90785792417287d7c0",
+  "file_version": 95,
+  "locale": "pl_PL",
+  "generator_default_for_this_cell": "Yaskawa Motoman INFORM",
+  "generators_loaded": [
+    "ABB RAPID",
+    "Doosan DRL",
+    "FANUC LS",
+    "Kawasaki AS",
+    "Kuka KRL",
+    "OTC Slim",
+    "Panasonic CSR",
+    "Universal Robots URP",
+    "Yaskawa Motoman INFORM",
+    "Reis RRL",
+    "Elite CS Task",
+    "QJAR RBG",
+    "CROBOTP"
+  ],
+  "workcells": [
+    {
+      "id": "856eb580-e7fa-4cf3-b0be-50949f0f0aeb",
+      "seen": 5,
+      "note": "EXPODREW Untitled.vbweld (Mar\u2013May 2026, also opened 2026-09-11)"
+    },
+    {
+      "id": "88d44813-4907-4107-8cbe-a84ebe93d876",
+      "seen": 6,
+      "note": "Active cell from 2026-09-11 (autosave sessions)"
+    }
+  ],
+  "projects": {
+    "Loading project from 'C:/Users/macie/Desktop/EXPODREW/Untitled.vbweld'": 3,
+    "Loading project from 'C:/Users/macie/AppData/Local/Temp/verbotics-weld-autosave-rxsGcf.vbweld'": 3,
+    "Loading project from 'C:/Users/macie/AppData/Local/Temp/verbotics-weld-autosave-ACuiEG.vbweld'": 2
+  },
+  "planner": {
+    "identify_welds_cpu_cores": "13 (user PC); prototype uses os.cpu_count()",
+    "weld_name_pattern": "Weld {part}-{index}",
+    "attempts": "1/2 (sometimes 1/3)",
+    "seed_states_typical": 5000,
+    "seed_from": "reference position (home)",
+    "replan": "ToolpathPlanner::replanConfigurationToHome",
+    "simplify": [
+      "PathSimplifier::simplify",
+      "ToolpathSimplifier::simplify",
+      "ToolpathSimplifier::optimiseNozzle"
+    ],
+    "collision": "rm::BulletCollisionChecker",
+    "ik": [
+      "TaskSpaceKinematics::solve",
+      "rm::SixDofKinematics::solve",
+      "PositionerIK::solve"
+    ],
+    "motion": "OmplPlanner + MotionPlanner::plan",
+    "touch": {
+      "approach_states": 3,
+      "features": [
+        "plane",
+        "line",
+        "point"
+      ],
+      "aligned_planes_first": true,
+      "failures": {
+        "Touch failed - Touch frame not found": 96,
+        "Touch failed - Two valid points not found": 11,
+        "Touch not valid in generator: Raycast failed.": 10
+      }
+    },
+    "actions": {
+      "home": 1,
+      "touch": 3,
+      "weld": 5,
+      "missing_transitions_go_home": {
+        "4->2": 4,
+        "5->3": 21,
+        "3->1": 21
+      },
+      "note": "Touches and weld toolpath both connect through home; missing 5->3 or 3->1 inserts a home move."
+    },
+    "motions_planned": [
+      "home to touches",
+      "touches to home",
+      "home to toolpath",
+      "toolpath to home"
+    ],
+    "ctwd_mm": {
+      "welding_mode": 12,
+      "air_move": 0,
+      "observed_histogram": {
+        "0mm not welding": 441,
+        "49.5mm welding": 85,
+        "12mm welding": 140,
+        "11.875mm welding": 132,
+        "25mm welding": 8,
+        "225mm welding": 16,
+        "150.5mm welding": 8,
+        "25.25mm welding": 14,
+        "300mm welding": 2,
+        "13mm welding": 7,
+        "150mm welding": 15,
+        "1176mm welding": 2,
+        "50mm welding": 2,
+        "73.75mm welding": 3,
+        "74mm welding": 1,
+        "82.9907mm welding": 6
+      }
+    },
+    "joint_unwrap_deg": 360,
+    "positioner_joint_name": "positioner_joint",
+    "max_joint_change_deg_without_intermediate": 175,
+    "unique_weld_names": 511,
+    "example_welds": [
+      "Weld 1-2",
+      "Weld 1-5",
+      "Weld 1-11",
+      "Weld 1-20",
+      "Weld 1-23",
+      "Weld 1-27",
+      "Weld 1-30",
+      "Weld 1-33",
+      "Weld 1-1",
+      "Weld 1-8",
+      "Weld 1-14",
+      "Weld 1-17",
+      "Weld 4-1",
+      "Weld 1-4",
+      "Weld 1-3",
+      "Weld 1-6",
+      "Weld 1-7",
+      "Weld 1-9",
+      "Weld 1-10",
+      "Weld 1-12"
+    ],
+    "toolpath_states": {
+      "n": 441,
+      "min": 2,
+      "max": 17,
+      "histogram_top": {
+        "2": 425,
+        "17": 6,
+        "5": 4,
+        "3": 2,
+        "6": 1,
+        "8": 1,
+        "12": 1,
+        "4": 1
+      }
+    },
+    "seeded": {
+      "Seeded 5000 toolpath states": 510,
+      "Seeded 4265 toolpath states": 1,
+      "Seeded 4981 toolpath states": 1,
+      "Seeded 2991 toolpath states": 1,
+      "Seeded 2828 toolpath states": 1,
+      "Seeded 4936 toolpath states": 1,
+      "Seeded 4916 toolpath states": 1,
+      "Seeded 3848 toolpath states": 1
+    },
+    "profiling_hotspots": [
+      "STEPControl_Reader"
+    ]
+  },
+  "sessions": [
+    {
+      "file": "Weld2026_20260329_220937_112b.log",
+      "bytes": 3028161,
+      "lines": 33504,
+      "first": "2026-03-29 22:09:37.235081",
+      "last": "2026-03-29 22:42:12.346746",
+      "levels": {
+        "DBG": 27939,
+        "INF": 5388,
+        "WRN": 52
+      }
+    },
+    {
+      "file": "Weld2026_20260329_224241_dfdd.log",
+      "bytes": 62848,
+      "lines": 694,
+      "first": "2026-03-29 22:42:41.257097",
+      "last": "2026-03-29 22:58:15.230062",
+      "levels": {
+        "DBG": 492,
+        "INF": 125,
+        "WRN": 6
+      }
+    },
+    {
+      "file": "Weld2026_20260526_205630_bd8f.log",
+      "bytes": 6786,
+      "lines": 74,
+      "first": "2026-05-26 20:56:30.631458",
+      "last": "2026-05-26 20:56:56.746342",
+      "levels": {
+        "DBG": 42,
+        "INF": 7,
+        "WRN": 12
+      }
+    },
+    {
+      "file": "Weld2026_20260526_210940_c54f.log",
+      "bytes": 3351,
+      "lines": 36,
+      "first": "2026-05-26 21:09:40.230663",
+      "last": "2026-05-26 21:09:40.727004",
+      "levels": {
+        "DBG": 32,
+        "INF": 4
+      }
+    },
+    {
+      "file": "Weld2026_20260526_210949_a432.log",
+      "bytes": 3351,
+      "lines": 36,
+      "first": "2026-05-26 21:09:49.276390",
+      "last": "2026-05-26 21:09:49.757271",
+      "levels": {
+        "DBG": 32,
+        "INF": 4
+      }
+    },
+    {
+      "file": "Weld2026_20260526_211016_933f.log",
+      "bytes": 3351,
+      "lines": 36,
+      "first": "2026-05-26 21:10:16.180357",
+      "last": "2026-05-26 21:10:16.665108",
+      "levels": {
+        "DBG": 32,
+        "INF": 4
+      }
+    },
+    {
+      "file": "Weld2026_20260526_211206_d4ea.log",
+      "bytes": 6341,
+      "lines": 70,
+      "first": "2026-05-26 21:12:06.656684",
+      "last": "2026-05-26 21:14:31.255546",
+      "levels": {
+        "DBG": 38,
+        "INF": 7,
+        "WRN": 12
+      }
+    },
+    {
+      "file": "Weld2026_20260911_115953_ceba.log",
+      "bytes": 135668,
+      "lines": 926,
+      "first": "2026-09-11 11:59:53.677815",
+      "last": "2026-09-11 12:18:43.047145",
+      "levels": {
+        "DBG": 765,
+        "INF": 60,
+        "WRN": 42
+      }
+    },
+    {
+      "file": "Weld2026_20260911_124612_a423.log",
+      "bytes": 5105,
+      "lines": 60,
+      "first": "2026-09-11 12:46:12.663677",
+      "last": "2026-09-11 12:48:22.472730",
+      "levels": {
+        "DBG": 38,
+        "INF": 9
+      }
+    },
+    {
+      "file": "Weld2026_20260911_152424_8b6d.log",
+      "bytes": 5580,
+      "lines": 53,
+      "first": "2026-09-11 15:24:24.843454",
+      "last": "2026-09-11 15:24:29.224058",
+      "levels": {
+        "DBG": 44,
+        "INF": 9
+      }
+    },
+    {
+      "file": "Weld2026_20260911_152437_79b9.log",
+      "bytes": 164077,
+      "lines": 1146,
+      "first": "2026-09-11 15:24:37.508791",
+      "last": "2026-09-11 15:32:56.778973",
+      "levels": {
+        "DBG": 987,
+        "INF": 105
+      }
+    }
+  ],
+  "workcell_downloads": 2,
+  "api": {
+    "Making API request to 'https://accounts.verbotics.com/api/login'...": 1,
+    "Making API request to 'https://accounts.verbotics.com/api/check-in'...": 14,
+    "Making API request to 'https://accounts.verbotics.com/api/workcells'...": 4
+  },
+  "identify_cores": {
+    "Identifying welds with 13 CPU cores": 17
+  },
+  "joint_unwrap": {
+    "positioner_joint": 14
+  },
+  "joint_insert_examples": [
+    "Inserted 1 intermediate points to avoid > 175 degree joint changes"
+  ],
+  "warnings": {
+    "Missing from previous path '<weld>' between action 4 and 2, going home": 4,
+    "Missing from previous path '<weld>' between action 5 and 3, going home": 21,
+    "Missing from previous path '<weld>' between action 3 and 1, going home": 21
+  }
+}

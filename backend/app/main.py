@@ -171,6 +171,22 @@ def plan_path(req: PlanRequest):
              "weld_speed": w.weld_speed, "arc_file": w.arc_file}
             for w in planned.weld_segments
         ],
+        "welds": [
+            {
+                "name": w.name,
+                "start_index": w.start_index,
+                "end_index": w.end_index,
+                "cost": w.cost,
+                "states": w.states,
+                "attempt": w.attempt,
+                "max_attempts": w.max_attempts,
+            }
+            for w in planned.welds
+        ],
+        "planner_log": planned.log,
+        "ctwd_mm": planned.ctwd_mm,
+        "seed_states": planned.seed_states,
+        "generator": "yaskawa_inform",
     }
 
 

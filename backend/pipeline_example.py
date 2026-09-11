@@ -45,10 +45,12 @@ def main() -> None:
     # Path planning: seams -> ordered TCP path + weld ranges
     planned = plan_from_seams(seams["segments"], samples_per_seam=5, arc_file=2)
     print(f"[2] Path points: {len(planned.points)}, "
-          f"weld segments: {len(planned.weld_segments)}")
+          f"weld segments: {len(planned.weld_segments)}, "
+          f"welds: {[w.name for w in planned.welds]}")
 
-    # Phase 2: inverse kinematics
-    ik = solve_ik_path(planned.points)
+    # Phase 2: inverse kinematics (weld TCP at 12 mm CTWD)
+    weld_pts = [p for p in planned.points if p.get("kind") == "weld"]
+    ik = solve_ik_path(weld_pts or planned.points)
     reached = sum(d["success"] for d in ik["diagnostics"])
     print(f"[3] IK solved: {reached}/{len(ik['diagnostics'])} points reachable "
           f"(all_reachable={ik['all_reachable']})")

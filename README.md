@@ -158,6 +158,8 @@ npm run dev                              # http://localhost:3000
   arm topology, not any real MA/AR model. Not verified against MotoSim.
 - **IK** is unconstrained numeric IK: no collision avoidance, singularity
   handling, reach/limit strategy, or turn-number (RCONF) management.
+  The path planner now follows Verbotics Weld 2026 log behaviour (12 mm CTWD,
+  home ↔ touch ↔ weld, `Weld 1-N` names) — see [`docs/VERBOTICS_LOGS.md`](docs/VERBOTICS_LOGS.md).
 - **`.JBI`** structure is plausible but unvalidated against a real DX200;
   pulse↔degree scaling, weld schedules and frames are placeholders.
 - **STEP** import is optional and not wired by default; seam detection is a
