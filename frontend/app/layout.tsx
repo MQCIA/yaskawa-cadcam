@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import Providers from "@/components/Providers";
 
 export const metadata: Metadata = {
-  title: "Yaskawa CAD/CAM Prototype",
-  description: "Prototype welding path planner for Yaskawa AR/MA robots (DX200)",
+  title: "Yaskawa Welding Navigator",
+  description:
+    "Prototypowy planer ścieżek spawania dla robotów Yaskawa AR (DX200) — UI w stylu Verbotics Weld",
 };
 
 export default function RootLayout({
@@ -12,8 +14,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body>{children}</body>
+    <html lang="pl">
+      <body>
+        <Providers>{children}</Providers>
+      </body>
     </html>
   );
 }

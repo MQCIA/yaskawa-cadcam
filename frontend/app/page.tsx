@@ -14,6 +14,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import dynamic from "next/dynamic";
 import AxisSliders, { defaultJoints, type Joints } from "@/components/AxisSliders";
+import { useI18n, LanguageToggle } from "@/lib/i18n";
 import type { SeamSegment } from "@/components/RobotWorkspace";
 import { analyzeCad } from "@/lib/api";
 import { ROBOT_MODELS, POSITIONER_MODELS } from "@/lib/models";
@@ -43,6 +44,7 @@ const btnRibbon =
   "flex cursor-pointer flex-col items-center gap-0.5 rounded px-3 py-1.5 text-[11px] text-slate-200 transition hover:bg-slate-700/80 disabled:opacity-40";
 
 export default function Home() {
+  const { t } = useI18n();
   const [modelId, setModelId] = useState("ar2010");
   const [joints, setJoints] = useState<Joints>(defaultJoints());
   const [seams, setSeams] = useState<SeamSegment[]>([]);
@@ -111,7 +113,10 @@ export default function Home() {
     setStation(0, { rotate: 0 });
     setLeftTab("welds");
     setStatus(
-      `Program ready: T-fillet · ${prog.weldLenMm.toFixed(0)} mm · cycle ≈ ${prog.cycleSec.toFixed(1)} s`,
+      t("status.programReady", {
+        mm: prog.weldLenMm.toFixed(0),
+        sec: prog.cycleSec.toFixed(1),
+      }),
     );
   }
 
@@ -122,20 +127,20 @@ export default function Home() {
   function identifyWelds() {
     if (!program) {
       makeProgram(weldCondition);
-      setStatus("Identify Welds (demo): 1 fillet seam created from T-coupon.");
+      setStatus(t("status.identifyDemo"));
     } else {
       setLeftTab("welds");
-      setStatus(`Identify Welds: seam with ${program.seam.length} points already in project.`);
+      setStatus(t("status.identifyExisting", { n: program.seam.length }));
     }
   }
 
   function planWelds() {
     if (!program) {
-      setStatus("Import / load a part before planning.");
+      setStatus(t("status.planNeedPart"));
       return;
     }
     setLeftTab("program");
-    setStatus("Plan complete (demo path). Open Program tab and press Play to simulate.");
+    setStatus(t("status.planDone"));
   }
 
   function changeCondition(c: number) {
@@ -173,12 +178,12 @@ export default function Home() {
     setSimPlaying(false);
     setManualJog(true);
     setJoints(defaultJoints());
-    setStatus("Robot → Home pose (all axes 0°).");
+    setStatus(t("status.home"));
   }
 
   function zeroJoints() {
     homeJoints();
-    setStatus("Robot → Zero (all joint values set to 0°).");
+    setStatus(t("status.zero"));
   }
 
   function stepTo(dir: 1 | -1) {
@@ -198,16 +203,16 @@ export default function Home() {
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    setStatus("Importing CAD…");
+    setStatus(t("status.importing"));
     try {
       const result = await analyzeCad(file);
       setSeams(result.segments ?? []);
       setLeftTab("workspace");
-      setStatus(`Imported ${file.name}: ${result.seam_count ?? 0} candidate seam(s).`);
+      setStatus(t("status.imported", { name: file.name, n: result.seam_count ?? 0 }));
     } catch (err) {
       makeProgram(weldCondition);
       setStatus(
-        `CAD backend unavailable (${(err as Error).message}). Loaded demo T-fillet instead.`,
+        t("status.cadFallback", { err: (err as Error).message }),
       );
     }
   }
@@ -221,10 +226,10 @@ export default function Home() {
     : "—";
 
   const robotStatus = manualJog
-    ? { ok: true, label: "Valid (manual jog)" }
+    ? { ok: true, label: t("robot.statusManual") }
     : program
-    ? { ok: true, label: "Valid (path)" }
-    : { ok: true, label: "Valid" };
+    ? { ok: true, label: t("robot.statusPath") }
+    : { ok: true, label: t("robot.statusIdle") };
 
   const leftTabBtn = (id: LeftTab, label: string) => (
     <button
@@ -264,38 +269,33 @@ export default function Home() {
           </span>
           <div>
             <div className="text-sm font-semibold leading-tight">
-              Yaskawa Welding Navigator
+              {t("app.title")}
               <span className="ml-2 text-[10px] font-normal text-slate-500">
-                (Verbotics Weld–style UI)
+                {t("app.styleHint")}
               </span>
             </div>
-            <div className="text-[10px] text-slate-500">DX200 · AR2010 · H1000D · Lorch S8</div>
+            <div className="text-[10px] text-slate-500">{t("app.subtitle")}</div>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={loadDemo} className={btnGhost}>
-            New Project / Demo Cell
-          </button>
-          <button onClick={downloadJbi} disabled={!program} className={btnPrimary}>
-            Generate Code
-          </button>
+          <LanguageToggle />
+          <button onClick={loadDemo} className={btnGhost}>{t("header.newProject")}</button>
+          <button onClick={downloadJbi} disabled={!program} className={btnPrimary}>{t("header.generateCode")}</button>
         </div>
       </header>
 
       {/* Ribbon */}
       <div className="border-b border-slate-700 bg-[#1f232b]">
         <div className="flex gap-1 px-2 pt-1">
-          {ribbonTab("plan", "Plan")}
-          {ribbonTab("settings", "Settings")}
-          {ribbonTab("view", "View")}
+          {ribbonTab("plan", t("ribbon.plan"))}
+          {ribbonTab("settings", t("ribbon.settings"))}
+          {ribbonTab("view", t("ribbon.view"))}
         </div>
         <div className="flex flex-wrap items-center gap-1 px-2 py-2">
           {ribbon === "plan" && (
             <>
               <label className={btnRibbon}>
-                <span className="text-base">📂</span>
-                Import Part
-                <input
+                <span className="text-base">📂</span>{t("plan.importPart")}<input
                   type="file"
                   accept=".step,.stp,.stl,.obj,.ply,.glb"
                   onChange={onFile}
@@ -303,14 +303,10 @@ export default function Home() {
                 />
               </label>
               <button onClick={loadDemo} className={btnRibbon}>
-                <span className="text-base">🧱</span>
-                Load Demo Part
-              </button>
+                <span className="text-base">🧱</span>{t("plan.loadDemo")}</button>
               <div className="mx-1 h-8 w-px bg-slate-600" />
               <button onClick={identifyWelds} className={btnRibbon}>
-                <span className="text-base">🔍</span>
-                Identify Welds
-              </button>
+                <span className="text-base">🔍</span>{t("plan.identifyWelds")}</button>
               <button
                 onClick={() => {
                   setRibbon("settings");
@@ -318,12 +314,10 @@ export default function Home() {
                 }}
                 className={btnRibbon}
               >
-                <span className="text-base">⚙️</span>
-                Weld Settings
-              </button>
+                <span className="text-base">⚙️</span>{t("plan.weldSettings")}</button>
               <button onClick={planWelds} className={btnRibbon} disabled={!program}>
                 <span className="text-base">🛤</span>
-                Plan
+                {t("plan.plan")}
               </button>
               <div className="mx-1 h-8 w-px bg-slate-600" />
               <button
@@ -334,19 +328,17 @@ export default function Home() {
                 className={btnRibbon}
                 disabled={!program}
               >
-                <span className="text-base">▶</span>
-                Simulate
-              </button>
+                <span className="text-base">▶</span>{t("plan.simulate")}</button>
               <button onClick={downloadJbi} className={btnRibbon} disabled={!program}>
                 <span className="text-base">💾</span>
-                Generate Code
+                {t("plan.generateCode")}
               </button>
             </>
           )}
           {ribbon === "settings" && (
             <>
               <div className="flex items-center gap-2 px-2 text-xs text-slate-300">
-                <span>Weld condition (ARCON)</span>
+                <span>{t("settings.weldCondition")}</span>
                 <select
                   value={weldCondition}
                   onChange={(e) => changeCondition(Number(e.target.value))}
@@ -361,7 +353,7 @@ export default function Home() {
                 </select>
               </div>
               <div className="flex items-center gap-2 px-2 text-xs text-slate-300">
-                <span>Robot</span>
+                <span>{t("settings.robot")}</span>
                 <select
                   value={modelId}
                   onChange={(e) => setModelId(e.target.value)}
@@ -375,13 +367,13 @@ export default function Home() {
                 </select>
               </div>
               <div className="flex items-center gap-2 px-2 text-xs text-slate-300">
-                <span>Positioner</span>
+                <span>{t("settings.positioner")}</span>
                 <select
                   value={positionerId ?? ""}
                   onChange={(e) => setPositionerId(e.target.value || null)}
                   className="rounded bg-slate-800 px-2 py-1"
                 >
-                  <option value="">None</option>
+                  <option value="">{t("settings.none")}</option>
                   {POSITIONER_MODELS.map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.label}
@@ -401,37 +393,31 @@ export default function Home() {
       </div>
 
       <div className="bg-amber-900/30 px-3 py-0.5 text-[11px] text-amber-200">
-        ⚠ Prototype — kinematics / collisions / weld params are placeholders. Validate in
-        MotoSim before real hardware.
-      </div>
+        {t("app.warning")}</div>
 
       {/* Main 3-column layout */}
       <div className="flex min-h-0 flex-1">
         {/* LEFT DOCK */}
         <aside className="flex w-72 shrink-0 flex-col border-r border-slate-700 bg-[#181b21]">
           <div className="flex border-b border-slate-700">
-            {leftTabBtn("workspace", "Workspace")}
-            {leftTabBtn("welds", "Welds")}
-            {leftTabBtn("program", "Program")}
+            {leftTabBtn("workspace", t("left.workspace"))}
+            {leftTabBtn("welds", t("left.welds"))}
+            {leftTabBtn("program", t("left.program"))}
           </div>
 
           <div className="flex-1 overflow-y-auto p-2 text-sm">
             {leftTab === "workspace" && (
               <div className="space-y-1">
-                <div className="px-1 text-[10px] font-semibold uppercase text-slate-500">
-                  Cell
-                </div>
+                <div className="px-1 text-[10px] font-semibold uppercase text-slate-500">{t("workspace.cell")}</div>
                 <button
                   onClick={() => setSelectedStation(null)}
                   className="flex w-full items-center gap-2 rounded px-2 py-1 text-left hover:bg-slate-800"
                 >
-                  <span className="text-[#e87722]">●</span> Robot ·{" "}
+                  <span className="text-[#e87722]">●</span> {t("workspace.robot")} ·{" "}
                   {activeModel?.label ?? modelId}
                 </button>
                 <div className="flex items-center gap-2 px-2 py-1 text-slate-300">
-                  <span className="text-slate-500">●</span>
-                  Rail travel
-                  <input
+                  <span className="text-slate-500">●</span>{t("workspace.rail")}<input
                     type="range"
                     min={-1.6}
                     max={1.6}
@@ -452,13 +438,11 @@ export default function Home() {
                       selectedStation === i ? "bg-slate-800 text-[#e87722]" : ""
                     }`}
                   >
-                    <span className="text-slate-500">●</span> Stół {i + 1} —{" "}
-                    {activePositioner?.label ?? "positioner"}
+                    <span className="text-slate-500">●</span> {t("workspace.table", { n: i + 1 })} —{" "}
+                    {activePositioner?.label ?? t("workspace.positioner")}
                   </button>
                 ))}
-                <div className="mt-3 px-1 text-[10px] font-semibold uppercase text-slate-500">
-                  Parts
-                </div>
+                <div className="mt-3 px-1 text-[10px] font-semibold uppercase text-slate-500">{t("workspace.parts")}</div>
                 <div className="rounded px-2 py-1 text-slate-300">
                   {program ? (
                     <>
@@ -468,14 +452,12 @@ export default function Home() {
                       </div>
                     </>
                   ) : (
-                    <span className="text-slate-500">
-                      No part — Import Part or Load Demo
-                    </span>
+                    <span className="text-slate-500">{t("workspace.noPart")}</span>
                   )}
                 </div>
                 {seams.length > 0 && (
                   <div className="text-[11px] text-slate-500">
-                    Extra CAD seams: {seams.length}
+                    {t("workspace.extraSeams", { n: seams.length })}
                   </div>
                 )}
               </div>
@@ -486,18 +468,13 @@ export default function Home() {
                 {program ? (
                   <div className="rounded border border-slate-700 bg-slate-900/50 p-2">
                     <div className="flex items-center justify-between">
-                      <span className="font-medium">Seam 1</span>
-                      <span className="rounded bg-orange-500/20 px-1.5 py-0.5 text-[10px] text-orange-300">
-                        fillet
-                      </span>
+                      <span className="font-medium">{t("welds.seam1")}</span>
+                      <span className="rounded bg-orange-500/20 px-1.5 py-0.5 text-[10px] text-orange-300">{t("welds.fillet")}</span>
                     </div>
                     <div className="mt-1 text-[11px] text-slate-400">
-                      Length {program.weldLenMm.toFixed(0)} mm · {program.waypoints.length}{" "}
-                      waypoints
+                      {t("welds.length", { mm: program.weldLenMm.toFixed(0), n: program.waypoints.length })}
                     </div>
-                    <label className="mt-2 block text-[10px] text-slate-500">
-                      Weld process
-                    </label>
+                    <label className="mt-2 block text-[10px] text-slate-500">{t("welds.process")}</label>
                     <select
                       value={weldCondition}
                       onChange={(e) => changeCondition(Number(e.target.value))}
@@ -511,9 +488,7 @@ export default function Home() {
                     </select>
                   </div>
                 ) : (
-                  <p className="px-1 text-xs text-slate-500">
-                    No welds yet. Use Plan → Identify Welds.
-                  </p>
+                  <p className="px-1 text-xs text-slate-500">{t("welds.empty")}</p>
                 )}
               </div>
             )}
@@ -544,7 +519,7 @@ export default function Home() {
                     ))}
                   </div>
                 ) : (
-                  <p className="px-1 text-xs text-slate-500">No program. Plan welds first.</p>
+                  <p className="px-1 text-xs text-slate-500">{t("program.empty")}</p>
                 )}
               </div>
             )}
@@ -552,15 +527,13 @@ export default function Home() {
 
           {/* Details */}
           <div className="border-t border-slate-700 bg-[#14171c] p-2">
-            <div className="mb-1 text-[10px] font-semibold uppercase text-slate-500">
-              Details
-            </div>
+            <div className="mb-1 text-[10px] font-semibold uppercase text-slate-500">{t("details.title")}</div>
             {selectedStation != null && activePositioner ? (
               <div className="space-y-2 text-xs">
                 <div className="font-medium">Stół {selectedStation + 1}</div>
                 {activePositioner.hasTilt && (
                   <label className="flex items-center gap-2">
-                    <span className="w-12 text-slate-400">Tilt</span>
+                    <span className="w-12 text-slate-400">{t("details.tilt")}</span>
                     <input
                       type="range"
                       min={-135}
@@ -579,7 +552,7 @@ export default function Home() {
                 )}
                 {activePositioner.hasRotate && (
                   <label className="flex items-center gap-2">
-                    <span className="w-12 text-slate-400">Rotate</span>
+                    <span className="w-12 text-slate-400">{t("details.rotate")}</span>
                     <input
                       type="range"
                       min={-360}
@@ -599,19 +572,17 @@ export default function Home() {
               </div>
             ) : program ? (
               <dl className="grid grid-cols-2 gap-x-2 gap-y-0.5 text-[11px] text-slate-300">
-                <dt className="text-slate-500">Part</dt>
+                <dt className="text-slate-500">{t("details.part")}</dt>
                 <dd className="font-mono">{program.name}</dd>
-                <dt className="text-slate-500">Weld len</dt>
+                <dt className="text-slate-500">{t("details.weldLen")}</dt>
                 <dd className="font-mono">{program.weldLenMm.toFixed(0)} mm</dd>
-                <dt className="text-slate-500">Cycle</dt>
+                <dt className="text-slate-500">{t("details.cycle")}</dt>
                 <dd className="font-mono">{program.cycleSec.toFixed(1)} s</dd>
-                <dt className="text-slate-500">Mode</dt>
-                <dd>{manualJog ? "Manual jog" : "Path IK"}</dd>
+                <dt className="text-slate-500">{t("details.mode")}</dt>
+                <dd>{manualJog ? t("details.modeManual") : t("details.modePath")}</dd>
               </dl>
             ) : (
-              <p className="text-[11px] text-slate-500">
-                Select a cell item or load a part.
-              </p>
+              <p className="text-[11px] text-slate-500">{t("details.empty")}</p>
             )}
             {status && <p className="mt-2 text-[10px] text-slate-400">{status}</p>}
           </div>
@@ -656,7 +627,7 @@ export default function Home() {
               onClick={() => stepTo(-1)}
               disabled={!program}
               className={`${btnGhost} !px-2 !py-1`}
-              title="Previous"
+              title={t("sim.prev")}
             >
               ⏮
             </button>
@@ -665,13 +636,13 @@ export default function Home() {
               disabled={!program}
               className={`${btnPrimary} !px-4 !py-1`}
             >
-              {simPlaying ? "Pause" : simT >= 1 ? "Replay" : "Play"}
+              {simPlaying ? t("sim.pause") : simT >= 1 ? t("sim.replay") : t("sim.play")}
             </button>
             <button
               onClick={() => stepTo(1)}
               disabled={!program}
               className={`${btnGhost} !px-2 !py-1`}
-              title="Next"
+              title={t("sim.next")}
             >
               ⏭
             </button>
@@ -682,7 +653,7 @@ export default function Home() {
               }}
               disabled={!program}
               className={`${btnGhost} !px-2 !py-1`}
-              title="Reset"
+              title={t("sim.reset")}
             >
               ⟲
             </button>
@@ -719,11 +690,9 @@ export default function Home() {
         {/* RIGHT DOCK — Robot (ALWAYS visible) */}
         <aside className="flex w-80 shrink-0 flex-col border-l border-slate-700 bg-[#181b21]">
           <div className="border-b border-slate-700 px-3 py-2">
-            <div className="text-xs font-semibold uppercase tracking-wide text-slate-300">
-              Robot
-            </div>
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-300">{t("robot.title")}</div>
             <div className="text-[10px] text-slate-500">
-              {activeModel?.label ?? "AR2010"} · joint jog
+              {activeModel?.label ?? "AR2010"} · {t("robot.jointJog")}
             </div>
           </div>
 
@@ -735,54 +704,42 @@ export default function Home() {
                   : "bg-slate-800 text-slate-400"
               }`}
             >
-              {manualJog ? "● Manual joint jog" : "Path / IK control (Play)"}
+              {manualJog ? t("robot.modeManual") : t("robot.modePath")}
             </div>
 
             <div className="mb-2 flex gap-2">
-              <button onClick={homeJoints} className={`${btnGhost} flex-1 !py-1 text-xs`}>
-                Home
-              </button>
-              <button onClick={zeroJoints} className={`${btnGhost} flex-1 !py-1 text-xs`}>
-                Zero
-              </button>
+              <button onClick={homeJoints} className={`${btnGhost} flex-1 !py-1 text-xs`}>{t("robot.home")}</button>
+              <button onClick={zeroJoints} className={`${btnGhost} flex-1 !py-1 text-xs`}>{t("robot.zero")}</button>
               {!manualJog && (
                 <button
                   onClick={() => {
                     setSimPlaying(false);
                     setManualJog(true);
-                    setStatus("Manual joint jog ON.");
+                    setStatus(t("status.jogOn"));
                   }}
                   className={`${btnPrimary} flex-1 !py-1 text-xs`}
-                >
-                  Take jog
-                </button>
+                >{t("robot.takeJog")}</button>
               )}
             </div>
 
-            <div className="mb-1 text-[10px] font-semibold uppercase text-slate-500">
-              Joints
-            </div>
+            <div className="mb-1 text-[10px] font-semibold uppercase text-slate-500">{t("robot.joints")}</div>
             <AxisSliders joints={joints} onChange={onJointsChange} />
 
-            <div className="mb-1 mt-4 text-[10px] font-semibold uppercase text-slate-500">
-              Tool
-            </div>
+            <div className="mb-1 mt-4 text-[10px] font-semibold uppercase text-slate-500">{t("robot.tool")}</div>
             <dl className="grid grid-cols-[1fr_auto] gap-x-2 gap-y-0.5 font-mono text-[11px] text-slate-300">
-              <dt className="text-slate-500">Frame</dt>
-              <dd>World</dd>
-              <dt className="text-slate-500">TCP</dt>
+              <dt className="text-slate-500">{t("robot.frame")}</dt>
+              <dd>{t("robot.frameWorld")}</dd>
+              <dt className="text-slate-500">{t("robot.tcp")}</dt>
               <dd>
                 {sample
                   ? `${sample.pos[0].toFixed(3)}, ${sample.pos[1].toFixed(3)}, ${sample.pos[2].toFixed(3)}`
                   : "—"}
               </dd>
-              <dt className="text-slate-500">Rail</dt>
+              <dt className="text-slate-500">{t("robot.rail")}</dt>
               <dd>{railTravel.toFixed(3)} m</dd>
             </dl>
 
-            <div className="mb-1 mt-4 text-[10px] font-semibold uppercase text-slate-500">
-              Status
-            </div>
+            <div className="mb-1 mt-4 text-[10px] font-semibold uppercase text-slate-500">{t("robot.status")}</div>
             <div
               className={`rounded px-2 py-1.5 text-xs font-medium ${
                 robotStatus.ok
@@ -793,9 +750,7 @@ export default function Home() {
               {robotStatus.ok ? "●" : "⚠"} {robotStatus.label}
             </div>
             <p className="mt-2 text-[10px] leading-snug text-slate-500">
-              Przesuwaj S/L/U/R/B/T tutaj, żeby ręcznie ruszać AR2010 (jak panel Robot w
-              Verbotics Weld). Play na pasku symulacji przełącza na IK ścieżki. Home / Zero
-              zerują osie.
+              {t("robot.help")}
             </p>
           </div>
         </aside>

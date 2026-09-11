@@ -1,9 +1,10 @@
 "use client";
 
+import { useI18n } from "@/lib/i18n";
+
 export const AXES = ["S", "L", "U", "R", "B", "T"] as const;
 export type Joints = Record<(typeof AXES)[number], number>;
 
-// Approximate travel ranges (deg). Replace with your robot's real limits.
 const LIMITS: Record<(typeof AXES)[number], [number, number]> = {
   S: [-170, 170],
   L: [-90, 155],
@@ -11,15 +12,6 @@ const LIMITS: Record<(typeof AXES)[number], [number, number]> = {
   R: [-180, 180],
   B: [-135, 135],
   T: [-360, 360],
-};
-
-const AXIS_HELP: Record<(typeof AXES)[number], string> = {
-  S: "Base rotation",
-  L: "Lower arm",
-  U: "Upper arm",
-  R: "Arm roll",
-  B: "Wrist bend",
-  T: "Torch roll",
 };
 
 export function defaultJoints(): Joints {
@@ -36,12 +28,16 @@ export default function AxisSliders({
   onChange,
   step = 1,
   disabled = false,
+  showHome = false,
 }: {
   joints: Joints;
   onChange: (j: Joints) => void;
   step?: number;
   disabled?: boolean;
+  showHome?: boolean;
 }) {
+  const { t } = useI18n();
+
   function setAxis(axis: (typeof AXES)[number], value: number) {
     onChange({ ...joints, [axis]: clamp(axis, value) });
   }
@@ -58,9 +54,9 @@ export default function AxisSliders({
           <div key={axis}>
             <div className="mb-0.5 flex items-center justify-between text-[10px] text-slate-500">
               <span>
-                <span className="font-mono text-yaskawa-accent">{axis}</span>
+                <span className="font-mono text-[#e87722]">{axis}</span>
                 {" · "}
-                {AXIS_HELP[axis]}
+                {t(`axis.${axis}`)}
               </span>
               <span className="font-mono text-slate-300">{joints[axis].toFixed(1)}°</span>
             </div>
@@ -80,7 +76,7 @@ export default function AxisSliders({
                 step={0.5}
                 value={joints[axis]}
                 onChange={(e) => setAxis(axis, Number(e.target.value))}
-                className="flex-1 accent-yaskawa-accent"
+                className="flex-1 accent-[#e87722]"
               />
               <button
                 type="button"
@@ -103,15 +99,15 @@ export default function AxisSliders({
           </div>
         );
       })}
-      <div className="flex gap-2 pt-1">
+      {showHome && (
         <button
           type="button"
           onClick={() => onChange(defaultJoints())}
-          className="flex-1 rounded bg-slate-700 px-3 py-1.5 text-sm hover:bg-slate-600"
+          className="mt-1 w-full rounded bg-slate-700 px-3 py-1.5 text-sm hover:bg-slate-600"
         >
-          Home (0°)
+          {t("axis.home")}
         </button>
-      </div>
+      )}
     </div>
   );
 }
