@@ -120,6 +120,8 @@ export default function WeldUrdfRobot({
 
   // Scratch objects (avoid per-frame allocation).
   const target = useRef(new THREE.Vector3()).current;
+  const desiredDir = useRef(new THREE.Vector3()).current;
+  const toolDir = useRef(new THREE.Vector3()).current;
   const P = useRef(new THREE.Vector3()).current;
   const A = useRef(new THREE.Vector3()).current;
   const E = useRef(new THREE.Vector3()).current;
@@ -133,6 +135,16 @@ export default function WeldUrdfRobot({
   const desired = useRef(new THREE.Matrix4()).current;
   const parentInv = useRef(new THREE.Matrix4()).current;
   const scaleOne = useRef(new THREE.Vector3(1, 1, 1)).current;
+
+  function applyJoint(j: URDFJointLike, delta: number) {
+    let next = (j.angle ?? 0) + delta;
+    const lim = j.limit;
+    if (lim && typeof lim.lower === "number" && lim.upper > lim.lower) {
+      next = THREE.MathUtils.clamp(next, lim.lower, lim.upper);
+    }
+    j.setJointValue(next);
+    robot.updateMatrixWorld(true);
+  }
 
   // Place the torch visual on the flange, aligned to the tool axis.
   function placeTorch() {
@@ -175,24 +187,43 @@ export default function WeldUrdfRobot({
     }
 
     const s = prog ? sampleProgram(prog, simRef.current) : null;
-    if (s) target.set(s.pos[0], s.pos[1], s.pos[2]);
-    else target.set(base[0] + 1.2, 0.95, base[2]);
+    if (s) {
+      target.set(s.pos[0], s.pos[1], s.pos[2]);
+      desiredDir.set(s.dir[0], s.dir[1], s.dir[2]).normalize();
+    } else {
+      target.set(base[0] + 1.2, 0.95, base[2]);
+      desiredDir.set(0, -1, 0); // default: torch pointing straight down
+    }
 
-    // Rotate the target with the positioner so the torch tracks the seam when
-    // the table (and the attached part) is turned about the axle (world Z).
+    // Rotate target + approach with the positioner so the torch tracks the seam
+    // (and stays at a fixed work angle) when the table turns about world Z.
     const pivot = pivotRef.current;
     const rz = rotZRef.current ?? 0;
     if (s && pivot && Math.abs(rz) > 1e-6) {
-      const dx = target.x - pivot[0];
-      const dy = target.y - pivot[1];
       const c = Math.cos(rz);
       const sn = Math.sin(rz);
+      const dx = target.x - pivot[0];
+      const dy = target.y - pivot[1];
       target.set(pivot[0] + dx * c - dy * sn, pivot[1] + dx * sn + dy * c, target.z);
+      const ddx = desiredDir.x;
+      const ddy = desiredDir.y;
+      desiredDir.set(ddx * c - ddy * sn, ddx * sn + ddy * c, desiredDir.z).normalize();
     }
 
-    // Cyclic Coordinate Descent (position only).
-    for (let it = 0; it < 12; it++) {
+    // Freeze torch roll (T / joint_6) so the torch does not spin about its own
+    // axis while travelling — orientation stays fixed unless the user overrides.
+    if (chain.length >= 6) {
+      chain[5].setJointValue(0);
+      robot.updateMatrixWorld(true);
+    }
+
+    // CCD: position (arm) + orientation (wrist) interleaved so the tip stays on
+    // the seam AND the torch axis stays locked to desiredDir (perpendicular /
+    // constant work angle along the path).
+    for (let it = 0; it < 10; it++) {
+      // --- position pass (skip frozen T) ---
       for (let k = chain.length - 1; k >= 0; k--) {
+        if (k === 5) continue;
         const j = chain[k];
         j.getWorldPosition(P);
         A.copy(j.axis).transformDirection(j.matrixWorld).normalize();
@@ -207,16 +238,29 @@ export default function WeldUrdfRobot({
         let ang = Math.acos(THREE.MathUtils.clamp(ve.dot(vt), -1, 1));
         cr.crossVectors(ve, vt);
         if (cr.dot(A) < 0) ang = -ang;
-        let next = (j.angle ?? 0) + ang;
-        const lim = j.limit;
-        if (lim && typeof lim.lower === "number" && lim.upper > lim.lower) {
-          next = THREE.MathUtils.clamp(next, lim.lower, lim.upper);
-        }
-        j.setJointValue(next);
-        robot.updateMatrixWorld(true);
+        applyJoint(j, ang);
       }
+
+      // --- orientation pass (U / R / B) to align tool axis with desiredDir ---
+      for (let k = Math.min(4, chain.length - 1); k >= 2; k--) {
+        const j = chain[k];
+        j.getWorldPosition(P);
+        A.copy(j.axis).transformDirection(j.matrixWorld).normalize();
+        toolDir.copy(mount.axis).transformDirection(mount.matrixWorld).normalize();
+        ve.copy(toolDir).addScaledVector(A, -toolDir.dot(A));
+        vt.copy(desiredDir).addScaledVector(A, -desiredDir.dot(A));
+        if (ve.lengthSq() < 1e-8 || vt.lengthSq() < 1e-8) continue;
+        ve.normalize();
+        vt.normalize();
+        let ang = Math.acos(THREE.MathUtils.clamp(ve.dot(vt), -1, 1));
+        cr.crossVectors(ve, vt);
+        if (cr.dot(A) < 0) ang = -ang;
+        applyJoint(j, ang * 0.85);
+      }
+
       tcp.getWorldPosition(E);
-      if (E.distanceTo(target) < 0.003) break;
+      toolDir.copy(mount.axis).transformDirection(mount.matrixWorld).normalize();
+      if (E.distanceTo(target) < 0.004 && toolDir.dot(desiredDir) > 0.995) break;
     }
 
     placeTorch();

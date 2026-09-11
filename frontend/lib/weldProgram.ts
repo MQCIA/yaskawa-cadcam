@@ -137,6 +137,19 @@ export function buildDemoProgram(mount: Vec3 = DEMO_MOUNT, condition = 1): WeldP
   };
 }
 
+/** Default torch approach: into the fillet, held constant along the path. */
+const DEFAULT_TORCH_DIR: Vec3 = [0, -Math.SQRT1_2, -Math.SQRT1_2];
+
+/** Pick the torch approach direction for a waypoint (stable along the seam). */
+function torchDirAt(prog: WeldProgram, wpIndex: number): Vec3 {
+  const frames = prog.torchFrames;
+  if (!frames.length) return DEFAULT_TORCH_DIR;
+  // Map waypoint → nearest seam frame so approach/retract keep the same
+  // work angle as the weld (torch does not tip over during air moves).
+  const i = Math.max(0, Math.min(frames.length - 1, wpIndex));
+  return frames[i]?.dir ?? frames[0].dir;
+}
+
 /** Interpolate the TCP along the program at progress p in [0,1]. */
 export function sampleProgram(prog: WeldProgram, p: number) {
   const target = Math.max(0, Math.min(1, p)) * prog.cycleSec;
@@ -152,8 +165,12 @@ export function sampleProgram(prog: WeldProgram, p: number) {
         a[1] + (b[1] - a[1]) * local,
         a[2] + (b[2] - a[2]) * local,
       ];
+      // Hold a fixed approach along each segment (no interpolation of dir) so
+      // the torch stays "perpendicular"/constant unless the program says otherwise.
+      const dir = torchDirAt(prog, i);
       return {
         pos,
+        dir,
         wpIndex: i,
         arcOn: prog.waypoints[i].arc && prog.waypoints[i + 1].arc,
         elapsedSec: target,
@@ -162,7 +179,13 @@ export function sampleProgram(prog: WeldProgram, p: number) {
     acc += d;
   }
   const last = prog.waypoints[prog.waypoints.length - 1];
-  return { pos: last.pos, wpIndex: prog.waypoints.length - 1, arcOn: false, elapsedSec: prog.cycleSec };
+  return {
+    pos: last.pos,
+    dir: torchDirAt(prog, prog.waypoints.length - 1),
+    wpIndex: prog.waypoints.length - 1,
+    arcOn: false,
+    elapsedSec: prog.cycleSec,
+  };
 }
 
 const f4 = (v: number) => v.toFixed(4);
