@@ -59,13 +59,34 @@ from source (1) is usually the faster path to an articulated model.
 
 ## How the bundled models were produced
 
-The ROS xacro files were converted to plain, browser-loadable URDF with
-[`tools/xacro_to_urdf.py`](../tools/xacro_to_urdf.py), which:
-- instantiates the `<xacro:macro>` and drops `${prefix}`,
-- evaluates `${…}` math (`pi`, `radians()`),
-- replaces the materials include with a concrete Yaskawa-blue material,
-- rewrites `package://…/meshes/{visual,collision}/…` to relative `visual/…`
-  paths (only visual meshes are vendored).
+## Fidelity — what is (and is not) simplified
+
+The 3D viewer **does not decimate, remesh, or scale** CAD. `urdf-loader`
+loads the STL triangles as-is (`parseVisual=true`, `parseCollision=false`),
+so the on-screen robot is the visual mesh, never the collision hull.
+
+| Asset | Source | Simplified? |
+|-------|--------|-------------|
+| **MOTOMAN-AR2010** visual STL | ROS-Industrial `motoman_ar2010_support` (Apache-2.0), copied byte-for-byte | **Not by us.** SHA-256 must match upstream (`python3 tools/verify_vendor_meshes.py`). ROS-Industrial already tessellated these from Yaskawa CAD; they are coarser than official STEP / MotoSim / Verbotics library models. |
+| AR2010 **collision** STL | Same package, `meshes/collision/` | Yes — these are the ROS hulls (~10× fewer triangles). Vendored for a faithful URDF, **not rendered**. |
+| **MotoPos D500** | `motoman_motopos_d500_support` visual + collision | Same split as AR2010. |
+| **H1000D**, travel rail, Lorch S8, welding torch | Procedural primitives in React-Three-Fiber | **Yes — placeholders.** There is no public URDF/STEP we can legally vendor. Drop in manufacturer CAD per “Adding a new model” below. |
+
+`tools/xacro_to_urdf.py` only rewrites `package://` paths and evaluates
+`${…}` joint math. It does **not** touch triangle data, and it no longer
+points `<collision>` at the visual meshes.
+
+To confirm nothing has been rewritten on disk:
+
+```bash
+python3 tools/verify_vendor_meshes.py
+python3 tools/verify_vendor_meshes.py --fetch-upstream   # live GitHub compare
+```
+
+Official Yaskawa STEP/IGES (e-mechatronics / MotoSim Model Library) is the
+geometry Verbotics uses. Those files require a Yaskawa login and are **not**
+redistributable here. If you have them, convert per-link and register them
+in `frontend/lib/models.ts` — do not run a decimator.
 
 ## Adding a new model (e.g. your exact AR model or the H1000D)
 

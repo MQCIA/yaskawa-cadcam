@@ -10,9 +10,9 @@ It handles exactly the subset those packages use:
   * ``${...}`` math expressions with ``pi`` and ``radians()``
   * the ``<xacro:include .../>`` of common_materials (dropped)
   * ``<xacro:material_yaskawa_blue/>`` (-> a concrete <material>)
-  * ``package://<pkg>/meshes/...`` mesh paths rewritten to relative paths,
-    with every ``/collision/`` folder redirected to ``/visual/`` (we only
-    vendor visual meshes).
+  * ``package://<pkg>/meshes/...`` mesh paths rewritten to relative
+    ``visual/…`` or ``collision/…`` paths (both mesh sets are vendored
+    unmodified; collision hulls are never substituted for visual CAD).
 
 Usage:
   python xacro_to_urdf.py <macro.xacro> <robot_name> <mesh_prefix> <out.urdf>
@@ -51,8 +51,8 @@ def convert(macro_path: str, robot_name: str, out_path: str) -> None:
     # Evaluate ${...} math expressions.
     text = re.sub(r"\$\{([^}]*)\}", eval_expr, text)
 
-    # Rewrite mesh paths: package://<pkg>/meshes/<...> -> <...>, and any
-    # /collision/ segment -> /visual/ (only visual meshes are vendored).
+    # Rewrite mesh paths: package://<pkg>/meshes/<...> -> visual/… or
+    # collision/… (keep the original mesh set; do not substitute hulls).
     def rewrite_mesh(m: re.Match) -> str:
         rel = m.group(1)  # everything after .../meshes/
         # Normalise to start at the visual/ or collision/ folder, dropping any
@@ -62,7 +62,6 @@ def convert(macro_path: str, robot_name: str, out_path: str) -> None:
             if idx != -1:
                 rel = rel[idx:]
                 break
-        rel = rel.replace("collision/", "visual/")
         return f'filename="{rel}"'
 
     text = re.sub(
