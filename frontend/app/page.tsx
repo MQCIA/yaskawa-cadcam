@@ -1,5 +1,16 @@
 "use client";
 
+/**
+ * UI modelled on Verbotics Weld:
+ *  - Top ribbon (Plan / Settings / View)
+ *  - Left dock: Workspace | Welds | Program + Details
+ *  - Center: 3D viewer with simulation bar underneath
+ *  - Right dock (ALWAYS visible): Robot — joint jog, Home/Zero, tool, status
+ *
+ * Manual joint jogging lives permanently in the right Robot dock, matching
+ * Verbotics' Robot Positioning panel.
+ */
+
 import { useState, useEffect, useRef, useMemo } from "react";
 import dynamic from "next/dynamic";
 import AxisSliders, { defaultJoints, type Joints } from "@/components/AxisSliders";
@@ -21,59 +32,21 @@ const RobotWorkspace = dynamic(() => import("@/components/RobotWorkspace"), {
 
 const PLAYBACK_BASE_SEC = 12;
 
-type View =
-  | "cell-robot"
-  | "cell-rail"
-  | "cell-station-0"
-  | "cell-station-1"
-  | "part"
-  | "seams"
-  | "path"
-  | "simulate"
-  | "export";
-
-const STEPS: { id: number; label: string; view: View }[] = [
-  { id: 1, label: "Cell", view: "cell-robot" },
-  { id: 2, label: "Part", view: "part" },
-  { id: 3, label: "Seams", view: "seams" },
-  { id: 4, label: "Path", view: "path" },
-  { id: 5, label: "Simulate", view: "simulate" },
-  { id: 6, label: "Export", view: "export" },
-];
-
-const stepOf = (v: View) =>
-  v.startsWith("cell")
-    ? 1
-    : v === "part"
-    ? 2
-    : v === "seams"
-    ? 3
-    : v === "path"
-    ? 4
-    : v === "simulate"
-    ? 5
-    : 6;
+type LeftTab = "workspace" | "welds" | "program";
+type Ribbon = "plan" | "settings" | "view";
 
 const btnPrimary =
-  "rounded-md bg-yaskawa-accent px-3 py-1.5 text-sm font-semibold text-slate-900 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40";
+  "rounded bg-[#e87722] px-3 py-1.5 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40";
 const btnGhost =
-  "rounded-md border border-slate-600 px-3 py-1.5 text-sm text-slate-200 transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40";
-const iconBtn =
-  "flex h-8 w-8 items-center justify-center rounded-md border border-slate-600 text-slate-200 transition hover:bg-slate-800 disabled:opacity-40";
-
-function PanelHeader({ children }: { children: React.ReactNode }) {
-  return (
-    <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
-      {children}
-    </h2>
-  );
-}
+  "rounded border border-slate-500 bg-slate-800 px-3 py-1.5 text-sm text-slate-100 transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-40";
+const btnRibbon =
+  "flex cursor-pointer flex-col items-center gap-0.5 rounded px-3 py-1.5 text-[11px] text-slate-200 transition hover:bg-slate-700/80 disabled:opacity-40";
 
 export default function Home() {
-  const [modelId, setModelId] = useState<string>("ar2010");
+  const [modelId, setModelId] = useState("ar2010");
   const [joints, setJoints] = useState<Joints>(defaultJoints());
   const [seams, setSeams] = useState<SeamSegment[]>([]);
-  const [status, setStatus] = useState<string>("");
+  const [status, setStatus] = useState("");
 
   const [positionerId, setPositionerId] = useState<string | null>("h1000d");
   const [railTravel, setRailTravel] = useState(0);
@@ -87,9 +60,13 @@ export default function Home() {
   const [simT, setSimT] = useState(0);
   const [simPlaying, setSimPlaying] = useState(false);
   const [simSpeed, setSimSpeed] = useState(1);
-  const [manualJog, setManualJog] = useState(false);
 
-  const [view, setView] = useState<View>("part");
+  // Verbotics-style: joint jog is always available; ON until the user plays a plan.
+  const [manualJog, setManualJog] = useState(true);
+
+  const [ribbon, setRibbon] = useState<Ribbon>("plan");
+  const [leftTab, setLeftTab] = useState<LeftTab>("workspace");
+  const [selectedStation, setSelectedStation] = useState<0 | 1 | null>(null);
 
   const rafRef = useRef<number | undefined>(undefined);
   const lastRef = useRef<number | undefined>(undefined);
@@ -117,7 +94,6 @@ export default function Home() {
     if (simT >= 1 && simPlaying) setSimPlaying(false);
   }, [simT, simPlaying]);
 
-  // Progress (0..1) at the start of each waypoint, for step-to-next/prev.
   const wpProgress = useMemo(() => {
     if (!program) return [] as number[];
     const cum = [0];
@@ -133,16 +109,33 @@ export default function Home() {
     setModelId("ar2010");
     setRailTravel(Math.max(-1.6, Math.min(1.6, DEMO_MOUNT[2])));
     setStation(0, { rotate: 0 });
+    setLeftTab("welds");
     setStatus(
-      `Program ready: T-fillet · ${prog.weldLenMm.toFixed(0)} mm · cycle ≈ ${prog.cycleSec.toFixed(
-        1,
-      )} s`,
+      `Program ready: T-fillet · ${prog.weldLenMm.toFixed(0)} mm · cycle ≈ ${prog.cycleSec.toFixed(1)} s`,
     );
   }
 
   function loadDemo() {
     makeProgram(weldCondition);
-    setView("path");
+  }
+
+  function identifyWelds() {
+    if (!program) {
+      makeProgram(weldCondition);
+      setStatus("Identify Welds (demo): 1 fillet seam created from T-coupon.");
+    } else {
+      setLeftTab("welds");
+      setStatus(`Identify Welds: seam with ${program.seam.length} points already in project.`);
+    }
+  }
+
+  function planWelds() {
+    if (!program) {
+      setStatus("Import / load a part before planning.");
+      return;
+    }
+    setLeftTab("program");
+    setStatus("Plan complete (demo path). Open Program tab and press Play to simulate.");
   }
 
   function changeCondition(c: number) {
@@ -163,15 +156,35 @@ export default function Home() {
 
   function togglePlay() {
     if (!program) return;
-    // Playing the weld path needs IK control, so release the manual override.
     setManualJog(false);
     if (simT >= 1) setSimT(0);
     setSimPlaying((p) => !p);
   }
 
+  function onJointsChange(next: Joints) {
+    setJoints(next);
+    if (!manualJog) {
+      setSimPlaying(false);
+      setManualJog(true);
+    }
+  }
+
+  function homeJoints() {
+    setSimPlaying(false);
+    setManualJog(true);
+    setJoints(defaultJoints());
+    setStatus("Robot → Home pose (all axes 0°).");
+  }
+
+  function zeroJoints() {
+    homeJoints();
+    setStatus("Robot → Zero (all joint values set to 0°).");
+  }
+
   function stepTo(dir: 1 | -1) {
     if (!program) return;
     setSimPlaying(false);
+    setManualJog(false);
     const eps = 1e-4;
     if (dir === 1) {
       const next = wpProgress.find((p) => p > simT + eps);
@@ -185,13 +198,17 @@ export default function Home() {
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    setStatus("Analyzing CAD...");
+    setStatus("Importing CAD…");
     try {
       const result = await analyzeCad(file);
       setSeams(result.segments ?? []);
-      setStatus(`Found ${result.seam_count} candidate seam(s).`);
+      setLeftTab("workspace");
+      setStatus(`Imported ${file.name}: ${result.seam_count ?? 0} candidate seam(s).`);
     } catch (err) {
-      setStatus(`Error: ${(err as Error).message}`);
+      makeProgram(weldCondition);
+      setStatus(
+        `CAD backend unavailable (${(err as Error).message}). Loaded demo T-fillet instead.`,
+      );
     }
   }
 
@@ -202,554 +219,585 @@ export default function Home() {
   const instruction = curWp
     ? `${curWp.move} ${curWp.id}  ${curWp.speedLabel}${curWp.tag ? "  " + curWp.tag : ""}`
     : "—";
-  const activeStep = stepOf(view);
 
-  const treeItem = (v: View, label: string, depth = 0) => (
+  const robotStatus = manualJog
+    ? { ok: true, label: "Valid (manual jog)" }
+    : program
+    ? { ok: true, label: "Valid (path)" }
+    : { ok: true, label: "Valid" };
+
+  const leftTabBtn = (id: LeftTab, label: string) => (
     <button
-      key={v}
-      onClick={() => setView(v)}
-      className={`flex w-full items-center gap-2 rounded px-2 py-1 text-left text-sm transition ${
-        view === v
-          ? "bg-yaskawa-accent/15 text-yaskawa-accent"
-          : "text-slate-300 hover:bg-slate-800"
+      key={id}
+      onClick={() => setLeftTab(id)}
+      className={`flex-1 border-b-2 px-2 py-1.5 text-xs font-semibold transition ${
+        leftTab === id
+          ? "border-[#e87722] text-[#e87722]"
+          : "border-transparent text-slate-400 hover:text-slate-200"
       }`}
-      style={{ paddingLeft: 8 + depth * 14 }}
     >
-      <span className="text-[10px] text-slate-500">●</span>
+      {label}
+    </button>
+  );
+
+  const ribbonTab = (id: Ribbon, label: string) => (
+    <button
+      key={id}
+      onClick={() => setRibbon(id)}
+      className={`px-4 py-1 text-xs font-semibold uppercase tracking-wide transition ${
+        ribbon === id
+          ? "border-b-2 border-[#e87722] text-white"
+          : "text-slate-400 hover:text-slate-200"
+      }`}
+    >
       {label}
     </button>
   );
 
   return (
-    <main className="flex h-screen flex-col bg-slate-950 text-slate-100">
-      {/* App bar */}
-      <header className="flex items-center justify-between border-b border-slate-800 bg-slate-900 px-4 py-2">
+    <main className="flex h-screen flex-col bg-[#1b1e24] text-slate-100">
+      {/* Title bar */}
+      <header className="flex items-center justify-between border-b border-slate-700 bg-[#12141a] px-3 py-1.5">
         <div className="flex items-center gap-3">
-          <span className="flex h-7 w-7 items-center justify-center rounded-md bg-yaskawa-blue text-sm font-bold text-white">
-            Y
+          <span className="flex h-6 w-6 items-center justify-center rounded bg-[#e87722] text-[11px] font-bold text-white">
+            VW
           </span>
           <div>
             <div className="text-sm font-semibold leading-tight">
               Yaskawa Welding Navigator
+              <span className="ml-2 text-[10px] font-normal text-slate-500">
+                (Verbotics Weld–style UI)
+              </span>
             </div>
-            <div className="text-[10px] leading-tight text-slate-400">
-              DX200 · AR series · H1000D · Lorch S8
-            </div>
+            <div className="text-[10px] text-slate-500">DX200 · AR2010 · H1000D · Lorch S8</div>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={loadDemo} className={btnPrimary}>
-            Load demo part
+          <button onClick={loadDemo} className={btnGhost}>
+            New Project / Demo Cell
           </button>
-          <button onClick={downloadJbi} disabled={!program} className={btnGhost}>
-            Export .JBI
+          <button onClick={downloadJbi} disabled={!program} className={btnPrimary}>
+            Generate Code
           </button>
         </div>
       </header>
 
-      {/* Workflow stepper */}
-      <nav className="flex items-center gap-1 border-b border-slate-800 bg-slate-900/60 px-3 py-1.5">
-        {STEPS.map((s, i) => {
-          const active = activeStep === s.id;
-          const done = activeStep > s.id;
-          return (
-            <div key={s.id} className="flex items-center">
-              <button
-                onClick={() => setView(s.view)}
-                className={`flex items-center gap-2 rounded-md px-2.5 py-1 text-xs font-medium transition ${
-                  active
-                    ? "bg-yaskawa-accent/15 text-yaskawa-accent"
-                    : "text-slate-400 hover:bg-slate-800"
-                }`}
-              >
-                <span
-                  className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] ${
-                    active
-                      ? "bg-yaskawa-accent text-slate-900"
-                      : done
-                      ? "bg-yaskawa-blue text-white"
-                      : "bg-slate-700 text-slate-300"
-                  }`}
-                >
-                  {s.id}
-                </span>
-                {s.label}
-              </button>
-              {i < STEPS.length - 1 && (
-                <span className="mx-1 text-slate-600">›</span>
-              )}
-            </div>
-          );
-        })}
-      </nav>
-
-      <div className="bg-amber-900/40 px-4 py-1 text-[11px] text-amber-200">
-        ⚠ Prototype with placeholder kinematics — validate every path in MotoSim
-        before real hardware use.
-      </div>
-
-      <div className="flex flex-1 overflow-hidden">
-        {/* Left: project / cell tree */}
-        <aside className="w-60 shrink-0 overflow-y-auto border-r border-slate-800 bg-slate-900/40 p-3">
-          <PanelHeader>Project</PanelHeader>
-          <div className="mb-1 flex items-center gap-1 text-xs font-semibold text-slate-400">
-            <span>▾</span> Cell
-          </div>
-          {treeItem("cell-robot", "Robot (AR + torch)", 1)}
-          {treeItem("cell-rail", "Rail (travel axis)", 1)}
-          {treeItem("cell-station-0", "Stół 1 — positioner", 1)}
-          {treeItem("cell-station-1", "Stół 2 — positioner", 1)}
-          <div className="mb-1 mt-3 flex items-center gap-1 text-xs font-semibold text-slate-400">
-            <span>▾</span> Part
-          </div>
-          {treeItem("part", program ? program.name : "No part", 1)}
-          <div className="mb-1 mt-3 flex items-center gap-1 text-xs font-semibold text-slate-400">
-            <span>▾</span> Welds
-          </div>
-          {treeItem("seams", program ? "Seam 1 (fillet)" : "No welds", 1)}
-          {treeItem("path", "Path & parameters", 1)}
-          {treeItem("simulate", "Simulation", 1)}
-          {treeItem("export", "Export job", 1)}
-        </aside>
-
-        {/* Center: viewport */}
-        <div className="relative flex-1">
-          <RobotWorkspace
-            modelId={modelId}
-            joints={joints}
-            seams={seams}
-            positionerId={positionerId}
-            railTravel={railTravel}
-            stations={stations}
-            program={program}
-            simT={simT}
-            manualJog={manualJog}
-          />
-
-          {/* HUD */}
-          {program && sample && (
-            <div className="pointer-events-none absolute left-4 top-4 rounded-lg bg-slate-900/85 px-3 py-2 font-mono text-xs text-slate-200 shadow-lg">
-              <div className="mb-1 font-sans text-[11px] font-semibold uppercase text-slate-400">
-                {program.name}
-              </div>
-              <div className="flex items-center gap-2">
-                <span
-                  className={`inline-block h-2 w-2 rounded-full ${
-                    sample.arcOn ? "animate-pulse bg-orange-400" : "bg-slate-600"
-                  }`}
-                />
-                ARC {sample.arcOn ? "ON" : "OFF"}
-              </div>
-              <div>
-                t = {sample.elapsedSec.toFixed(1)} / {program.cycleSec.toFixed(1)} s
-              </div>
-              <div>{(simT * 100).toFixed(0)}% complete</div>
-            </div>
-          )}
-
-          {/* Simulation transport */}
-          {program && (
-            <div className="absolute bottom-4 left-1/2 w-[min(720px,94%)] -translate-x-1/2 rounded-lg bg-slate-900/90 px-4 py-2 shadow-lg">
-              <div className="mb-1.5 flex items-center gap-3">
-                <button onClick={() => stepTo(-1)} className={iconBtn} title="Previous point">
-                  ⏮
-                </button>
-                <button
-                  onClick={togglePlay}
-                  className="rounded-md bg-yaskawa-accent px-4 py-1 text-sm font-semibold text-slate-900 hover:brightness-110"
-                >
-                  {simPlaying ? "Pause" : simT >= 1 ? "Replay" : "Play"}
-                </button>
-                <button onClick={() => stepTo(1)} className={iconBtn} title="Next point">
-                  ⏭
-                </button>
-                <button
-                  onClick={() => {
-                    setSimPlaying(false);
-                    setSimT(0);
-                  }}
-                  className={iconBtn}
-                  title="Reset"
-                >
-                  ⟲
-                </button>
-                <div className="flex-1 truncate px-2 font-mono text-xs text-slate-300">
-                  {instruction}
-                </div>
-                <select
-                  value={simSpeed}
-                  onChange={(e) => setSimSpeed(Number(e.target.value))}
-                  className="rounded bg-slate-800 px-2 py-1 text-xs"
-                >
-                  <option value={0.5}>0.5×</option>
-                  <option value={1}>1×</option>
-                  <option value={2}>2×</option>
-                  <option value={4}>4×</option>
-                </select>
-              </div>
-              <input
-                type="range"
-                min={0}
-                max={1}
-                step={0.001}
-                value={simT}
-                onChange={(e) => {
-                  setSimPlaying(false);
-                  setSimT(Number(e.target.value));
-                }}
-                className="w-full accent-yaskawa-accent"
-              />
-            </div>
-          )}
+      {/* Ribbon */}
+      <div className="border-b border-slate-700 bg-[#1f232b]">
+        <div className="flex gap-1 px-2 pt-1">
+          {ribbonTab("plan", "Plan")}
+          {ribbonTab("settings", "Settings")}
+          {ribbonTab("view", "View")}
         </div>
-
-        {/* Right: contextual properties */}
-        <aside className="w-80 shrink-0 overflow-y-auto border-l border-slate-800 bg-slate-900/40 p-4">
-          {view === "cell-robot" && (
+        <div className="flex flex-wrap items-center gap-1 px-2 py-2">
+          {ribbon === "plan" && (
             <>
-              <PanelHeader>Robot</PanelHeader>
-              <select
-                value={modelId}
-                onChange={(e) => setModelId(e.target.value)}
-                className="w-full rounded bg-slate-800 px-2 py-1 text-sm"
-              >
-                {ROBOT_MODELS.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.label}
-                  </option>
-                ))}
-              </select>
-              {activeModel?.source && (
-                <p className="mt-1 text-[10px] text-slate-500">{activeModel.source}</p>
-              )}
-              <div className="mt-4">
-                <PanelHeader>Jog axes</PanelHeader>
-                {activeModel?.kind === "urdf" && program && (
-                  <label className="mb-3 flex items-center gap-2 text-xs text-slate-200">
-                    <input
-                      type="checkbox"
-                      checked={manualJog}
-                      onChange={(e) => setManualJog(e.target.checked)}
-                      className="h-3.5 w-3.5 accent-yaskawa-accent"
-                    />
-                    Manual jog override (ignore weld path)
-                  </label>
-                )}
-                <AxisSliders joints={joints} onChange={setJoints} />
-                {activeModel?.kind === "urdf" && (
-                  <p className="mt-3 rounded bg-slate-800/60 p-2 text-[11px] text-slate-400">
-                    {program && !manualJog
-                      ? "A part is loaded — the AR2010 follows the weld path via inverse kinematics (CCD). Enable manual jog override to move the axes by hand."
-                      : "Move the real AR2010 axes directly (S/L/U/R/B/T). Load a part and disable manual jog to run the IK weld path."}
-                  </p>
-                )}
-              </div>
-            </>
-          )}
-
-          {view === "cell-rail" && (
-            <>
-              <PanelHeader>Rail — travel axis</PanelHeader>
-              <div className="flex items-center gap-3">
-                <span className="w-14 font-mono text-xs text-yaskawa-accent">Travel</span>
-                <input
-                  type="range"
-                  min={-1.6}
-                  max={1.6}
-                  step={0.01}
-                  value={railTravel}
-                  onChange={(e) => setRailTravel(Number(e.target.value))}
-                  className="flex-1 accent-yaskawa-accent"
-                />
-                <span className="w-16 text-right font-mono text-xs">
-                  {railTravel.toFixed(2)} m
-                </span>
-              </div>
-              <p className="mt-3 text-[10px] text-slate-500">
-                Dedicated Yaskawa travel rail; the robot rides the carriage between
-                the two stations.
-              </p>
-            </>
-          )}
-
-          {(view === "cell-station-0" || view === "cell-station-1") && activePositioner && (
-            <>
-              {(() => {
-                const i = view === "cell-station-0" ? 0 : 1;
-                const st = stations[i];
-                return (
-                  <>
-                    <PanelHeader>Stół {i + 1} — positioner</PanelHeader>
-                    <select
-                      value={positionerId ?? ""}
-                      onChange={(e) => setPositionerId(e.target.value || null)}
-                      className="w-full rounded bg-slate-800 px-2 py-1 text-sm"
-                    >
-                      <option value="">None</option>
-                      {POSITIONER_MODELS.map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.label}
-                        </option>
-                      ))}
-                    </select>
-                    <div className="mt-4 space-y-3">
-                      {activePositioner.hasTilt && (
-                        <div className="flex items-center gap-3">
-                          <span className="w-14 font-mono text-xs text-yaskawa-accent">
-                            Tilt
-                          </span>
-                          <input
-                            type="range"
-                            min={-135}
-                            max={135}
-                            step={0.5}
-                            value={st.tilt}
-                            onChange={(e) => setStation(i, { tilt: Number(e.target.value) })}
-                            className="flex-1 accent-yaskawa-accent"
-                          />
-                          <span className="w-14 text-right font-mono text-xs">
-                            {st.tilt.toFixed(0)}&deg;
-                          </span>
-                        </div>
-                      )}
-                      {activePositioner.hasRotate && (
-                        <div className="flex items-center gap-3">
-                          <span className="w-14 font-mono text-xs text-yaskawa-accent">
-                            Rotate
-                          </span>
-                          <input
-                            type="range"
-                            min={-360}
-                            max={360}
-                            step={0.5}
-                            value={st.rotate}
-                            onChange={(e) => setStation(i, { rotate: Number(e.target.value) })}
-                            className="flex-1 accent-yaskawa-accent"
-                          />
-                          <span className="w-14 text-right font-mono text-xs">
-                            {st.rotate.toFixed(0)}&deg;
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                    <p className="mt-3 text-[10px] text-slate-500">
-                      {activePositioner.source}
-                    </p>
-                  </>
-                );
-              })()}
-            </>
-          )}
-
-          {view === "part" && (
-            <>
-              <PanelHeader>Part</PanelHeader>
-              <div className="flex gap-2">
-                <button onClick={loadDemo} className={`${btnPrimary} flex-1`}>
-                  Load demo part
-                </button>
-              </div>
-              <div className="mt-3">
-                <label className="text-[11px] text-slate-400">Import CAD (STEP/STL)</label>
+              <label className={btnRibbon}>
+                <span className="text-base">📂</span>
+                Import Part
                 <input
                   type="file"
                   accept=".step,.stp,.stl,.obj,.ply,.glb"
                   onChange={onFile}
-                  className="mt-1 w-full text-xs"
+                  className="hidden"
                 />
-              </div>
-              {program && (
-                <dl className="mt-4 space-y-1 text-xs text-slate-300">
-                  <div className="flex justify-between">
-                    <dt className="text-slate-500">Name</dt>
-                    <dd className="font-mono">{program.name}</dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt className="text-slate-500">Type</dt>
-                    <dd>T-fillet coupon</dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt className="text-slate-500">Mounted on</dt>
-                    <dd>Stół 1</dd>
-                  </div>
-                </dl>
-              )}
-              {status && <p className="mt-3 text-xs text-slate-400">{status}</p>}
+              </label>
+              <button onClick={loadDemo} className={btnRibbon}>
+                <span className="text-base">🧱</span>
+                Load Demo Part
+              </button>
+              <div className="mx-1 h-8 w-px bg-slate-600" />
+              <button onClick={identifyWelds} className={btnRibbon}>
+                <span className="text-base">🔍</span>
+                Identify Welds
+              </button>
+              <button
+                onClick={() => {
+                  setRibbon("settings");
+                  setLeftTab("welds");
+                }}
+                className={btnRibbon}
+              >
+                <span className="text-base">⚙️</span>
+                Weld Settings
+              </button>
+              <button onClick={planWelds} className={btnRibbon} disabled={!program}>
+                <span className="text-base">🛤</span>
+                Plan
+              </button>
+              <div className="mx-1 h-8 w-px bg-slate-600" />
+              <button
+                onClick={() => {
+                  setLeftTab("program");
+                  togglePlay();
+                }}
+                className={btnRibbon}
+                disabled={!program}
+              >
+                <span className="text-base">▶</span>
+                Simulate
+              </button>
+              <button onClick={downloadJbi} className={btnRibbon} disabled={!program}>
+                <span className="text-base">💾</span>
+                Generate Code
+              </button>
             </>
           )}
-
-          {view === "seams" && (
+          {ribbon === "settings" && (
             <>
-              <PanelHeader>Weld seams</PanelHeader>
-              {program ? (
-                <>
-                  <div className="rounded border border-slate-700 bg-slate-900/60 p-3">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="font-medium text-slate-200">Seam 1</span>
-                      <span className="rounded bg-orange-500/20 px-2 py-0.5 text-[10px] text-orange-300">
+              <div className="flex items-center gap-2 px-2 text-xs text-slate-300">
+                <span>Weld condition (ARCON)</span>
+                <select
+                  value={weldCondition}
+                  onChange={(e) => changeCondition(Number(e.target.value))}
+                  className="rounded bg-slate-800 px-2 py-1"
+                >
+                  {LORCH_S8_SCHEDULES.map((s) => (
+                    <option key={s.condition} value={s.condition}>
+                      #{s.condition} — {s.currentA}A / {s.voltageV.toFixed(1)}V / {s.travelCmMin}{" "}
+                      cm/min
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex items-center gap-2 px-2 text-xs text-slate-300">
+                <span>Robot</span>
+                <select
+                  value={modelId}
+                  onChange={(e) => setModelId(e.target.value)}
+                  className="rounded bg-slate-800 px-2 py-1"
+                >
+                  {ROBOT_MODELS.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex items-center gap-2 px-2 text-xs text-slate-300">
+                <span>Positioner</span>
+                <select
+                  value={positionerId ?? ""}
+                  onChange={(e) => setPositionerId(e.target.value || null)}
+                  className="rounded bg-slate-800 px-2 py-1"
+                >
+                  <option value="">None</option>
+                  {POSITIONER_MODELS.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </>
+          )}
+          {ribbon === "view" && (
+            <div className="px-2 text-xs text-slate-400">
+              LMB rotate · RMB pan · scroll zoom. Robot joint jog is always on the right
+              (Verbotics-style).
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="bg-amber-900/30 px-3 py-0.5 text-[11px] text-amber-200">
+        ⚠ Prototype — kinematics / collisions / weld params are placeholders. Validate in
+        MotoSim before real hardware.
+      </div>
+
+      {/* Main 3-column layout */}
+      <div className="flex min-h-0 flex-1">
+        {/* LEFT DOCK */}
+        <aside className="flex w-72 shrink-0 flex-col border-r border-slate-700 bg-[#181b21]">
+          <div className="flex border-b border-slate-700">
+            {leftTabBtn("workspace", "Workspace")}
+            {leftTabBtn("welds", "Welds")}
+            {leftTabBtn("program", "Program")}
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-2 text-sm">
+            {leftTab === "workspace" && (
+              <div className="space-y-1">
+                <div className="px-1 text-[10px] font-semibold uppercase text-slate-500">
+                  Cell
+                </div>
+                <button
+                  onClick={() => setSelectedStation(null)}
+                  className="flex w-full items-center gap-2 rounded px-2 py-1 text-left hover:bg-slate-800"
+                >
+                  <span className="text-[#e87722]">●</span> Robot ·{" "}
+                  {activeModel?.label ?? modelId}
+                </button>
+                <div className="flex items-center gap-2 px-2 py-1 text-slate-300">
+                  <span className="text-slate-500">●</span>
+                  Rail travel
+                  <input
+                    type="range"
+                    min={-1.6}
+                    max={1.6}
+                    step={0.01}
+                    value={railTravel}
+                    onChange={(e) => setRailTravel(Number(e.target.value))}
+                    className="ml-auto w-24 accent-[#e87722]"
+                  />
+                  <span className="w-12 text-right font-mono text-[10px]">
+                    {railTravel.toFixed(2)}m
+                  </span>
+                </div>
+                {[0, 1].map((i) => (
+                  <button
+                    key={i}
+                    onClick={() => setSelectedStation(i as 0 | 1)}
+                    className={`flex w-full items-center gap-2 rounded px-2 py-1 text-left hover:bg-slate-800 ${
+                      selectedStation === i ? "bg-slate-800 text-[#e87722]" : ""
+                    }`}
+                  >
+                    <span className="text-slate-500">●</span> Stół {i + 1} —{" "}
+                    {activePositioner?.label ?? "positioner"}
+                  </button>
+                ))}
+                <div className="mt-3 px-1 text-[10px] font-semibold uppercase text-slate-500">
+                  Parts
+                </div>
+                <div className="rounded px-2 py-1 text-slate-300">
+                  {program ? (
+                    <>
+                      <div className="font-medium text-slate-100">{program.name}</div>
+                      <div className="text-[11px] text-slate-500">
+                        Mounted on Stół 1 · T-fillet coupon
+                      </div>
+                    </>
+                  ) : (
+                    <span className="text-slate-500">
+                      No part — Import Part or Load Demo
+                    </span>
+                  )}
+                </div>
+                {seams.length > 0 && (
+                  <div className="text-[11px] text-slate-500">
+                    Extra CAD seams: {seams.length}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {leftTab === "welds" && (
+              <div className="space-y-2">
+                {program ? (
+                  <div className="rounded border border-slate-700 bg-slate-900/50 p-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium">Seam 1</span>
+                      <span className="rounded bg-orange-500/20 px-1.5 py-0.5 text-[10px] text-orange-300">
                         fillet
                       </span>
                     </div>
                     <div className="mt-1 text-[11px] text-slate-400">
-                      Length {program.weldLenMm.toFixed(0)} mm
+                      Length {program.weldLenMm.toFixed(0)} mm · {program.waypoints.length}{" "}
+                      waypoints
                     </div>
-                    <label className="mt-3 block text-[11px] text-slate-400">
-                      Weld condition (ARCON)
+                    <label className="mt-2 block text-[10px] text-slate-500">
+                      Weld process
                     </label>
                     <select
                       value={weldCondition}
                       onChange={(e) => changeCondition(Number(e.target.value))}
-                      className="mt-1 w-full rounded bg-slate-800 px-2 py-1 text-sm"
+                      className="mt-0.5 w-full rounded bg-slate-800 px-2 py-1 text-xs"
                     >
                       {LORCH_S8_SCHEDULES.map((s) => (
                         <option key={s.condition} value={s.condition}>
-                          #{s.condition} — {s.currentA}A / {s.voltageV.toFixed(1)}V /{" "}
-                          {s.travelCmMin} cm/min
+                          #{s.condition} {s.process} · {s.currentA}A
                         </option>
                       ))}
                     </select>
                   </div>
-                  <p className="mt-3 text-[10px] text-slate-500">
-                    Auto-detected fillet seam (demo). Real seams are extracted from the
-                    imported CAD.
+                ) : (
+                  <p className="px-1 text-xs text-slate-500">
+                    No welds yet. Use Plan → Identify Welds.
                   </p>
-                </>
-              ) : (
-                <p className="text-xs text-slate-400">
-                  Load a part to detect weld seams.
-                </p>
-              )}
-            </>
-          )}
-
-          {view === "path" && (
-            <>
-              <PanelHeader>Path & parameters</PanelHeader>
-              {program ? (
-                <>
-                  <dl className="mb-3 space-y-1 text-xs text-slate-300">
-                    <div className="flex justify-between">
-                      <dt className="text-slate-500">Waypoints</dt>
-                      <dd className="font-mono">{program.waypoints.length}</dd>
-                    </div>
-                    <div className="flex justify-between">
-                      <dt className="text-slate-500">Weld length</dt>
-                      <dd className="font-mono">{program.weldLenMm.toFixed(0)} mm</dd>
-                    </div>
-                    <div className="flex justify-between">
-                      <dt className="text-slate-500">Cycle time</dt>
-                      <dd className="font-mono">{program.cycleSec.toFixed(1)} s</dd>
-                    </div>
-                  </dl>
-                  <div className="max-h-72 overflow-y-auto rounded border border-slate-700 bg-slate-900/60 text-[11px]">
-                    <table className="w-full">
-                      <thead className="sticky top-0 bg-slate-800 text-slate-400">
-                        <tr>
-                          <th className="px-2 py-1 text-left font-medium">Pt</th>
-                          <th className="px-1 py-1 text-left font-medium">Move</th>
-                          <th className="px-1 py-1 text-left font-medium">Speed</th>
-                          <th className="px-1 py-1 text-left font-medium">Arc</th>
-                        </tr>
-                      </thead>
-                      <tbody className="font-mono">
-                        {program.waypoints.map((wp, i) => (
-                          <tr
-                            key={wp.id}
-                            className={
-                              sample && i === sample.wpIndex
-                                ? "bg-yaskawa-accent/20 text-yaskawa-accent"
-                                : "text-slate-300"
-                            }
-                          >
-                            <td className="px-2 py-0.5">{wp.id}</td>
-                            <td className="px-1 py-0.5">{wp.move}</td>
-                            <td className="px-1 py-0.5">{wp.speedLabel}</td>
-                            <td className="px-1 py-0.5">
-                              {wp.tag === "ARCON" ? (
-                                <span className="text-orange-400">ARCON</span>
-                              ) : wp.tag === "ARCOF" ? (
-                                <span className="text-slate-400">ARCOF</span>
-                              ) : wp.arc ? (
-                                "•"
-                              ) : (
-                                ""
-                              )}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </>
-              ) : (
-                <p className="text-xs text-slate-400">Load a part to plan a path.</p>
-              )}
-            </>
-          )}
-
-          {view === "simulate" && (
-            <>
-              <PanelHeader>Weld schedule (Lorch S8)</PanelHeader>
-              <div className="overflow-hidden rounded border border-slate-700 text-[11px]">
-                <table className="w-full">
-                  <thead className="bg-slate-800 text-slate-400">
-                    <tr>
-                      <th className="px-2 py-1 text-left font-medium">#</th>
-                      <th className="px-1 py-1 text-right font-medium">A</th>
-                      <th className="px-1 py-1 text-right font-medium">V</th>
-                      <th className="px-1 py-1 text-right font-medium">m/min</th>
-                      <th className="px-1 py-1 text-right font-medium">cm/min</th>
-                    </tr>
-                  </thead>
-                  <tbody className="font-mono text-slate-300">
-                    {LORCH_S8_SCHEDULES.map((s) => (
-                      <tr
-                        key={s.condition}
-                        className={
-                          program && program.schedule.condition === s.condition
-                            ? "bg-yaskawa-accent/10"
-                            : ""
-                        }
-                      >
-                        <td className="px-2 py-0.5">{s.condition}</td>
-                        <td className="px-1 py-0.5 text-right">{s.currentA}</td>
-                        <td className="px-1 py-0.5 text-right">{s.voltageV.toFixed(1)}</td>
-                        <td className="px-1 py-0.5 text-right">{s.wireMmin.toFixed(1)}</td>
-                        <td className="px-1 py-0.5 text-right">{s.travelCmMin}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                )}
               </div>
-              <p className="mt-2 text-[10px] text-slate-500">
-                EXAMPLE parameters — replace with your qualified WPS.
-              </p>
-              <p className="mt-3 text-[11px] text-slate-400">
-                {program
-                  ? "Use the transport bar below the viewport to play, step and scrub the program."
-                  : "Load a part first."}
-              </p>
-            </>
-          )}
+            )}
 
-          {view === "export" && (
-            <>
-              <PanelHeader>Export job</PanelHeader>
-              <button onClick={downloadJbi} disabled={!program} className={`${btnPrimary} w-full`}>
-                Download {program ? `${program.name}.JBI` : ".JBI"}
-              </button>
-              {program && (
-                <pre className="mt-3 max-h-80 overflow-auto rounded border border-slate-700 bg-slate-950 p-2 text-[10px] leading-tight text-slate-300">
-                  {generateJbi(program).split("\n").slice(0, 22).join("\n")}
-                  {"\n…"}
-                </pre>
-              )}
-              <p className="mt-2 text-[10px] text-slate-500">
-                DX200 INFORM III job (coordinated RB1,ST1). Structurally plausible
-                template — validate on the controller / MotoSim.
+            {leftTab === "program" && (
+              <div className="space-y-1">
+                {program ? (
+                  <div className="max-h-full overflow-y-auto font-mono text-[11px]">
+                    {program.waypoints.map((wp, i) => (
+                      <button
+                        key={wp.id}
+                        onClick={() => {
+                          setManualJog(false);
+                          setSimPlaying(false);
+                          setSimT(wpProgress[i] ?? 0);
+                        }}
+                        className={`flex w-full items-center gap-2 rounded px-2 py-0.5 text-left ${
+                          sample && i === sample.wpIndex
+                            ? "bg-[#e87722]/20 text-[#e87722]"
+                            : "text-slate-300 hover:bg-slate-800"
+                        }`}
+                      >
+                        <span className="w-8 text-slate-500">{wp.id}</span>
+                        <span className="w-10">{wp.move}</span>
+                        <span className="flex-1 truncate">{wp.speedLabel}</span>
+                        <span className="text-orange-400">{wp.tag ?? ""}</span>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="px-1 text-xs text-slate-500">No program. Plan welds first.</p>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Details */}
+          <div className="border-t border-slate-700 bg-[#14171c] p-2">
+            <div className="mb-1 text-[10px] font-semibold uppercase text-slate-500">
+              Details
+            </div>
+            {selectedStation != null && activePositioner ? (
+              <div className="space-y-2 text-xs">
+                <div className="font-medium">Stół {selectedStation + 1}</div>
+                {activePositioner.hasTilt && (
+                  <label className="flex items-center gap-2">
+                    <span className="w-12 text-slate-400">Tilt</span>
+                    <input
+                      type="range"
+                      min={-135}
+                      max={135}
+                      step={0.5}
+                      value={stations[selectedStation].tilt}
+                      onChange={(e) =>
+                        setStation(selectedStation, { tilt: Number(e.target.value) })
+                      }
+                      className="flex-1 accent-[#e87722]"
+                    />
+                    <span className="w-10 text-right font-mono">
+                      {stations[selectedStation].tilt.toFixed(0)}°
+                    </span>
+                  </label>
+                )}
+                {activePositioner.hasRotate && (
+                  <label className="flex items-center gap-2">
+                    <span className="w-12 text-slate-400">Rotate</span>
+                    <input
+                      type="range"
+                      min={-360}
+                      max={360}
+                      step={0.5}
+                      value={stations[selectedStation].rotate}
+                      onChange={(e) =>
+                        setStation(selectedStation, { rotate: Number(e.target.value) })
+                      }
+                      className="flex-1 accent-[#e87722]"
+                    />
+                    <span className="w-10 text-right font-mono">
+                      {stations[selectedStation].rotate.toFixed(0)}°
+                    </span>
+                  </label>
+                )}
+              </div>
+            ) : program ? (
+              <dl className="grid grid-cols-2 gap-x-2 gap-y-0.5 text-[11px] text-slate-300">
+                <dt className="text-slate-500">Part</dt>
+                <dd className="font-mono">{program.name}</dd>
+                <dt className="text-slate-500">Weld len</dt>
+                <dd className="font-mono">{program.weldLenMm.toFixed(0)} mm</dd>
+                <dt className="text-slate-500">Cycle</dt>
+                <dd className="font-mono">{program.cycleSec.toFixed(1)} s</dd>
+                <dt className="text-slate-500">Mode</dt>
+                <dd>{manualJog ? "Manual jog" : "Path IK"}</dd>
+              </dl>
+            ) : (
+              <p className="text-[11px] text-slate-500">
+                Select a cell item or load a part.
               </p>
-            </>
-          )}
+            )}
+            {status && <p className="mt-2 text-[10px] text-slate-400">{status}</p>}
+          </div>
+        </aside>
+
+        {/* CENTER — Viewer + sim bar */}
+        <div className="relative flex min-w-0 flex-1 flex-col">
+          <div className="relative min-h-0 flex-1">
+            <RobotWorkspace
+              modelId={modelId}
+              joints={joints}
+              seams={seams}
+              positionerId={positionerId}
+              railTravel={railTravel}
+              stations={stations}
+              program={program}
+              simT={simT}
+              manualJog={manualJog}
+            />
+
+            {program && sample && (
+              <div className="pointer-events-none absolute left-3 top-3 rounded bg-[#12141a]/90 px-2.5 py-1.5 font-mono text-[11px] text-slate-200 shadow">
+                <div className="mb-0.5 font-sans text-[10px] font-semibold uppercase text-slate-400">
+                  {program.name}
+                </div>
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`inline-block h-2 w-2 rounded-full ${
+                      sample.arcOn ? "animate-pulse bg-orange-400" : "bg-slate-600"
+                    }`}
+                  />
+                  ARC {sample.arcOn ? "ON" : "OFF"}
+                  <span className="text-slate-500">·</span>
+                  {sample.elapsedSec.toFixed(1)}/{program.cycleSec.toFixed(1)}s
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2 border-t border-slate-700 bg-[#12141a] px-3 py-1.5">
+            <button
+              onClick={() => stepTo(-1)}
+              disabled={!program}
+              className={`${btnGhost} !px-2 !py-1`}
+              title="Previous"
+            >
+              ⏮
+            </button>
+            <button
+              onClick={togglePlay}
+              disabled={!program}
+              className={`${btnPrimary} !px-4 !py-1`}
+            >
+              {simPlaying ? "Pause" : simT >= 1 ? "Replay" : "Play"}
+            </button>
+            <button
+              onClick={() => stepTo(1)}
+              disabled={!program}
+              className={`${btnGhost} !px-2 !py-1`}
+              title="Next"
+            >
+              ⏭
+            </button>
+            <button
+              onClick={() => {
+                setSimPlaying(false);
+                setSimT(0);
+              }}
+              disabled={!program}
+              className={`${btnGhost} !px-2 !py-1`}
+              title="Reset"
+            >
+              ⟲
+            </button>
+            <div className="min-w-0 flex-1 truncate px-2 font-mono text-[11px] text-slate-400">
+              {instruction}
+            </div>
+            <select
+              value={simSpeed}
+              onChange={(e) => setSimSpeed(Number(e.target.value))}
+              className="rounded bg-slate-800 px-2 py-1 text-xs"
+            >
+              <option value={0.5}>0.5×</option>
+              <option value={1}>1×</option>
+              <option value={2}>2×</option>
+              <option value={4}>4×</option>
+            </select>
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.001}
+              value={simT}
+              disabled={!program}
+              onChange={(e) => {
+                setSimPlaying(false);
+                setManualJog(false);
+                setSimT(Number(e.target.value));
+              }}
+              className="w-40 accent-[#e87722]"
+            />
+          </div>
+        </div>
+
+        {/* RIGHT DOCK — Robot (ALWAYS visible) */}
+        <aside className="flex w-80 shrink-0 flex-col border-l border-slate-700 bg-[#181b21]">
+          <div className="border-b border-slate-700 px-3 py-2">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-300">
+              Robot
+            </div>
+            <div className="text-[10px] text-slate-500">
+              {activeModel?.label ?? "AR2010"} · joint jog
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-3">
+            <div
+              className={`mb-3 rounded px-2 py-1.5 text-center text-xs font-semibold ${
+                manualJog
+                  ? "bg-[#e87722]/20 text-[#e87722]"
+                  : "bg-slate-800 text-slate-400"
+              }`}
+            >
+              {manualJog ? "● Manual joint jog" : "Path / IK control (Play)"}
+            </div>
+
+            <div className="mb-2 flex gap-2">
+              <button onClick={homeJoints} className={`${btnGhost} flex-1 !py-1 text-xs`}>
+                Home
+              </button>
+              <button onClick={zeroJoints} className={`${btnGhost} flex-1 !py-1 text-xs`}>
+                Zero
+              </button>
+              {!manualJog && (
+                <button
+                  onClick={() => {
+                    setSimPlaying(false);
+                    setManualJog(true);
+                    setStatus("Manual joint jog ON.");
+                  }}
+                  className={`${btnPrimary} flex-1 !py-1 text-xs`}
+                >
+                  Take jog
+                </button>
+              )}
+            </div>
+
+            <div className="mb-1 text-[10px] font-semibold uppercase text-slate-500">
+              Joints
+            </div>
+            <AxisSliders joints={joints} onChange={onJointsChange} />
+
+            <div className="mb-1 mt-4 text-[10px] font-semibold uppercase text-slate-500">
+              Tool
+            </div>
+            <dl className="grid grid-cols-[1fr_auto] gap-x-2 gap-y-0.5 font-mono text-[11px] text-slate-300">
+              <dt className="text-slate-500">Frame</dt>
+              <dd>World</dd>
+              <dt className="text-slate-500">TCP</dt>
+              <dd>
+                {sample
+                  ? `${sample.pos[0].toFixed(3)}, ${sample.pos[1].toFixed(3)}, ${sample.pos[2].toFixed(3)}`
+                  : "—"}
+              </dd>
+              <dt className="text-slate-500">Rail</dt>
+              <dd>{railTravel.toFixed(3)} m</dd>
+            </dl>
+
+            <div className="mb-1 mt-4 text-[10px] font-semibold uppercase text-slate-500">
+              Status
+            </div>
+            <div
+              className={`rounded px-2 py-1.5 text-xs font-medium ${
+                robotStatus.ok
+                  ? "bg-emerald-900/40 text-emerald-300"
+                  : "bg-red-900/40 text-red-300"
+              }`}
+            >
+              {robotStatus.ok ? "●" : "⚠"} {robotStatus.label}
+            </div>
+            <p className="mt-2 text-[10px] leading-snug text-slate-500">
+              Przesuwaj S/L/U/R/B/T tutaj, żeby ręcznie ruszać AR2010 (jak panel Robot w
+              Verbotics Weld). Play na pasku symulacji przełącza na IK ścieżki. Home / Zero
+              zerują osie.
+            </p>
+          </div>
         </aside>
       </div>
     </main>

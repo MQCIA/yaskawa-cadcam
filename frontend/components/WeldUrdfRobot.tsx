@@ -177,9 +177,15 @@ export default function WeldUrdfRobot({
     // Manual jog: drive each axis straight from the S/L/U/R/B/T sliders.
     if (!ikActive) {
       const jm = jointsRef.current;
-      for (let k = 0; k < chain.length; k++) {
+      for (let k = 0; k < CHAIN.length; k++) {
         const axis = AXES[k];
-        if (axis) chain[k].setJointValue(deg2rad(jm[axis] ?? 0));
+        if (!axis) continue;
+        const rad = deg2rad(jm[axis] ?? 0);
+        // Prefer the robot-level API (same as UrdfModel) — more reliable than
+        // calling setJointValue on a joint handle that may be stale.
+        const robotJoints = (robot as unknown as { setJointValue?: (n: string, v: number) => boolean }).setJointValue;
+        if (robotJoints) robotJoints.call(robot, CHAIN[k], rad);
+        else if (chain[k]) chain[k].setJointValue(rad);
       }
       robot.updateMatrixWorld(true);
       placeTorch();
