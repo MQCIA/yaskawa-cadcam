@@ -9,6 +9,7 @@ import H1000dPositioner from "./H1000dPositioner";
 import RobotTrack from "./RobotTrack";
 import WeldScene from "./WeldScene";
 import WeldUrdfRobot from "./WeldUrdfRobot";
+import WeldPowerSource from "./WeldPowerSource";
 import type { Joints } from "./AxisSliders";
 import {
   ROBOT_MODELS,
@@ -26,11 +27,31 @@ export type StationState = { tilt: number; rotate: number };
 
 // Height of the rail carriage top the robot base mounts on.
 const CARRIAGE_TOP_Y = 0.26;
+// Height of the positioner rotation axis (matches H1000dPositioner.axisHeight).
+const AXLE_Y = 0.95;
+// X position of the trailing power-source dolly on the carriage (matches RobotTrack).
+const DOLLY_X = -0.62;
 // The two work-station positioner positions (robot faces +X, rail runs along Z).
 const STATION_POS: [number, number, number][] = [
   [1.6, 0, -1.2],
   [1.6, 0, 1.2],
 ];
+
+const deg2rad = (d: number) => (d * Math.PI) / 180;
+
+// Index of the station a part is mounted on, from its world mount point.
+function mountStationIndex(mount: [number, number, number]): number {
+  let best = 0;
+  let bestD = Infinity;
+  STATION_POS.forEach((p, i) => {
+    const d = Math.hypot(p[0] - mount[0], p[2] - mount[2]);
+    if (d < bestD) {
+      bestD = d;
+      best = i;
+    }
+  });
+  return best;
+}
 
 function Seam({ seg }: { seg: SeamSegment }) {
   const [x0, y0, z0] = seg.start;
@@ -83,16 +104,23 @@ function SelectedRobot({
   base,
   program,
   simT,
+  manualJog,
+  partPivot,
+  partRotZ,
 }: {
   modelId: string;
   joints: Joints;
   base: [number, number, number];
   program: WeldProgram | null;
   simT: number;
+  manualJog: boolean;
+  partPivot?: [number, number, number];
+  partRotZ?: number;
 }) {
   const model = ROBOT_MODELS.find((m) => m.id === modelId) ?? ROBOT_MODELS[0];
   if (model.kind === "urdf" && model.url) {
-    // Real Yaskawa model with a torch, IK-driven to follow the weld path.
+    // Real Yaskawa model with a torch: IK-driven along the weld path, or driven
+    // by the manual jog sliders when there is no program / manual jog is on.
     return (
       <WeldUrdfRobot
         url={model.url}
@@ -100,6 +128,10 @@ function SelectedRobot({
         program={program}
         simT={simT}
         base={base}
+        joints={joints}
+        manual={manualJog}
+        partPivot={partPivot}
+        partRotZ={partRotZ}
       />
     );
   }
@@ -154,6 +186,7 @@ export default function RobotWorkspace({
   ],
   program = null,
   simT = 0,
+  manualJog = false,
 }: {
   modelId: string;
   joints: Joints;
@@ -163,10 +196,23 @@ export default function RobotWorkspace({
   stations?: StationState[];
   program?: WeldProgram | null;
   simT?: number;
+  manualJog?: boolean;
 }) {
   const positioner = positionerId
     ? POSITIONER_MODELS.find((p) => p.id === positionerId)
     : undefined;
+
+  // The workpiece is clamped to the positioner table, so it rotates with it.
+  // Compute the pivot (axle) and rotation for the mounting station.
+  const partStation = program ? mountStationIndex(program.mount) : 0;
+  const partPivot: [number, number, number] = [
+    STATION_POS[partStation][0],
+    AXLE_Y,
+    STATION_POS[partStation][2],
+  ];
+  // Table turns about the axle (world Z after the positioner's 90° yaw); a
+  // positive positioner "rotate" maps to a negative rotation about world Z.
+  const partRotZ = -deg2rad(stations[partStation]?.rotate ?? 0);
 
   return (
     <Canvas shadows camera={{ position: [4.5, 3, 4.5], fov: 45 }}>
@@ -190,8 +236,13 @@ export default function RobotWorkspace({
             base={[0, CARRIAGE_TOP_Y, railTravel]}
             program={program}
             simT={simT}
+            manualJog={manualJog}
+            partPivot={partPivot}
+            partRotZ={partRotZ}
           />
         </Suspense>
+        {/* Lorch S8 power source on the trailing dolly — rides with the robot */}
+        <WeldPowerSource position={[DOLLY_X, 0, 0]} />
       </group>
 
       {/* Two work stations, each with its own positioner */}
@@ -213,8 +264,17 @@ export default function RobotWorkspace({
           </group>
         ))}
 
-      {/* Generated welding program (part, seam, torch frames, TCP marker) */}
-      {program && <WeldScene program={program} simT={simT} />}
+      {/* Generated welding program (part, seam, torch frames, TCP marker).
+          Clamped to the positioner table, so it rotates with it about the axle. */}
+      {program && (
+        <group position={partPivot}>
+          <group rotation={[0, 0, partRotZ]}>
+            <group position={[-partPivot[0], -partPivot[1], -partPivot[2]]}>
+              <WeldScene program={program} simT={simT} />
+            </group>
+          </group>
+        </group>
+      )}
 
       {seams.map((s, i) => (
         <Seam key={i} seg={s} />

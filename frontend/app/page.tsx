@@ -87,6 +87,7 @@ export default function Home() {
   const [simT, setSimT] = useState(0);
   const [simPlaying, setSimPlaying] = useState(false);
   const [simSpeed, setSimSpeed] = useState(1);
+  const [manualJog, setManualJog] = useState(false);
 
   const [view, setView] = useState<View>("part");
 
@@ -162,6 +163,8 @@ export default function Home() {
 
   function togglePlay() {
     if (!program) return;
+    // Playing the weld path needs IK control, so release the manual override.
+    setManualJog(false);
     if (simT >= 1) setSimT(0);
     setSimPlaying((p) => !p);
   }
@@ -320,6 +323,7 @@ export default function Home() {
             stations={stations}
             program={program}
             simT={simT}
+            manualJog={manualJog}
           />
 
           {/* HUD */}
@@ -418,19 +422,28 @@ export default function Home() {
               {activeModel?.source && (
                 <p className="mt-1 text-[10px] text-slate-500">{activeModel.source}</p>
               )}
-              {activeModel?.kind === "urdf" ? (
-                <p className="mt-3 rounded bg-slate-800/60 p-2 text-[11px] text-slate-400">
-                  Real AR2010 model with a torch on the flange. When a part is
-                  loaded it is driven by the weld path via inverse kinematics
-                  (CCD); otherwise it holds a ready pose. Manual jog applies to the
-                  procedural model.
-                </p>
-              ) : (
-                <div className="mt-4">
-                  <PanelHeader>Jog axes</PanelHeader>
-                  <AxisSliders joints={joints} onChange={setJoints} />
-                </div>
-              )}
+              <div className="mt-4">
+                <PanelHeader>Jog axes</PanelHeader>
+                {activeModel?.kind === "urdf" && program && (
+                  <label className="mb-3 flex items-center gap-2 text-xs text-slate-200">
+                    <input
+                      type="checkbox"
+                      checked={manualJog}
+                      onChange={(e) => setManualJog(e.target.checked)}
+                      className="h-3.5 w-3.5 accent-yaskawa-accent"
+                    />
+                    Manual jog override (ignore weld path)
+                  </label>
+                )}
+                <AxisSliders joints={joints} onChange={setJoints} />
+                {activeModel?.kind === "urdf" && (
+                  <p className="mt-3 rounded bg-slate-800/60 p-2 text-[11px] text-slate-400">
+                    {program && !manualJog
+                      ? "A part is loaded — the AR2010 follows the weld path via inverse kinematics (CCD). Enable manual jog override to move the axes by hand."
+                      : "Move the real AR2010 axes directly (S/L/U/R/B/T). Load a part and disable manual jog to run the IK weld path."}
+                  </p>
+                )}
+              </div>
             </>
           )}
 
