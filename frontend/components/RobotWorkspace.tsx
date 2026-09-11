@@ -2,7 +2,7 @@
 
 import { Suspense } from "react";
 import { Canvas } from "@react-three/fiber";
-import { OrbitControls, Environment, Html } from "@react-three/drei";
+import { OrbitControls, Html } from "@react-three/drei";
 import YaskawaManipulator from "./YaskawaManipulator";
 import UrdfModel from "./UrdfModel";
 import H1000dPositioner from "./H1000dPositioner";
@@ -214,17 +214,31 @@ export default function RobotWorkspace({
   // positive positioner "rotate" maps to a negative rotation about world Z.
   const partRotZ = -deg2rad(stations[partStation]?.rotate ?? 0);
 
+  // Fill the flex parent explicitly — without absolute inset-0 the R3F canvas
+  // can intermittently collapse to 0×0 height in the Verbotics-style layout.
+  // Skip <Environment> (HDR fetch) — it flakes on restricted networks and
+  // leaves a blank viewer; local lights are enough for the cell.
   return (
-    <Canvas shadows camera={{ position: [4.5, 3, 4.5], fov: 45 }}>
+    <div className="absolute inset-0 h-full w-full">
+    <Canvas
+      shadows
+      camera={{ position: [4.5, 3, 4.5], fov: 45 }}
+      gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
+      dpr={[1, 1.75]}
+      style={{ width: "100%", height: "100%", display: "block" }}
+      onCreated={({ gl }) => {
+        gl.setClearColor("#ffffff", 1);
+      }}
+    >
       <color attach="background" args={["#ffffff"]} />
-      <ambientLight intensity={0.4} />
+      <ambientLight intensity={0.55} />
       <directionalLight
         position={[5, 8, 5]}
-        intensity={1.1}
+        intensity={1.15}
         castShadow
         shadow-mapSize={[2048, 2048]}
       />
-      <hemisphereLight intensity={0.3} groundColor="#101820" />
+      <hemisphereLight intensity={0.45} groundColor="#101820" />
 
       {/* Dedicated Yaskawa travel rail with the robot mounted on the carriage */}
       <RobotTrack length={4.6} carriage={railTravel} />
@@ -280,8 +294,8 @@ export default function RobotWorkspace({
         <Seam key={i} seg={s} />
       ))}
 
-      <Environment preset="warehouse" />
       <OrbitControls makeDefault enableDamping target={[1, 0.7, 0]} />
     </Canvas>
+    </div>
   );
 }
