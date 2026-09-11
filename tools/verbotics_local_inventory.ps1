@@ -1,13 +1,15 @@
-# Full Verbotics Weld dump for the self-hosted Windows worker (verbotics-pc).
-# Writes frontend/public/models/from-verbotics/{inventory.json,SUMMARY.md,extracted-json/,meshes/}
+# Full Verbotics Weld dump — run on the Windows PC that has the install.
+# Discovers Program Files / AppData / Documents / uninstall registry, then
+# writes frontend/public/models/from-verbotics/{inventory.json,SUMMARY.md,...}
 $ErrorActionPreference = "Continue"
 $repo = Split-Path -Parent $PSScriptRoot
 $outDir = Join-Path $repo "frontend\public\models\from-verbotics"
 New-Item -ItemType Directory -Force -Path $outDir | Out-Null
 
-$py = Get-Command python -ErrorAction SilentlyContinue
-if (-not $py) { $py = Get-Command python3 -ErrorAction SilentlyContinue }
-if (-not $py) { throw "Python not found. Install Python 3 and retry." }
+$pyCmd = Get-Command python -ErrorAction SilentlyContinue
+if (-not $pyCmd) { $pyCmd = Get-Command python3 -ErrorAction SilentlyContinue }
+if (-not $pyCmd) { throw "Python not found. Install Python 3 and retry." }
+$python = $pyCmd.Source
 
 function Find-VerboticsRoots {
     $roots = New-Object System.Collections.Generic.List[string]
@@ -40,7 +42,6 @@ function Find-VerboticsRoots {
             ForEach-Object { [void]$roots.Add($_.FullName) }
     }
 
-    # Uninstall registry -> InstallLocation / DisplayIcon
     $uninstallKeys = @(
         "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*",
         "HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*",
@@ -62,7 +63,6 @@ function Find-VerboticsRoots {
             }
     }
 
-    # Start Menu shortcuts
     $smRoots = @(
         "$env:ProgramData\Microsoft\Windows\Start Menu\Programs",
         "$env:APPDATA\Microsoft\Windows\Start Menu\Programs"
@@ -90,22 +90,17 @@ function Get-FileVersions([string[]]$Roots) {
     foreach ($root in $Roots) {
         if (-not (Test-Path -LiteralPath $root)) { continue }
         Get-ChildItem -LiteralPath $root -Recurse -Include *.exe,*.dll -ErrorAction SilentlyContinue |
-            Where-Object {
-                $_.Name -match 'verbotic|weld|cell|editor' -or
-                $_.DirectoryName -match '\\bin($|\\)' -or
-                $_.Directory.Name -eq (Split-Path $root -Leaf)
-            } |
-            Select-Object -First 120 |
+            Select-Object -First 150 |
             ForEach-Object {
                 try {
                     $vi = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($_.FullName)
                     $versions += [ordered]@{
-                        path           = $_.FullName
-                        size           = $_.Length
-                        FileVersion    = $vi.FileVersion
-                        ProductVersion = $vi.ProductVersion
-                        ProductName    = $vi.ProductName
-                        CompanyName    = $vi.CompanyName
+                        path            = $_.FullName
+                        size            = $_.Length
+                        FileVersion     = $vi.FileVersion
+                        ProductVersion  = $vi.ProductVersion
+                        ProductName     = $vi.ProductName
+                        CompanyName     = $vi.CompanyName
                         FileDescription = $vi.FileDescription
                     }
                 } catch {
@@ -126,18 +121,21 @@ $versions = @(Get-FileVersions $found)
 $versions | ConvertTo-Json -Depth 6 | Set-Content -Encoding UTF8 -Path $versionsPath
 Write-Host "Wrote $versionsPath ($($versions.Count) entries)"
 
-$argsList = @(
-    (Join-Path $PSScriptRoot "verbotics_full_dump.py"),
+$dumpScript = Join-Path $PSScriptRoot "verbotics_full_dump.py"
+$argList = @(
+    $dumpScript,
     "--copy-torch-meshes",
+    "--out-dir", $outDir,
     "--versions-json", $versionsPath
 )
 foreach ($r in $found) {
-    $argsList += @("--root", $r)
+    $argList += @("--root", $r)
 }
 
-Write-Host "Running: $($py.Source) $($argsList -join ' ')"
-& $py.Source @argsList
+Write-Host "Running: $python $($argList -join ' ')"
+& $python @argList
 $code = $LASTEXITCODE
 Write-Host "Exit code: $code"
 Write-Host "Outputs under: $outDir"
+Write-Host "Next: commit frontend/public/models/from-verbotics/ and tell the cloud agent — or start a new Cloud Agent with environment = verbotics-pc."
 exit $code
