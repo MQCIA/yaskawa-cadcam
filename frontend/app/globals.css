@@ -2,10 +2,31 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --app-bg: #f4f6f8;
+  --panel-bg: #ffffff;
+  --panel-muted: #f0f2f5;
+  --border: #d8dee6;
+  --text: #1a2332;
+  --text-muted: #5b6777;
+  --accent: #e87722;
+  --accent-soft: #fff1e6;
+  --ok: #1f8a4c;
+  --warn: #b45309;
+  --danger: #c0392b;
+}
+
 html,
 body {
   height: 100%;
   margin: 0;
-  background: #0b0f14;
-  color: #e6edf3;
+  background: var(--app-bg);
+  color: var(--text);
+  font-family: "Segoe UI", "IBM Plex Sans", system-ui, sans-serif;
+}
+
+/* Light industrial scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #c5ced8 transparent;
 }

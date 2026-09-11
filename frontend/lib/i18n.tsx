@@ -136,8 +136,7 @@ const pl: Dict = {
   "status.identifyExisting":
     "Wykryj spoiny: spoina z {n} punktami już jest w projekcie.",
   "status.planNeedPart": "Zaimportuj / załaduj część przed planowaniem.",
-  "status.planDone":
-    "Plan gotowy (ścieżka demo). Otwórz zakładkę Program i naciśnij Odtwórz.",
+  "status.planDone": "Plan ruchu gotowy · bez kolizji: {collision}. Otwórz Program i naciśnij Odtwórz.",
   "status.home": "Robot → pozycja bazowa (wszystkie osie 0°).",
   "status.zero": "Robot → Zero (wszystkie wartości osi = 0°).",
   "status.jogOn": "Ręczny ruch osi WŁĄCZONY.",
@@ -145,6 +144,32 @@ const pl: Dict = {
   "status.imported": "Zaimportowano {name}: {n} kandydat(ów) spoiny.",
   "status.cadFallback":
     "Backend CAD niedostępny ({err}). Załadowano demo T-fillet.",
+  "arcnc.workflow": "Przepływ ArcNC",
+  "arcnc.cad": "1. CAD",
+  "arcnc.detect": "2. Spoiny",
+  "arcnc.plan": "3. Plan ruchu",
+  "arcnc.sense": "4. TouchSense",
+  "arcnc.sim": "5. Symulacja",
+  "arcnc.export": "6. Kod",
+  "arcnc.planner": "Wynik planera",
+  "arcnc.collisionFree": "Bez kolizji",
+  "arcnc.touchSense": "TouchSense",
+  "arcnc.sequence": "Sekwencja zoptymalizowana",
+  "arcnc.singularity": "Bez singularności",
+  "arcnc.yes": "TAK",
+  "arcnc.no": "NIE",
+  "arcnc.optimizeSeq": "Optymalizuj kolejność",
+  "arcnc.addSense": "Dodaj TouchSense",
+  "program.kind.retract": "Odlegnięcie",
+  "program.kind.weld": "Spoina",
+  "program.kind.approach": "Dojazd",
+  "status.sequenceOptimized": "Zoptymalizowano kolejność spawania.",
+  "status.touchSenseAdded": "Dodano punkty TouchSense przed spoiną.",
+  "arcnc.planMotion": "Planuj ruchy (auto)",
+  "welds.tagTouch": "TOUCH",
+  "program.kind.sense": "TouchSense",
+  "program.kind.travel": "Dojazd",
+
 };
 
 const en: Dict = {
@@ -253,8 +278,7 @@ const en: Dict = {
   "status.identifyExisting":
     "Identify Welds: seam with {n} points already in project.",
   "status.planNeedPart": "Import / load a part before planning.",
-  "status.planDone":
-    "Plan complete (demo path). Open Program tab and press Play to simulate.",
+  "status.planDone": "Motion plan ready · collision-free: {collision}. Open Program and press Play.",
   "status.home": "Robot → Home pose (all axes 0°).",
   "status.zero": "Robot → Zero (all joint values set to 0°).",
   "status.jogOn": "Manual joint jog ON.",
@@ -262,6 +286,32 @@ const en: Dict = {
   "status.imported": "Imported {name}: {n} candidate seam(s).",
   "status.cadFallback":
     "CAD backend unavailable ({err}). Loaded demo T-fillet instead.",
+  "arcnc.workflow": "ArcNC workflow",
+  "arcnc.cad": "1. CAD",
+  "arcnc.detect": "2. Seams",
+  "arcnc.plan": "3. Motion plan",
+  "arcnc.sense": "4. TouchSense",
+  "arcnc.sim": "5. Simulate",
+  "arcnc.export": "6. Code",
+  "arcnc.planner": "Planner result",
+  "arcnc.collisionFree": "Collision-free",
+  "arcnc.touchSense": "TouchSense",
+  "arcnc.sequence": "Sequence optimized",
+  "arcnc.singularity": "Singularity-safe",
+  "arcnc.yes": "YES",
+  "arcnc.no": "NO",
+  "arcnc.optimizeSeq": "Optimize sequence",
+  "arcnc.addSense": "Add TouchSense",
+  "arcnc.planMotion": "Plan motions (auto)",
+  "welds.tagTouch": "TOUCH",
+  "program.kind.sense": "TouchSense",
+  "program.kind.travel": "Travel",
+  "status.touchSenseAdded": "Added TouchSense points before the seam.",
+  "status.sequenceOptimized": "Optimized weld sequence.",
+  "program.kind.approach": "Approach",
+  "program.kind.weld": "Weld",
+  "program.kind.retract": "Retract",
+
 };
 
 const DICTS: Record<Locale, Dict> = { pl, en };
@@ -338,7 +388,7 @@ export function LanguageToggle() {
   const { locale, setLocale, t } = useI18n();
   return (
     <div
-      className="flex items-center rounded border border-slate-600 p-0.5 text-xs"
+      className="flex items-center rounded border border-slate-300 bg-white p-0.5 text-xs"
       title={t("header.lang")}
       role="group"
       aria-label={t("header.lang")}
@@ -351,7 +401,7 @@ export function LanguageToggle() {
           className={`rounded px-2 py-1 font-semibold uppercase transition ${
             locale === l
               ? "bg-[#e87722] text-white"
-              : "text-slate-400 hover:text-slate-100"
+              : "text-slate-500 hover:text-slate-800"
           }`}
         >
           {l}

@@ -58,14 +58,14 @@ export default function AxisSliders({
                 {" · "}
                 {t(`axis.${axis}`)}
               </span>
-              <span className="font-mono text-slate-300">{joints[axis].toFixed(1)}°</span>
+              <span className="font-mono text-slate-700">{joints[axis].toFixed(1)}°</span>
             </div>
             <div className="flex items-center gap-1.5">
               <button
                 type="button"
                 title={`−${step}°`}
                 onClick={() => nudge(axis, -1)}
-                className="flex h-7 w-7 shrink-0 items-center justify-center rounded border border-slate-600 text-sm text-slate-200 hover:bg-slate-800"
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded border border-slate-300 text-sm text-slate-700 hover:bg-slate-100"
               >
                 −
               </button>
@@ -82,7 +82,7 @@ export default function AxisSliders({
                 type="button"
                 title={`+${step}°`}
                 onClick={() => nudge(axis, 1)}
-                className="flex h-7 w-7 shrink-0 items-center justify-center rounded border border-slate-600 text-sm text-slate-200 hover:bg-slate-800"
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded border border-slate-300 text-sm text-slate-700 hover:bg-slate-100"
               >
                 +
               </button>
@@ -93,7 +93,7 @@ export default function AxisSliders({
                 step={0.5}
                 value={Number(joints[axis].toFixed(1))}
                 onChange={(e) => setAxis(axis, Number(e.target.value))}
-                className="w-16 rounded border border-slate-700 bg-slate-900 px-1 py-1 text-right font-mono text-xs text-slate-200"
+                className="w-16 rounded border border-slate-300 bg-white px-1 py-1 text-right font-mono text-xs text-slate-800"
               />
             </div>
           </div>
@@ -103,7 +103,7 @@ export default function AxisSliders({
         <button
           type="button"
           onClick={() => onChange(defaultJoints())}
-          className="mt-1 w-full rounded bg-slate-700 px-3 py-1.5 text-sm hover:bg-slate-600"
+          className="mt-1 w-full rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
         >
           {t("axis.home")}
         </button>

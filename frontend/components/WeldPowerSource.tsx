@@ -117,7 +117,7 @@ export default function WeldPowerSource({
         distanceFactor={7}
         occlude={false}
       >
-        <div className="whitespace-nowrap rounded bg-[#0072ce] px-1.5 py-0.5 text-[11px] font-bold tracking-wide text-white shadow">
+        <div className="whitespace-nowrap rounded bg-[#0072ce] px-1.5 py-0.5 text-[11px] font-bold tracking-wide text-white">
           {label}
         </div>
       </Html>

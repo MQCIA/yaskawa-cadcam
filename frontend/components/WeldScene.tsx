@@ -89,6 +89,17 @@ export default function WeldScene({
       {/* Weld seam — solid orange line on the geometry */}
       <Line points={program.seam} color="#ff7a1a" lineWidth={5} />
 
+      {/* TouchSense search points */}
+      {program.waypoints
+        .filter((w) => w.kind === "sense")
+        .map((w) => (
+          <mesh key={w.id} position={w.pos}>
+            <sphereGeometry args={[0.012, 10, 10]} />
+            <meshStandardMaterial color="#2563eb" emissive="#1d4ed8" emissiveIntensity={0.5} />
+          </mesh>
+        ))}
+
+
       {/* Growing weld bead over the welded portion of the seam */}
       {bead.map((p, i) => (
         <mesh key={i} position={p}>

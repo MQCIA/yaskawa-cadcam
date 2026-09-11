@@ -24,6 +24,9 @@ import {
   generateJbi,
   DEMO_MOUNT,
   LORCH_S8_SCHEDULES,
+  ensureTouchSense,
+  optimizeSequence,
+  planMotions,
   type WeldProgram,
 } from "@/lib/weldProgram";
 
@@ -39,9 +42,9 @@ type Ribbon = "plan" | "settings" | "view";
 const btnPrimary =
   "rounded bg-[#e87722] px-3 py-1.5 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40";
 const btnGhost =
-  "rounded border border-slate-500 bg-slate-800 px-3 py-1.5 text-sm text-slate-100 transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-40";
+  "rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40";
 const btnRibbon =
-  "flex cursor-pointer flex-col items-center gap-0.5 rounded px-3 py-1.5 text-[11px] text-slate-200 transition hover:bg-slate-700/80 disabled:opacity-40";
+  "flex cursor-pointer flex-col items-center gap-0.5 rounded px-3 py-1.5 text-[11px] text-slate-700 transition hover:bg-orange-50 disabled:opacity-40";
 
 export default function Home() {
   const { t } = useI18n();
@@ -139,8 +142,36 @@ export default function Home() {
       setStatus(t("status.planNeedPart"));
       return;
     }
+    const planned = planMotions(program);
+    setProgram(planned);
     setLeftTab("program");
-    setStatus(t("status.planDone"));
+    setStatus(
+      t("status.planDone", {
+        collision: planned.meta?.collisionFree ? t("arcnc.yes") : t("arcnc.no"),
+      }),
+    );
+  }
+
+  function addTouchSense() {
+    if (!program) {
+      setStatus(t("status.planNeedPart"));
+      return;
+    }
+    const next = ensureTouchSense(program);
+    setProgram(next);
+    setLeftTab("program");
+    setStatus(t("status.touchSenseAdded"));
+  }
+
+  function optimizeWeldSequence() {
+    if (!program) {
+      setStatus(t("status.planNeedPart"));
+      return;
+    }
+    const next = optimizeSequence(program);
+    setProgram(next);
+    setLeftTab("program");
+    setStatus(t("status.sequenceOptimized"));
   }
 
   function changeCondition(c: number) {
@@ -237,8 +268,8 @@ export default function Home() {
       onClick={() => setLeftTab(id)}
       className={`flex-1 border-b-2 px-2 py-1.5 text-xs font-semibold transition ${
         leftTab === id
-          ? "border-[#e87722] text-[#e87722]"
-          : "border-transparent text-slate-400 hover:text-slate-200"
+          ? "border-[#e87722] text-[#e87722] bg-orange-50"
+          : "border-transparent text-slate-500 hover:text-slate-700"
       }`}
     >
       {label}
@@ -251,8 +282,8 @@ export default function Home() {
       onClick={() => setRibbon(id)}
       className={`px-4 py-1 text-xs font-semibold uppercase tracking-wide transition ${
         ribbon === id
-          ? "border-b-2 border-[#e87722] text-white"
-          : "text-slate-400 hover:text-slate-200"
+          ? "border-b-2 border-[#e87722] text-[#e87722]"
+          : "text-slate-500 hover:text-slate-700"
       }`}
     >
       {label}
@@ -260,9 +291,9 @@ export default function Home() {
   );
 
   return (
-    <main className="flex h-screen flex-col bg-[#1b1e24] text-slate-100">
+    <main className="flex h-screen flex-col bg-[#f4f6f8] text-slate-800">
       {/* Title bar */}
-      <header className="flex items-center justify-between border-b border-slate-700 bg-[#12141a] px-3 py-1.5">
+      <header className="flex items-center justify-between border-b border-slate-200 bg-white px-3 py-1.5">
         <div className="flex items-center gap-3">
           <span className="flex h-6 w-6 items-center justify-center rounded bg-[#e87722] text-[11px] font-bold text-white">
             VW
@@ -285,7 +316,7 @@ export default function Home() {
       </header>
 
       {/* Ribbon */}
-      <div className="border-b border-slate-700 bg-[#1f232b]">
+      <div className="border-b border-slate-200 bg-white">
         <div className="flex gap-1 px-2 pt-1">
           {ribbonTab("plan", t("ribbon.plan"))}
           {ribbonTab("settings", t("ribbon.settings"))}
@@ -304,7 +335,7 @@ export default function Home() {
               </label>
               <button onClick={loadDemo} className={btnRibbon}>
                 <span className="text-base">🧱</span>{t("plan.loadDemo")}</button>
-              <div className="mx-1 h-8 w-px bg-slate-600" />
+              <div className="mx-1 h-8 w-px bg-slate-200" />
               <button onClick={identifyWelds} className={btnRibbon}>
                 <span className="text-base">🔍</span>{t("plan.identifyWelds")}</button>
               <button
@@ -317,9 +348,17 @@ export default function Home() {
                 <span className="text-base">⚙️</span>{t("plan.weldSettings")}</button>
               <button onClick={planWelds} className={btnRibbon} disabled={!program}>
                 <span className="text-base">🛤</span>
-                {t("plan.plan")}
+                {t("arcnc.planMotion")}
               </button>
-              <div className="mx-1 h-8 w-px bg-slate-600" />
+              <button onClick={addTouchSense} className={btnRibbon} disabled={!program}>
+                <span className="text-base">👆</span>
+                {t("arcnc.addSense")}
+              </button>
+              <button onClick={optimizeWeldSequence} className={btnRibbon} disabled={!program}>
+                <span className="text-base">🔀</span>
+                {t("arcnc.optimizeSeq")}
+              </button>
+              <div className="mx-1 h-8 w-px bg-slate-200" />
               <button
                 onClick={() => {
                   setLeftTab("program");
@@ -337,12 +376,12 @@ export default function Home() {
           )}
           {ribbon === "settings" && (
             <>
-              <div className="flex items-center gap-2 px-2 text-xs text-slate-300">
+              <div className="flex items-center gap-2 px-2 text-xs text-slate-700">
                 <span>{t("settings.weldCondition")}</span>
                 <select
                   value={weldCondition}
                   onChange={(e) => changeCondition(Number(e.target.value))}
-                  className="rounded bg-slate-800 px-2 py-1"
+                  className="rounded bg-slate-100 px-2 py-1"
                 >
                   {LORCH_S8_SCHEDULES.map((s) => (
                     <option key={s.condition} value={s.condition}>
@@ -352,12 +391,12 @@ export default function Home() {
                   ))}
                 </select>
               </div>
-              <div className="flex items-center gap-2 px-2 text-xs text-slate-300">
+              <div className="flex items-center gap-2 px-2 text-xs text-slate-700">
                 <span>{t("settings.robot")}</span>
                 <select
                   value={modelId}
                   onChange={(e) => setModelId(e.target.value)}
-                  className="rounded bg-slate-800 px-2 py-1"
+                  className="rounded bg-slate-100 px-2 py-1"
                 >
                   {ROBOT_MODELS.map((m) => (
                     <option key={m.id} value={m.id}>
@@ -366,12 +405,12 @@ export default function Home() {
                   ))}
                 </select>
               </div>
-              <div className="flex items-center gap-2 px-2 text-xs text-slate-300">
+              <div className="flex items-center gap-2 px-2 text-xs text-slate-700">
                 <span>{t("settings.positioner")}</span>
                 <select
                   value={positionerId ?? ""}
                   onChange={(e) => setPositionerId(e.target.value || null)}
-                  className="rounded bg-slate-800 px-2 py-1"
+                  className="rounded bg-slate-100 px-2 py-1"
                 >
                   <option value="">{t("settings.none")}</option>
                   {POSITIONER_MODELS.map((p) => (
@@ -384,22 +423,47 @@ export default function Home() {
             </>
           )}
           {ribbon === "view" && (
-            <div className="px-2 text-xs text-slate-400">
-              LMB rotate · RMB pan · scroll zoom. Robot joint jog is always on the right
-              (Verbotics-style).
-            </div>
+            <div className="px-2 text-xs text-slate-500">{t("view.help")}</div>
           )}
         </div>
       </div>
 
-      <div className="bg-amber-900/30 px-3 py-0.5 text-[11px] text-amber-200">
-        {t("app.warning")}</div>
+      <div className="bg-amber-50 px-3 py-0.5 text-[11px] text-amber-800">
+        {t("app.warning")}
+      </div>
+
+      {/* ArcNC-style workflow strip */}
+      <div className="flex flex-wrap items-center gap-1 border-b border-slate-200 bg-white px-3 py-1.5 text-[11px]">
+        <span className="mr-2 font-semibold uppercase tracking-wide text-slate-500">
+          {t("arcnc.workflow")}
+        </span>
+        {[
+          ["arcnc.cad", !!program],
+          ["arcnc.detect", !!program],
+          ["arcnc.plan", !!program?.meta?.collisionFree],
+          ["arcnc.sense", !!program?.meta?.touchSense],
+          ["arcnc.sim", simT > 0 || simPlaying],
+          ["arcnc.export", !!program],
+        ].map(([key, done], i) => (
+          <span
+            key={String(key)}
+            className={`rounded-full border px-2.5 py-0.5 font-medium ${
+              done
+                ? "border-emerald-300 bg-emerald-50 text-emerald-800"
+                : "border-slate-200 bg-slate-50 text-slate-500"
+            }`}
+          >
+            {done ? "✓ " : `${i + 1}. `}
+            {t(String(key)).replace(/^\d+\.\s*/, "")}
+          </span>
+        ))}
+      </div>
 
       {/* Main 3-column layout */}
       <div className="flex min-h-0 flex-1">
         {/* LEFT DOCK */}
-        <aside className="flex w-72 shrink-0 flex-col border-r border-slate-700 bg-[#181b21]">
-          <div className="flex border-b border-slate-700">
+        <aside className="flex w-72 shrink-0 flex-col border-r border-slate-200 bg-white">
+          <div className="flex border-b border-slate-200">
             {leftTabBtn("workspace", t("left.workspace"))}
             {leftTabBtn("welds", t("left.welds"))}
             {leftTabBtn("program", t("left.program"))}
@@ -411,12 +475,12 @@ export default function Home() {
                 <div className="px-1 text-[10px] font-semibold uppercase text-slate-500">{t("workspace.cell")}</div>
                 <button
                   onClick={() => setSelectedStation(null)}
-                  className="flex w-full items-center gap-2 rounded px-2 py-1 text-left hover:bg-slate-800"
+                  className="flex w-full items-center gap-2 rounded px-2 py-1 text-left hover:bg-slate-100"
                 >
                   <span className="text-[#e87722]">●</span> {t("workspace.robot")} ·{" "}
                   {activeModel?.label ?? modelId}
                 </button>
-                <div className="flex items-center gap-2 px-2 py-1 text-slate-300">
+                <div className="flex items-center gap-2 px-2 py-1 text-slate-700">
                   <span className="text-slate-500">●</span>{t("workspace.rail")}<input
                     type="range"
                     min={-1.6}
@@ -434,8 +498,8 @@ export default function Home() {
                   <button
                     key={i}
                     onClick={() => setSelectedStation(i as 0 | 1)}
-                    className={`flex w-full items-center gap-2 rounded px-2 py-1 text-left hover:bg-slate-800 ${
-                      selectedStation === i ? "bg-slate-800 text-[#e87722]" : ""
+                    className={`flex w-full items-center gap-2 rounded px-2 py-1 text-left hover:bg-slate-100 ${
+                      selectedStation === i ? "bg-slate-100 text-[#e87722]" : ""
                     }`}
                   >
                     <span className="text-slate-500">●</span> {t("workspace.table", { n: i + 1 })} —{" "}
@@ -443,13 +507,11 @@ export default function Home() {
                   </button>
                 ))}
                 <div className="mt-3 px-1 text-[10px] font-semibold uppercase text-slate-500">{t("workspace.parts")}</div>
-                <div className="rounded px-2 py-1 text-slate-300">
+                <div className="rounded px-2 py-1 text-slate-700">
                   {program ? (
                     <>
-                      <div className="font-medium text-slate-100">{program.name}</div>
-                      <div className="text-[11px] text-slate-500">
-                        Mounted on Stół 1 · T-fillet coupon
-                      </div>
+                      <div className="font-medium text-slate-800">{program.name}</div>
+                      <div className="text-[11px] text-slate-500">{t("workspace.mountedOn")}</div>
                     </>
                   ) : (
                     <span className="text-slate-500">{t("workspace.noPart")}</span>
@@ -466,19 +528,19 @@ export default function Home() {
             {leftTab === "welds" && (
               <div className="space-y-2">
                 {program ? (
-                  <div className="rounded border border-slate-700 bg-slate-900/50 p-2">
+                  <div className="rounded border border-slate-200 bg-slate-50 p-2">
                     <div className="flex items-center justify-between">
                       <span className="font-medium">{t("welds.seam1")}</span>
-                      <span className="rounded bg-orange-500/20 px-1.5 py-0.5 text-[10px] text-orange-300">{t("welds.fillet")}</span>
+                      <span className="rounded bg-orange-50 px-1.5 py-0.5 text-[10px] text-orange-700">{t("welds.fillet")}</span>
                     </div>
-                    <div className="mt-1 text-[11px] text-slate-400">
+                    <div className="mt-1 text-[11px] text-slate-500">
                       {t("welds.length", { mm: program.weldLenMm.toFixed(0), n: program.waypoints.length })}
                     </div>
                     <label className="mt-2 block text-[10px] text-slate-500">{t("welds.process")}</label>
                     <select
                       value={weldCondition}
                       onChange={(e) => changeCondition(Number(e.target.value))}
-                      className="mt-0.5 w-full rounded bg-slate-800 px-2 py-1 text-xs"
+                      className="mt-0.5 w-full rounded bg-slate-100 px-2 py-1 text-xs"
                     >
                       {LORCH_S8_SCHEDULES.map((s) => (
                         <option key={s.condition} value={s.condition}>
@@ -507,14 +569,19 @@ export default function Home() {
                         }}
                         className={`flex w-full items-center gap-2 rounded px-2 py-0.5 text-left ${
                           sample && i === sample.wpIndex
-                            ? "bg-[#e87722]/20 text-[#e87722]"
-                            : "text-slate-300 hover:bg-slate-800"
+                            ? "bg-[#fff1e6] text-[#e87722]"
+                            : "text-slate-700 hover:bg-slate-100"
                         }`}
                       >
                         <span className="w-8 text-slate-500">{wp.id}</span>
                         <span className="w-10">{wp.move}</span>
+                        <span className="w-14 truncate text-[10px] uppercase text-slate-400">
+                          {t(`program.kind.${wp.kind}`)}
+                        </span>
                         <span className="flex-1 truncate">{wp.speedLabel}</span>
-                        <span className="text-orange-400">{wp.tag ?? ""}</span>
+                        <span className={wp.tag === "TOUCH" ? "text-blue-600" : "text-orange-600"}>
+                          {wp.tag === "TOUCH" ? t("welds.tagTouch") : wp.tag ?? ""}
+                        </span>
                       </button>
                     ))}
                   </div>
@@ -526,14 +593,14 @@ export default function Home() {
           </div>
 
           {/* Details */}
-          <div className="border-t border-slate-700 bg-[#14171c] p-2">
+          <div className="border-t border-slate-200 bg-[#f7f8fa] p-2">
             <div className="mb-1 text-[10px] font-semibold uppercase text-slate-500">{t("details.title")}</div>
             {selectedStation != null && activePositioner ? (
               <div className="space-y-2 text-xs">
                 <div className="font-medium">Stół {selectedStation + 1}</div>
                 {activePositioner.hasTilt && (
                   <label className="flex items-center gap-2">
-                    <span className="w-12 text-slate-400">{t("details.tilt")}</span>
+                    <span className="w-12 text-slate-500">{t("details.tilt")}</span>
                     <input
                       type="range"
                       min={-135}
@@ -552,7 +619,7 @@ export default function Home() {
                 )}
                 {activePositioner.hasRotate && (
                   <label className="flex items-center gap-2">
-                    <span className="w-12 text-slate-400">{t("details.rotate")}</span>
+                    <span className="w-12 text-slate-500">{t("details.rotate")}</span>
                     <input
                       type="range"
                       min={-360}
@@ -571,7 +638,7 @@ export default function Home() {
                 )}
               </div>
             ) : program ? (
-              <dl className="grid grid-cols-2 gap-x-2 gap-y-0.5 text-[11px] text-slate-300">
+              <dl className="grid grid-cols-2 gap-x-2 gap-y-0.5 text-[11px] text-slate-700">
                 <dt className="text-slate-500">{t("details.part")}</dt>
                 <dd className="font-mono">{program.name}</dd>
                 <dt className="text-slate-500">{t("details.weldLen")}</dt>
@@ -584,7 +651,7 @@ export default function Home() {
             ) : (
               <p className="text-[11px] text-slate-500">{t("details.empty")}</p>
             )}
-            {status && <p className="mt-2 text-[10px] text-slate-400">{status}</p>}
+            {status && <p className="mt-2 text-[10px] text-slate-500">{status}</p>}
           </div>
         </aside>
 
@@ -604,14 +671,14 @@ export default function Home() {
             />
 
             {program && sample && (
-              <div className="pointer-events-none absolute left-3 top-3 rounded bg-[#12141a]/90 px-2.5 py-1.5 font-mono text-[11px] text-slate-200 shadow">
-                <div className="mb-0.5 font-sans text-[10px] font-semibold uppercase text-slate-400">
+              <div className="pointer-events-none absolute left-3 top-3 rounded border border-slate-200 bg-white/90 px-2.5 py-1.5 font-mono text-[11px] text-slate-700">
+                <div className="mb-0.5 font-sans text-[10px] font-semibold uppercase text-slate-500">
                   {program.name}
                 </div>
                 <div className="flex items-center gap-2">
                   <span
                     className={`inline-block h-2 w-2 rounded-full ${
-                      sample.arcOn ? "animate-pulse bg-orange-400" : "bg-slate-600"
+                      sample.arcOn ? "animate-pulse bg-orange-400" : "bg-slate-200"
                     }`}
                   />
                   ARC {sample.arcOn ? "ON" : "OFF"}
@@ -622,7 +689,7 @@ export default function Home() {
             )}
           </div>
 
-          <div className="flex items-center gap-2 border-t border-slate-700 bg-[#12141a] px-3 py-1.5">
+          <div className="flex items-center gap-2 border-t border-slate-200 bg-white px-3 py-1.5">
             <button
               onClick={() => stepTo(-1)}
               disabled={!program}
@@ -657,13 +724,13 @@ export default function Home() {
             >
               ⟲
             </button>
-            <div className="min-w-0 flex-1 truncate px-2 font-mono text-[11px] text-slate-400">
+            <div className="min-w-0 flex-1 truncate px-2 font-mono text-[11px] text-slate-500">
               {instruction}
             </div>
             <select
               value={simSpeed}
               onChange={(e) => setSimSpeed(Number(e.target.value))}
-              className="rounded bg-slate-800 px-2 py-1 text-xs"
+              className="rounded bg-slate-100 px-2 py-1 text-xs"
             >
               <option value={0.5}>0.5×</option>
               <option value={1}>1×</option>
@@ -688,9 +755,9 @@ export default function Home() {
         </div>
 
         {/* RIGHT DOCK — Robot (ALWAYS visible) */}
-        <aside className="flex w-80 shrink-0 flex-col border-l border-slate-700 bg-[#181b21]">
-          <div className="border-b border-slate-700 px-3 py-2">
-            <div className="text-xs font-semibold uppercase tracking-wide text-slate-300">{t("robot.title")}</div>
+        <aside className="flex w-80 shrink-0 flex-col border-l border-slate-200 bg-white">
+          <div className="border-b border-slate-200 px-3 py-2">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-700">{t("robot.title")}</div>
             <div className="text-[10px] text-slate-500">
               {activeModel?.label ?? "AR2010"} · {t("robot.jointJog")}
             </div>
@@ -700,8 +767,8 @@ export default function Home() {
             <div
               className={`mb-3 rounded px-2 py-1.5 text-center text-xs font-semibold ${
                 manualJog
-                  ? "bg-[#e87722]/20 text-[#e87722]"
-                  : "bg-slate-800 text-slate-400"
+                  ? "bg-[#fff1e6] text-[#e87722]"
+                  : "bg-slate-100 text-slate-500"
               }`}
             >
               {manualJog ? t("robot.modeManual") : t("robot.modePath")}
@@ -726,7 +793,7 @@ export default function Home() {
             <AxisSliders joints={joints} onChange={onJointsChange} />
 
             <div className="mb-1 mt-4 text-[10px] font-semibold uppercase text-slate-500">{t("robot.tool")}</div>
-            <dl className="grid grid-cols-[1fr_auto] gap-x-2 gap-y-0.5 font-mono text-[11px] text-slate-300">
+            <dl className="grid grid-cols-[1fr_auto] gap-x-2 gap-y-0.5 font-mono text-[11px] text-slate-700">
               <dt className="text-slate-500">{t("robot.frame")}</dt>
               <dd>{t("robot.frameWorld")}</dd>
               <dt className="text-slate-500">{t("robot.tcp")}</dt>
@@ -743,12 +810,38 @@ export default function Home() {
             <div
               className={`rounded px-2 py-1.5 text-xs font-medium ${
                 robotStatus.ok
-                  ? "bg-emerald-900/40 text-emerald-300"
-                  : "bg-red-900/40 text-red-300"
+                  ? "bg-emerald-50 text-emerald-700"
+                  : "bg-red-50 text-red-700"
               }`}
             >
               {robotStatus.ok ? "●" : "⚠"} {robotStatus.label}
             </div>
+
+            {program?.meta && (
+              <div className="mt-3 rounded border border-slate-200 bg-slate-50 p-2">
+                <div className="mb-1.5 text-[10px] font-semibold uppercase text-slate-500">
+                  {t("arcnc.planner")}
+                </div>
+                <ul className="space-y-1 text-[11px]">
+                  {(
+                    [
+                      ["arcnc.collisionFree", program.meta.collisionFree],
+                      ["arcnc.touchSense", program.meta.touchSense],
+                      ["arcnc.sequence", program.meta.sequenceOptimized],
+                      ["arcnc.singularity", program.meta.singularitySafe],
+                    ] as const
+                  ).map(([k, ok]) => (
+                    <li key={k} className="flex items-center justify-between gap-2">
+                      <span className="text-slate-600">{t(k)}</span>
+                      <span className={ok ? "font-semibold text-emerald-700" : "font-semibold text-amber-700"}>
+                        {ok ? t("arcnc.yes") : t("arcnc.no")}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
             <p className="mt-2 text-[10px] leading-snug text-slate-500">
               {t("robot.help")}
             </p>

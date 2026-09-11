@@ -75,7 +75,7 @@ function Seam({ seg }: { seg: SeamSegment }) {
 function Loading() {
   return (
     <Html center>
-      <div className="rounded bg-slate-800/80 px-3 py-1 text-xs text-slate-200">
+      <div className="rounded border border-slate-200 bg-white/90 px-3 py-1 text-xs text-slate-700">
         Loading model…
       </div>
     </Html>
@@ -91,7 +91,7 @@ function StationLabel({
 }) {
   return (
     <Html position={position} center distanceFactor={8}>
-      <div className="whitespace-nowrap rounded bg-slate-900/80 px-2 py-0.5 text-xs font-medium text-slate-100">
+      <div className="whitespace-nowrap rounded border border-slate-200 bg-white/90 px-2 py-0.5 text-xs font-medium text-slate-700">
         {text}
       </div>
     </Html>
@@ -221,7 +221,6 @@ export default function RobotWorkspace({
   return (
     <div className="absolute inset-0 h-full w-full">
     <Canvas
-      shadows
       camera={{ position: [4.5, 3, 4.5], fov: 45 }}
       gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
       dpr={[1, 1.75]}
@@ -231,14 +230,9 @@ export default function RobotWorkspace({
       }}
     >
       <color attach="background" args={["#ffffff"]} />
-      <ambientLight intensity={0.55} />
-      <directionalLight
-        position={[5, 8, 5]}
-        intensity={1.15}
-        castShadow
-        shadow-mapSize={[2048, 2048]}
-      />
-      <hemisphereLight intensity={0.45} groundColor="#101820" />
+      <ambientLight intensity={0.7} />
+      <directionalLight position={[5, 8, 5]} intensity={1.05} />
+      <hemisphereLight intensity={0.4} groundColor="#d8dee6" />
 
       {/* Dedicated Yaskawa travel rail with the robot mounted on the carriage */}
       <RobotTrack length={4.6} carriage={railTravel} />
