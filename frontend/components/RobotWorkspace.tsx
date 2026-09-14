@@ -91,7 +91,13 @@ function StationLabel({
   position: [number, number, number];
 }) {
   return (
-    <Html position={position} center distanceFactor={8}>
+    <Html
+      position={position}
+      center
+      distanceFactor={8}
+      zIndexRange={[4, 0]}
+      style={{ pointerEvents: "none" }}
+    >
       <div className="whitespace-nowrap rounded border border-slate-200 bg-white/90 px-2 py-0.5 text-xs font-medium text-slate-700">
         {text}
       </div>
@@ -188,6 +194,7 @@ export default function RobotWorkspace({
   program = null,
   simT = 0,
   manualJog = false,
+  showLabels = true,
 }: {
   modelId: string;
   joints: Joints;
@@ -198,6 +205,7 @@ export default function RobotWorkspace({
   program?: WeldProgram | null;
   simT?: number;
   manualJog?: boolean;
+  showLabels?: boolean;
 }) {
   const positioner = positionerId
     ? POSITIONER_MODELS.find((p) => p.id === positionerId)
@@ -269,10 +277,12 @@ export default function RobotWorkspace({
                 rotate={stations[i]?.rotate ?? 0}
               />
             </Suspense>
-            <StationLabel
-              text={`Stół ${i + 1}`}
-              position={[pos[0], 1.7, pos[2]]}
-            />
+            {showLabels && (
+              <StationLabel
+                text={`Stół ${i + 1}`}
+                position={[pos[0], 1.7, pos[2]]}
+              />
+            )}
           </group>
         ))}
 

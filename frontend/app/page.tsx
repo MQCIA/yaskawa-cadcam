@@ -718,7 +718,7 @@ export default function Home() {
         </aside>
 
         {/* CENTER — Viewer + sim bar */}
-        <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
+        <div className="relative z-0 flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
           <div className="relative min-h-0 min-w-0 flex-1">
             <RobotWorkspace
               modelId={modelId}
@@ -730,6 +730,7 @@ export default function Home() {
               program={program}
               simT={simT}
               manualJog={manualJog}
+              showLabels={mobileSheet === null}
             />
 
             {program && sample && (
