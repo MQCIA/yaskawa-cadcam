@@ -61,3 +61,9 @@ No `ARCON ASF#(...)` on this cell — conditions come from `ARCSRT.CND` / macros
 - Torch length in viewer ≈ **416 mm** from TOOL 0
 
 Large binaries (`CMOS.BIN`, `ALL.PRM`, …) stay under `reference/` (gitignored).
+
+## Agent index
+
+- **Per-file dump catalog:** [CELL_DUMP_CATALOG.md](CELL_DUMP_CATALOG.md)
+- **Machine scan JSON:** [_dump_scan.json](_dump_scan.json)
+- **Cursor skill:** `.cursor/skills/dx200-cell-dump/` (lookup + concept gaps)

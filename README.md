@@ -7,12 +7,13 @@ cell: a 3D workspace (React-Three-Fiber), a kinematics backend
 (FastAPI + roboticstoolbox), a Yaskawa DX200 `.JBI` postprocessor, and a CAD
 seam-detection endpoint.
 
-**Configured cell** (see [`docs/HARDWARE.md`](docs/HARDWARE.md)):
-- Robot: **Yaskawa AR series** on DX200 (selectable: AR900 / AR1440 / AR1730 /
-  AR2010 / AR3120 — default AR1440 via `ROBOT_MODEL`)
-- Positioner: **H1000D** external / station axis (coordinated `SMOVL`)
-- Power source: **Lorch S8** (weld schedules → `ARCON`)
+**Roadmap:** [`docs/ROADMAP.md`](docs/ROADMAP.md) · **Cell:** [`docs/CELL.md`](docs/CELL.md) · **Dump catalog:** [`docs/CELL_DUMP_CATALOG.md`](docs/CELL_DUMP_CATALOG.md)
 
+**Configured cell** (see [`docs/HARDWARE.md`](docs/HARDWARE.md) / [`docs/CELL.md`](docs/CELL.md)):
+- Robot: **Yaskawa MA2010** (MA02010-A0*) on DX200 — default `ROBOT_MODEL=MA2010`
+  (AR-series catalogue still selectable)
+- Base / station: **RECT-X (BS1)** + **TURN (ST1)** — default `POSITIONER=TURN-ST1`
+- Power source: **MOTOWELD-E Series 350A** (plain `ARCON`; no `ASF#` on this cell)
 > ## ⚠️ SAFETY — READ BEFORE DOING ANYTHING WITH REAL HARDWARE
 >
 > This project **cannot** and **does not** guarantee "immediate, error-free"

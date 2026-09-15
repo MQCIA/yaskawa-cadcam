@@ -1,0 +1,5629 @@
+{
+  "root": {
+    "ARCSUP.DAT": {
+      "bytes": 1304,
+      "lines": 120,
+      "first": [
+        "//ARCSUP 1",
+        "0",
+        "1",
+        "0.10,10.0,0,5.0",
+        "100,100,17.0",
+        "0",
+        "5.0,5.0",
+        "100,100,17.0",
+        "0,0,0",
+        "3,1",
+        "110,0,0,0",
+        "120,0,0,0",
+        "19.0,0.0,0.0,0.0",
+        "0.30,0.00,0.00,0.00,0.0,0.0,2.0",
+        "0",
+        "//ARCSUP 2",
+        "0",
+        "1",
+        "0.10,10.0,0,5.0",
+        "100,100,17.0",
+        "0",
+        "5.0,5.0",
+        "100,100,17.0",
+        "0,0,0",
+        "3,1"
+      ],
+      "headers": [
+        "//ARCSUP 1",
+        "//ARCSUP 2",
+        "//ARCSUP 3",
+        "//ARCSUP 4",
+        "//ARCSUP 5",
+        "//ARCSUP 6",
+        "//ARCSUP 7",
+        "//ARCSUP 8"
+      ]
+    },
+    "CMOS.BIN": {
+      "bytes": 24487040,
+      "kind": "binary",
+      "note": "controller image; do not parse as text"
+    },
+    "HOME2.DAT": {
+      "bytes": 829,
+      "lines": 98,
+      "first": [
+        "//HOME2",
+        "///GROUP 63,63,1,1,1,3,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,4,1",
+        "0,0",
+        "0,0,0,0",
+        "0,0,0,0",
+        "0,0",
+        "0,0,0,0",
+        "0,0,0,0",
+        "0,0",
+        "0,0,0,0",
+        "0,0,0,0",
+        "0,0",
+        "0,0,0,0",
+        "0,0,0,0",
+        "0,0",
+        "0,0,0,0",
+        "0,0,0,0",
+        "0,0",
+        "0,0,0,0",
+        "0,0,0,0",
+        "0,0",
+        "0,0,0,0",
+        "0,0,0,0",
+        "0,0",
+        "0,0,0,0"
+      ],
+      "headers": [
+        "//HOME2",
+        "///GROUP 63,63,1,1,1,3,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,4,1"
+      ]
+    },
+    "IPNETCFG.DAT": {
+      "bytes": 133,
+      "lines": 19,
+      "first": [
+        "//IPNETCFG",
+        "///HOST",
+        "1",
+        "MY-HOST",
+        "LOCAL.DOMAIN",
+        "///DHCPC",
+        "0",
+        "0",
+        "///DNSC",
+        "0",
+        "1,0",
+        "0.0.0.0",
+        "///SNTPC",
+        "0",
+        "1,3",
+        "0.0.0.0",
+        "0,0",
+        "24",
+        "///END"
+      ],
+      "headers": [
+        "//IPNETCFG",
+        "///HOST",
+        "///DHCPC",
+        "///DNSC",
+        "///SNTPC",
+        "///END"
+      ]
+    },
+    "RBCALIB.DAT": {
+      "bytes": 1661,
+      "lines": 46,
+      "first": [
+        "//RBCALIB 3",
+        "///MTOOL 0",
+        "///MGROUP 1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0",
+        "///MPULSE",
+        "////MRBC1 C0000=-100635,31620,-55585,111413,-13230,-54456",
+        "////MBSC1 B0000=881499",
+        "////MRBC2 C0001=-97828,35477,-51291,105606,-14280,-52559",
+        "////MBSC2 B0001=881499",
+        "////MRBC3 C0002=-98024,42522,-43564,101265,-13972,-50514",
+        "////MBSC3 B0002=881499",
+        "////MRBC4 C0003=-84975,59579,-30851,87777,-33811,-42132",
+        "////MBSC4 B0003=881499",
+        "////MRBC5 C0004=-74832,85195,-17250,92922,-53367,-41453",
+        "////MBSC5 B0004=881499",
+        "///STOOL 0",
+        "///SGROUP 0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0",
+        "///SPULSE",
+        "////SSTC1 E0000=1081,0",
+        "////SSTC2 E0001=1081,-91771",
+        "////SSTC3 E0002=1081,-190564",
+        "////SSTC4 E0003=-27755,-190564",
+        "////SSTC5 E0004=-56786,-190564",
+        "////SRANG 5839.889,-1527.299,-697.191,-0.9106,0.5432,-179.5831",
+        "//RBCALIB 4",
+        "///MTOOL 0"
+      ],
+      "headers": [
+        "//RBCALIB 3",
+        "///MTOOL 0",
+        "///MGROUP 1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0",
+        "///MPULSE",
+        "////MRBC1 C0000=-100635,31620,-55585,111413,-13230,-54456",
+        "////MBSC1 B0000=881499",
+        "////MRBC2 C0001=-97828,35477,-51291,105606,-14280,-52559",
+        "////MBSC2 B0001=881499",
+        "////MRBC3 C0002=-98024,42522,-43564,101265,-13972,-50514",
+        "////MBSC3 B0002=881499",
+        "////MRBC4 C0003=-84975,59579,-30851,87777,-33811,-42132",
+        "////MBSC4 B0003=881499",
+        "////MRBC5 C0004=-74832,85195,-17250,92922,-53367,-41453",
+        "////MBSC5 B0004=881499",
+        "///STOOL 0",
+        "///SGROUP 0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0",
+        "///SPULSE",
+        "////SSTC1 E0000=1081,0",
+        "////SSTC2 E0001=1081,-91771",
+        "////SSTC3 E0002=1081,-190564",
+        "////SSTC4 E0003=-27755,-190564",
+        "////SSTC5 E0004=-56786,-190564",
+        "////SRANG 5839.889,-1527.299,-697.191,-0.9106,0.5432,-179.5831",
+        "//RBCALIB 4",
+        "///MTOOL 0",
+        "///MGROUP 1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0",
+        "///MPULSE",
+        "////MRBC1 C0000=-94631,50324,-37963,118004,-13337,-58053",
+        "////MBSC1 B0000=184959",
+        "////MRBC2 C0001=-93239,34248,-55717,125327,-15183,-61796",
+        "////MBSC2 B0001=184959",
+        "////MRBC3 C0002=-98255,24425,-65367,136440,-14005,-65496",
+        "////MBSC3 B0002=184959",
+        "////MRBC4 C0003=-81664,48791,-42467,78858,-31719,-33638",
+        "////MBSC4 B0003=184959",
+        "////MRBC5 C0004=-68002,92628,-15197,80473,-58991,-30768",
+        "////MBSC5 B0004=184959",
+        "///STOOL 0",
+        "///SGROUP 0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0",
+        "///SPULSE"
+      ]
+    },
+    "README.txt": {
+      "bytes": 1121,
+      "lines": 29,
+      "first": [
+        "﻿DX200 cell dump from production robot (2026-09-15)",
+        "Source folder: D:\\YASKAWA\\z robota",
+        "",
+        "Cell (from SYSTEM.SYS):",
+        "  Controller: DN2.27.00A(US/PL) — ARC WELDING",
+        "  Robot R1:   MA02010-A0* (MA2010)",
+        "  Base B1:    RECT-X (linear travel)",
+        "  Station:    S1..S4 TURN (positioner groups)",
+        "  Welder:     MOTOWELD-E Series 350A (WELDER.DAT)",
+        "  TOOL 0:     TCP mm = -54.280, 1.052, 415.702",
+        "              RPY deg = 1.3119, -42.6215, -6.8387",
+        "",
+        "Pulse scaling (see docs/CELL.md + backend/app/pulse_config.py):",
+        "  Robot: RC1G softlimits / URDF → S≈1341 L≈1908 U≈1593 R≈1023 B≈980 T≈455 pulse/deg",
+        "  Station TURN: RBCALIB ≈1019.7 pulse/deg (EC#=p,0)",
+        "  Base RECT-X: park BC≈878036 (mm lead not certified)",
+        "",
+        "Job format (real INFORM on this cell):",
+        "  ///NPOS n,n,n,0,0,0",
+        "  ///TOOL 0",
+        "  ///POSTYPE PULSE + C# (6 joint pulses) + BC# (base) + EC# (station, often 2 values)",
+        "  ///GROUP1 RB1,BS1",
+        "  ///GROUP2 ST1",
+        "  MOVJ/MOVL/MOVC C# BC# V=/VJ= DEC=20  +MOVJ EC# VJ=...",
+        "  ARCON / ARCOF (no ASF# in these jobs)"
+      ],
+      "headers": []
+    },
+    "SYSTEM.SYS": {
+      "bytes": 1624,
+      "lines": 46,
+      "first": [
+        "/SYSTEM 7",
+        "//DATE      : 2026/09/15 09:47:20",
+        "//SYSTEM NO : DN2.27.00A(US/PL)-00",
+        "//PARAM  NO : 2.06",
+        "//APPLI     : ARC WELDING     ",
+        "//LANGUAGE  :  2.27-00-00, 2.27-00-00",
+        "//REVISION",
+        "YCP21    2.27.00,-----,     ",
+        "YPP      2.21-00, 1.03-00, 2.03",
+        "YSF21-1  2.50-00, 2.00,",
+        "YSF21-2  2.50-00, 2.00,",
+        "EAXA*#0  2.11-00, 2.00,",
+        "EAXA*#1  2.11-00, 2.00,",
+        "//ROBOT NAME",
+        "R1 : MA02010-A0*                                  0011_1111,  B1 : RECT-X                                       0000_0001",
+        "S1 : TURN-1                                       0000_0001",
+        "S2 : TURN-1                                       0000_0001",
+        "S3 : TURN-2                                       0000_0011",
+        "S4 : TURN-2                                       0000_0011",
+        "//CONTROL POWER",
+        "TOTAL : 2017/09/21 11:37,19097:30'10",
+        "//SERVO POWER",
+        "TOTAL : 2017/09/21 11:37,10420:56'12",
+        "R1    : 2017/09/21 11:37,10419:06'02",
+        "S1    : 2017/09/21 11:37,10418:22'59"
+      ],
+      "headers": [
+        "/SYSTEM 7",
+        "//DATE      : 2026/09/15 09:47:20",
+        "//SYSTEM NO : DN2.27.00A(US/PL)-00",
+        "//PARAM  NO : 2.06",
+        "//APPLI     : ARC WELDING     ",
+        "//LANGUAGE  :  2.27-00-00, 2.27-00-00",
+        "//REVISION",
+        "//ROBOT NAME",
+        "//CONTROL POWER",
+        "//SERVO POWER",
+        "//PLAYBACK TIME",
+        "//MOVING TIME",
+        "//OPERATING TIME",
+        "//ENERGY TIME"
+      ]
+    },
+    "TOOL.CND": {
+      "bytes": 7443,
+      "lines": 448,
+      "first": [
+        "//TOOL 0",
+        "///NAME STANDARD TOOL11",
+        "-54.280,1.052,415.702,1.3119,-42.6215,-6.8387",
+        "-34.329,-59.651,325.206",
+        "1.836",
+        "0.001,0.001,0.001",
+        "0.000,0,2",
+        "//TOOL 1",
+        "///NAME",
+        "0.000,0.000,0.000,0.0000,0.0000,0.0000",
+        "0.000,0.000,0.000",
+        "0.000",
+        "0.000,0.000,0.000",
+        "0.000,0,1",
+        "//TOOL 2",
+        "///NAME",
+        "0.000,0.000,0.000,0.0000,0.0000,0.0000",
+        "0.000,0.000,0.000",
+        "0.000",
+        "0.000,0.000,0.000",
+        "0.000,0,1",
+        "//TOOL 3",
+        "///NAME",
+        "0.000,0.000,0.000,0.0000,0.0000,0.0000",
+        "0.000,0.000,0.000"
+      ],
+      "headers": [
+        "//TOOL 0",
+        "///NAME STANDARD TOOL11",
+        "//TOOL 1",
+        "///NAME",
+        "//TOOL 2",
+        "///NAME",
+        "//TOOL 3",
+        "///NAME",
+        "//TOOL 4",
+        "///NAME",
+        "//TOOL 5",
+        "///NAME",
+        "//TOOL 6",
+        "///NAME",
+        "//TOOL 7",
+        "///NAME",
+        "//TOOL 8",
+        "///NAME",
+        "//TOOL 9",
+        "///NAME",
+        "//TOOL 10",
+        "///NAME",
+        "//TOOL 11",
+        "///NAME",
+        "//TOOL 12",
+        "///NAME",
+        "//TOOL 13",
+        "///NAME",
+        "//TOOL 14",
+        "///NAME",
+        "//TOOL 15",
+        "///NAME",
+        "//TOOL 16",
+        "///NAME",
+        "//TOOL 17",
+        "///NAME",
+        "//TOOL 18",
+        "///NAME",
+        "//TOOL 19",
+        "///NAME"
+      ]
+    },
+    "VAR.DAT": {
+      "bytes": 6764,
+      "lines": 535,
+      "first": [
+        "//VAR",
+        "///PFNUM 6,1,2,1",
+        "///SHARE 100,100,100,100,100,128,128,128",
+        "///B",
+        "0,100,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "///I",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0"
+      ],
+      "headers": [
+        "//VAR",
+        "///PFNUM 6,1,2,1",
+        "///SHARE 100,100,100,100,100,128,128,128",
+        "///B",
+        "///I",
+        "///D",
+        "///R",
+        "///S",
+        "///P",
+        "///BP",
+        "///EX"
+      ]
+    },
+    "WEAV.CND": {
+      "bytes": 27128,
+      "lines": 1530,
+      "first": [
+        "//WEAV 1",
+        "0,0,0",
+        "00000000",
+        "2.000,2.000,70.00,70.00,2.000,2.0",
+        "0.1,0.0,0.1,0.0,0.1,0.0,0.1,0.0",
+        "0,0.0,0",
+        "//WEAV 2",
+        "0,0,0",
+        "00000000",
+        "4.000,0.000,0.00,0.00,2.000,2.0",
+        "0.1,0.0,0.1,0.0,0.1,0.0,0.1,0.0",
+        "0,0.0,0",
+        "//WEAV 3",
+        "0,0,0",
+        "00000000",
+        "0.000,3.000,0.00,45.00,1.500,5.0",
+        "0.1,0.5,0.1,0.0,0.1,0.5,0.1,0.0",
+        "0,0.0,0",
+        "//WEAV 4",
+        "0,0,0",
+        "00000000",
+        "1.500,0.000,55.00,55.00,1.500,2.5",
+        "0.1,0.2,0.1,0.0,0.1,0.2,0.1,0.0",
+        "0,0.0,0",
+        "//WEAV 5"
+      ],
+      "headers": [
+        "//WEAV 1",
+        "//WEAV 2",
+        "//WEAV 3",
+        "//WEAV 4",
+        "//WEAV 5",
+        "//WEAV 6",
+        "//WEAV 7",
+        "//WEAV 8",
+        "//WEAV 9",
+        "//WEAV 10",
+        "//WEAV 11",
+        "//WEAV 12",
+        "//WEAV 13",
+        "//WEAV 14",
+        "//WEAV 15",
+        "//WEAV 16",
+        "//WEAV 17",
+        "//WEAV 18",
+        "//WEAV 19",
+        "//WEAV 20",
+        "//WEAV 21",
+        "//WEAV 22",
+        "//WEAV 23",
+        "//WEAV 24",
+        "//WEAV 25",
+        "//WEAV 26",
+        "//WEAV 27",
+        "//WEAV 28",
+        "//WEAV 29",
+        "//WEAV 30",
+        "//WEAV 31",
+        "//WEAV 32",
+        "//WEAV 33",
+        "//WEAV 34",
+        "//WEAV 35",
+        "//WEAV 36",
+        "//WEAV 37",
+        "//WEAV 38",
+        "//WEAV 39",
+        "//WEAV 40"
+      ]
+    },
+    "WELDER.DAT": {
+      "bytes": 2160,
+      "lines": 104,
+      "first": [
+        "//WELDER 1",
+        "///NAME 1,MOTOWELD-E Series 350A class",
+        "0",
+        "0",
+        "1.2,0,15,0.1,0.60",
+        "///COMMENT COMBINATION GAS AND WIRE",
+        "0,1.00",
+        "0.00,1.35,2.70,10.80,12.15,13.50,0.00,0.00",
+        "30,62,94,286,318,350,0,0",
+        "0,1.00",
+        "0.00,7.20,7.50,7.80,14.00,0.00,0.00,0.00",
+        "50,99,100,101,150,0,0,0",
+        "0",
+        "//WELDER 2",
+        "///NAME 1,MOTOWELD-E Series 350A class",
+        "1",
+        "0",
+        "1.2,0,15,0.1,0.60",
+        "///COMMENT COMBINATION GAS AND WIRE",
+        "0,1.00",
+        "0.00,1.35,2.70,10.80,12.15,13.50,0.00,0.00",
+        "30,62,94,286,318,350,0,0",
+        "0,1.00",
+        "0.00,7.20,7.50,7.80,14.00,0.00,0.00,0.00",
+        "50,99,100,101,150,0,0,0"
+      ],
+      "headers": [
+        "//WELDER 1",
+        "///NAME 1,MOTOWELD-E Series 350A class",
+        "///COMMENT COMBINATION GAS AND WIRE",
+        "//WELDER 2",
+        "///NAME 1,MOTOWELD-E Series 350A class",
+        "///COMMENT COMBINATION GAS AND WIRE",
+        "//WELDER 3",
+        "///NAME 1,MOTOWELD-E Series 350A class",
+        "///COMMENT COMBINATION GAS AND WIRE",
+        "//WELDER 4",
+        "///NAME 1,MOTOWELD-E Series 350A class",
+        "///COMMENT COMBINATION GAS AND WIRE",
+        "//WELDER 5",
+        "///NAME 1,MOTOWELD-E Series 350A class",
+        "///COMMENT COMBINATION GAS AND WIRE",
+        "//WELDER 6",
+        "///NAME 1,MOTOWELD-E Series 350A class",
+        "///COMMENT COMBINATION GAS AND WIRE",
+        "//WELDER 7",
+        "///NAME 1,MOTOWELD-E Series 350A class",
+        "///COMMENT COMBINATION GAS AND WIRE",
+        "//WELDER 8",
+        "///NAME 1,MOTOWELD-E Series 350A class",
+        "///COMMENT COMBINATION GAS AND WIRE"
+      ]
+    },
+    "WELDUDEF.DAT": {
+      "bytes": 15178,
+      "lines": 832,
+      "first": [
+        "//WELDUDEF 1",
+        "///NAME 1,USER-1",
+        "1",
+        "0",
+        "1.2,0,15,0.3,1.50",
+        "///COMMENT",
+        "0,1.00",
+        "0.50,2.50,5.00,6.50,8.80,9.50,10.50,11.00",
+        "70,110,150,190,250,290,330,350",
+        "0,1.00",
+        "4.00,5.00,6.00,7.00,8.00,9.00,10.00,11.00",
+        "89,92,95,98,100,102,105,109",
+        "0",
+        "//WELDUDEF 2",
+        "///NAME 2,USER-2",
+        "1",
+        "0",
+        "1.2,1,15,0.3,1.50",
+        "///COMMENT",
+        "0,1.00",
+        "0.50,3.00,4.70,6.40,7.50,8.60,9.50,10.50",
+        "65,115,160,200,235,275,310,350",
+        "0,1.00",
+        "4.00,5.00,6.00,7.00,8.00,9.00,10.00,11.00",
+        "85,88,91,94,100,103,106,112"
+      ],
+      "headers": [
+        "//WELDUDEF 1",
+        "///NAME 1,USER-1",
+        "///COMMENT",
+        "//WELDUDEF 2",
+        "///NAME 2,USER-2",
+        "///COMMENT",
+        "//WELDUDEF 3",
+        "///NAME 3,USER-3",
+        "///COMMENT",
+        "//WELDUDEF 4",
+        "///NAME 4,USER-4",
+        "///COMMENT",
+        "//WELDUDEF 5",
+        "///NAME 1,USER-5",
+        "///COMMENT",
+        "//WELDUDEF 6",
+        "///NAME 2,USER-6",
+        "///COMMENT",
+        "//WELDUDEF 7",
+        "///NAME 3,USER-7",
+        "///COMMENT",
+        "//WELDUDEF 8",
+        "///NAME 4,USER-8",
+        "///COMMENT",
+        "//WELDUDEF 9",
+        "///NAME 1,USER-9",
+        "///COMMENT",
+        "//WELDUDEF 10",
+        "///NAME 1,USER-10",
+        "///COMMENT",
+        "//WELDUDEF 11",
+        "///NAME 1,USER-11",
+        "///COMMENT",
+        "//WELDUDEF 12",
+        "///NAME 1,USER-12",
+        "///COMMENT",
+        "//WELDUDEF 13",
+        "///NAME 1,USER-13",
+        "///COMMENT",
+        "//WELDUDEF 14"
+      ]
+    }
+  },
+  "jobs": [
+    {
+      "file": "-DEFRO-70-PRZYLACZE-70-NOWE.JBI",
+      "bytes": 8961,
+      "name": "-DEFRO-70-PRZYLACZE-70-NOWE",
+      "npos": "61,61,61,0,0,0",
+      "tool": "0",
+      "postype": [
+        "PULSE"
+      ],
+      "groups": [
+        "RB1,BS1",
+        "ST1"
+      ],
+      "counts": {
+        "C": 61,
+        "BC": 61,
+        "EC": 61
+      },
+      "flags": {
+        "ARCON": true,
+        "ARCOF": true,
+        "WVON": true,
+        "MACRO": true,
+        "SMOVL": false,
+        "CALL": false,
+        "PULSE": true,
+        "RECTAN": false
+      },
+      "first_inst": [
+        "MOVJ C00000 BC00000 VJ=80.00 DEC=20  +MOVJ EC00000 VJ=80.00",
+        "MOVJ C00001 BC00001 VJ=80.00 DEC=20  +MOVJ EC00001 VJ=0.78",
+        "MOVJ C00002 BC00002 VJ=80.00 DEC=20  +MOVJ EC00002 VJ=80.00",
+        "MOVJ C00003 BC00003 VJ=80.00 DEC=20  +MOVJ EC00003 VJ=2.00",
+        "TIMER T=0.50",
+        "MACRO1 MJ#(0) ARGF8",
+        "ARCON",
+        "MOVC C00004 BC00004 V=5.0 DEC=20  +MOVJ EC00004 VJ=80.00"
+      ]
+    },
+    {
+      "file": "000.JBI",
+      "bytes": 3063,
+      "name": "000",
+      "npos": "20,20,20,0,0,0",
+      "tool": "0",
+      "postype": [
+        "PULSE"
+      ],
+      "groups": [
+        "RB1,BS1",
+        "ST1"
+      ],
+      "counts": {
+        "C": 20,
+        "BC": 20,
+        "EC": 20
+      },
+      "flags": {
+        "ARCON": true,
+        "ARCOF": true,
+        "WVON": true,
+        "MACRO": true,
+        "SMOVL": false,
+        "CALL": false,
+        "PULSE": true,
+        "RECTAN": false
+      },
+      "first_inst": [
+        "MOVJ C00000 BC00000 VJ=80.00 DEC=20  +MOVJ EC00000 VJ=0.78",
+        "MOVJ C00001 BC00001 VJ=80.00 DEC=20  +MOVJ EC00001 VJ=2.00",
+        "TIMER T=0.50",
+        "MACRO1 MJ#(0) ARGF8",
+        "ARCON",
+        "MOVC C00002 BC00002 V=5.0 DEC=20  +MOVJ EC00002 VJ=80.00",
+        "MOVC C00003 BC00003 V=5.0 DEC=20  +MOVJ EC00003 VJ=80.00",
+        "MOVC C00004 BC00004 V=5.0 DEC=20  +MOVJ EC00004 VJ=80.00"
+      ]
+    },
+    {
+      "file": "02025_KOSZ_DO_RURY_70-PLUS-RAMKI.JBI",
+      "bytes": 32258,
+      "name": "02025_KOSZ_DO_RURY_70-PLUS-RAMKI",
+      "npos": "218,218,218,0,0,0",
+      "tool": "0",
+      "postype": [
+        "PULSE"
+      ],
+      "groups": [
+        "RB1,BS1",
+        "ST2"
+      ],
+      "counts": {
+        "C": 218,
+        "BC": 218,
+        "EC": 218
+      },
+      "flags": {
+        "ARCON": true,
+        "ARCOF": true,
+        "WVON": true,
+        "MACRO": true,
+        "SMOVL": false,
+        "CALL": false,
+        "PULSE": true,
+        "RECTAN": false
+      },
+      "first_inst": [
+        "MOVJ C00000 BC00000 VJ=80.00 DEC=20  +MOVJ EC00000 VJ=80.00",
+        "MOVJ C00001 BC00001 VJ=80.00 DEC=20  +MOVJ EC00001 VJ=80.00",
+        "MOVJ C00002 BC00002 VJ=80.00 DEC=20  +MOVJ EC00002 VJ=80.00",
+        "MOVJ C00003 BC00003 VJ=80.00 DEC=20  +MOVJ EC00003 VJ=80.00",
+        "MACRO1 MJ#(0) ARGF4",
+        "ARCON",
+        "MOVL C00004 BC00004 V=5.0 DEC=20  +MOVJ EC00004 VJ=80.00",
+        "MOVJ C00005 BC00005 VJ=80.00 DEC=20  +MOVJ EC00005 VJ=80.00"
+      ]
+    },
+    {
+      "file": "1-DEFRO-5.JBI",
+      "bytes": 1503,
+      "name": "1-DEFRO-5",
+      "npos": "9,9,9,0,0,0",
+      "tool": "0",
+      "postype": [
+        "PULSE"
+      ],
+      "groups": [
+        "RB1,BS1",
+        "ST3"
+      ],
+      "counts": {
+        "C": 9,
+        "BC": 9,
+        "EC": 9
+      },
+      "flags": {
+        "ARCON": true,
+        "ARCOF": true,
+        "WVON": false,
+        "MACRO": true,
+        "SMOVL": false,
+        "CALL": false,
+        "PULSE": true,
+        "RECTAN": false
+      },
+      "first_inst": [
+        "MOVJ C00000 BC00000 VJ=40.00 DEC=20  +MOVJ EC00000 VJ=40.00",
+        "MOVJ C00001 BC00001 VJ=40.00 DEC=20  +MOVJ EC00001 VJ=40.00",
+        "MOVJ C00002 BC00002 VJ=40.00 DEC=20  +MOVJ EC00002 VJ=40.00",
+        "MOVJ C00003 BC00003 VJ=40.00 DEC=20  +MOVJ EC00003 VJ=40.00",
+        "MOVJ C00004 BC00004 VJ=40.00 DEC=20  +MOVJ EC00004 VJ=40.00",
+        "MACRO1 MJ#(0) ARGF4",
+        "ARCON",
+        "MOVJ C00005 BC00005 VJ=0.78 DEC=20  +MOVJ EC00005 VJ=20.00"
+      ]
+    },
+    {
+      "file": "1.JBI",
+      "bytes": 22915,
+      "name": "1",
+      "npos": "162,162,162,0,0,0",
+      "tool": "0",
+      "postype": [
+        "PULSE"
+      ],
+      "groups": [
+        "RB1,BS1",
+        "ST1"
+      ],
+      "counts": {
+        "C": 162,
+        "BC": 162,
+        "EC": 162
+      },
+      "flags": {
+        "ARCON": true,
+        "ARCOF": true,
+        "WVON": false,
+        "MACRO": true,
+        "SMOVL": false,
+        "CALL": false,
+        "PULSE": true,
+        "RECTAN": false
+      },
+      "first_inst": [
+        "MOVJ C00000 BC00000 VJ=70.00 DEC=20  +MOVJ EC00000 VJ=70.00",
+        "MOVJ C00001 BC00001 VJ=40.00 DEC=20  +MOVJ EC00001 VJ=40.00",
+        "MOVJ C00002 BC00002 VJ=70.00 DEC=20  +MOVJ EC00002 VJ=70.00",
+        "MOVJ C00003 BC00003 VJ=40.00 DEC=20  +MOVJ EC00003 VJ=70.00",
+        "MACRO1 MJ#(0) ARGF5",
+        "ARCON",
+        "MOVC C00004 BC00004 V=4.2 DEC=20  +MOVJ EC00004 VJ=70.00",
+        "MOVC C00005 BC00005 V=4.2 DEC=20  +MOVJ EC00005 VJ=30.00"
+      ]
+    },
+    {
+      "file": "12.JBI",
+      "bytes": 3576,
+      "name": "12",
+      "npos": "25,25,25,0,0,0",
+      "tool": "0",
+      "postype": [
+        "PULSE"
+      ],
+      "groups": [
+        "RB1,BS1",
+        "ST2"
+      ],
+      "counts": {
+        "C": 25,
+        "BC": 25,
+        "EC": 25
+      },
+      "flags": {
+        "ARCON": true,
+        "ARCOF": true,
+        "WVON": false,
+        "MACRO": true,
+        "SMOVL": false,
+        "CALL": false,
+        "PULSE": true,
+        "RECTAN": false
+      },
+      "first_inst": [
+        "MOVJ C00000 BC00000 VJ=90.00  +MOVJ EC00000 VJ=90.00",
+        "MOVJ C00001 BC00001 VJ=90.00  +MOVJ EC00001 VJ=90.00",
+        "MOVJ C00002 BC00002 VJ=90.00  +MOVJ EC00002 VJ=90.00",
+        "MOVJ C00003 BC00003 VJ=90.00  +MOVJ EC00003 VJ=90.00",
+        "MACRO1 MJ#(0) ARGF1",
+        "ARCON",
+        "MOVL C00004 BC00004 V=5.0  +MOVJ EC00004 VJ=90.00",
+        "MOVL C00005 BC00005 V=5.0  +MOVJ EC00005 VJ=90.00"
+      ]
+    },
+    {
+      "file": "BAZA1.JBI",
+      "bytes": 1027,
+      "name": "BAZA1",
+      "npos": "6,6,6,0,0,0",
+      "tool": "0",
+      "postype": [
+        "PULSE"
+      ],
+      "groups": [
+        "RB1,BS1",
+        "ST4"
+      ],
+      "counts": {
+        "C": 6,
+        "BC": 6,
+        "EC": 6
+      },
+      "flags": {
+        "ARCON": true,
+        "ARCOF": true,
+        "WVON": false,
+        "MACRO": true,
+        "SMOVL": false,
+        "CALL": false,
+        "PULSE": true,
+        "RECTAN": false
+      },
+      "first_inst": [
+        "MOVJ C00000 BC00000 VJ=90.00 PL=0  +MOVJ EC00000 VJ=0.78",
+        "MOVJ C00001 BC00001 VJ=90.00 PL=0  +MOVJ EC00001 VJ=90.00",
+        "MOVJ C00002 BC00002 VJ=90.00 PL=0  +MOVJ EC00002 VJ=90.00",
+        "MOVJ C00003 BC00003 VJ=90.00 PL=0  +MOVJ EC00003 VJ=90.00",
+        "MACRO1 MJ#(0) ARGF11",
+        "ARCON",
+        "MOVL C00004 BC00004 V=3.3 PL=0  +MOVJ EC00004 VJ=90.00",
+        "MOVJ C00005 BC00005 VJ=90.00 PL=0  +MOVJ EC00005 VJ=90.00"
+      ]
+    },
+    {
+      "file": "CLEAN_R1.JBI",
+      "bytes": 2829,
+      "name": "CLEAN_R1",
+      "npos": "21,21,0,0,3,0",
+      "tool": "0",
+      "postype": [
+        "PULSE",
+        "ROBOT"
+      ],
+      "groups": [
+        "RB1,BS1"
+      ],
+      "counts": {
+        "C": 21,
+        "BC": 21,
+        "EC": 0
+      },
+      "flags": {
+        "ARCON": false,
+        "ARCOF": false,
+        "WVON": false,
+        "MACRO": false,
+        "SMOVL": false,
+        "CALL": false,
+        "PULSE": true,
+        "RECTAN": true
+      },
+      "first_inst": [
+        "MOVJ C00001 BC00001 VJ=50.00",
+        "MOVJ C00002 BC00002 VJ=50.00",
+        "MOVJ C00003 BC00003 VJ=20.00",
+        "MOVL C00004 BC00004 V=20.0",
+        "MOVL C00005 BC00005 V=16.7",
+        "TIMER T=0.30",
+        "TIMER T=1.00",
+        "TIMER T=0.50"
+      ]
+    },
+    {
+      "file": "CLEAN_R12.JBI",
+      "bytes": 2325,
+      "name": "CLEAN_R12",
+      "npos": "17,17,0,0,3,0",
+      "tool": "0",
+      "postype": [
+        "PULSE",
+        "ROBOT"
+      ],
+      "groups": [
+        "RB1,BS1"
+      ],
+      "counts": {
+        "C": 17,
+        "BC": 17,
+        "EC": 0
+      },
+      "flags": {
+        "ARCON": false,
+        "ARCOF": false,
+        "WVON": false,
+        "MACRO": false,
+        "SMOVL": false,
+        "CALL": false,
+        "PULSE": true,
+        "RECTAN": true
+      },
+      "first_inst": [
+        "MOVJ C00001 BC00001 VJ=50.00",
+        "MOVJ C00002 BC00002 VJ=50.00",
+        "MOVL C00003 BC00003 V=75.0",
+        "MOVL C00004 BC00004 V=20.0",
+        "TIMER T=0.30",
+        "TIMER T=1.00",
+        "MOVL C00005 BC00005 V=20.0",
+        "MOVL C00006 BC00006 V=75.0"
+      ]
+    },
+    {
+      "file": "CUBE-S4.JBI",
+      "bytes": 200,
+      "name": "CUBE-S4",
+      "npos": "0,0,1,0,0,0",
+      "tool": "0",
+      "postype": [
+        "PULSE"
+      ],
+      "groups": [
+        "ST4"
+      ],
+      "counts": {
+        "C": 0,
+        "BC": 0,
+        "EC": 1
+      },
+      "flags": {
+        "ARCON": false,
+        "ARCOF": false,
+        "WVON": false,
+        "MACRO": false,
+        "SMOVL": false,
+        "CALL": false,
+        "PULSE": true,
+        "RECTAN": false
+      },
+      "first_inst": [
+        "MOVJ EC00000 VJ=50.00"
+      ]
+    },
+    {
+      "file": "CUBE_ST1.JBI",
+      "bytes": 750,
+      "name": "CUBE_ST1",
+      "npos": "4,4,4,0,0,0",
+      "tool": "0",
+      "postype": [
+        "PULSE"
+      ],
+      "groups": [
+        "RB1,BS1",
+        "ST1"
+      ],
+      "counts": {
+        "C": 4,
+        "BC": 4,
+        "EC": 4
+      },
+      "flags": {
+        "ARCON": true,
+        "ARCOF": true,
+        "WVON": false,
+        "MACRO": true,
+        "SMOVL": false,
+        "CALL": false,
+        "PULSE": true,
+        "RECTAN": false
+      },
+      "first_inst": [
+        "MOVJ C00000 BC00000 VJ=20.00  +MOVJ EC00000 VJ=50.00",
+        "MOVJ C00001 BC00001 VJ=20.00 PL=0  +MOVJ EC00001 VJ=20.00",
+        "MACRO1 MJ#(0) ARGF2",
+        "ARCON",
+        "MOVL C00002 BC00002 V=3.3 PL=0  +MOVJ EC00002 VJ=0.78",
+        "MOVL C00003 BC00003 V=3.3 PL=0  +MOVJ EC00003 VJ=0.78"
+      ]
+    },
+    {
+      "file": "CUBE_ST2.JBI",
+      "bytes": 317,
+      "name": "CUBE_ST2",
+      "npos": "1,1,1,0,0,0",
+      "tool": "0",
+      "postype": [
+        "PULSE"
+      ],
+      "groups": [
+        "RB1,BS1",
+        "ST2"
+      ],
+      "counts": {
+        "C": 1,
+        "BC": 1,
+        "EC": 1
+      },
+      "flags": {
+        "ARCON": false,
+        "ARCOF": false,
+        "WVON": false,
+        "MACRO": false,
+        "SMOVL": false,
+        "CALL": false,
+        "PULSE": true,
+        "RECTAN": false
+      },
+      "first_inst": [
+        "MOVJ C00000 BC00000 VJ=50.00  +MOVJ EC00000 VJ=50.00"
+      ]
+    },
+    {
+      "file": "DRAHT-R1.JBI",
+      "bytes": 1026,
+      "name": "DRAHT-R1",
+      "npos": "7,7,0,0,0,0",
+      "tool": "0",
+      "postype": [
+        "PULSE"
+      ],
+      "groups": [
+        "RB1,BS1"
+      ],
+      "counts": {
+        "C": 7,
+        "BC": 7,
+        "EC": 0
+      },
+      "flags": {
+        "ARCON": false,
+        "ARCOF": false,
+        "WVON": false,
+        "MACRO": false,
+        "SMOVL": false,
+        "CALL": false,
+        "PULSE": true,
+        "RECTAN": false
+      },
+      "first_inst": [
+        "MOVJ C00000 BC00000 VJ=25.00",
+        "MOVJ C00001 BC00001 VJ=25.00",
+        "MOVL C00002 BC00002 V=83.3",
+        "MOVL C00003 BC00003 V=33.3",
+        "TIMER T=0.50",
+        "TIMER T=0.50",
+        "TIMER T=0.50",
+        "MOVL C00004 BC00004 V=83.3"
+      ]
+    },
+    {
+      "file": "EICH-R1-Y-BA.JBI",
+      "bytes": 5479,
+      "name": "EICH-R1-Y-BA",
+      "npos": "3,3,0,4,1,0",
+      "tool": "0",
+      "postype": [
+        "PULSE",
+        "BASE",
+        "USER",
+        "BASE",
+        "USER"
+      ],
+      "groups": [
+        "RB1,BS1"
+      ],
+      "counts": {
+        "C": 3,
+        "BC": 3,
+        "EC": 0
+      },
+      "flags": {
+        "ARCON": false,
+        "ARCOF": false,
+        "WVON": false,
+        "MACRO": false,
+        "SMOVL": false,
+        "CALL": true,
+        "PULSE": true,
+        "RECTAN": true
+      },
+      "first_inst": [
+        "MOVJ P121 BP121 VJ=25.00",
+        "TIMER T=0.30",
+        "MOVL P122 BP121 V=133.3",
+        "MOVL LP004 V=83.3",
+        "TIMER T=0.20",
+        "MOVL LP001 V=33.3 SRCH RIN#(6)=ON DIS=0.0",
+        "TIMER T=0.20",
+        "MOVL LP001 V=40.0"
+      ]
+    },
+    {
+      "file": "LORCH-R1.JBI",
+      "bytes": 310,
+      "name": "LORCH-R1",
+      "npos": "0,0,0,0,0,0",
+      "tool": null,
+      "postype": [],
+      "groups": [],
+      "counts": {
+        "C": 0,
+        "BC": 0,
+        "EC": 0
+      },
+      "flags": {
+        "ARCON": false,
+        "ARCOF": false,
+        "WVON": false,
+        "MACRO": false,
+        "SMOVL": false,
+        "CALL": false,
+        "PULSE": false,
+        "RECTAN": false
+      },
+      "first_inst": []
+    },
+    {
+      "file": "OTWORZ-BRAMA-STRONA-1.JBI",
+      "bytes": 230,
+      "name": "OTWORZ-BRAMA-STRONA-1",
+      "npos": "0,0,0,0,0,0",
+      "tool": null,
+      "postype": [],
+      "groups": [],
+      "counts": {
+        "C": 0,
+        "BC": 0,
+        "EC": 0
+      },
+      "flags": {
+        "ARCON": false,
+        "ARCOF": false,
+        "WVON": false,
+        "MACRO": false,
+        "SMOVL": false,
+        "CALL": false,
+        "PULSE": false,
+        "RECTAN": false
+      },
+      "first_inst": []
+    },
+    {
+      "file": "OTWORZ-BRAMA-STRONA-2.JBI",
+      "bytes": 230,
+      "name": "OTWORZ-BRAMA-STRONA-2",
+      "npos": "0,0,0,0,0,0",
+      "tool": null,
+      "postype": [],
+      "groups": [],
+      "counts": {
+        "C": 0,
+        "BC": 0,
+        "EC": 0
+      },
+      "flags": {
+        "ARCON": false,
+        "ARCOF": false,
+        "WVON": false,
+        "MACRO": false,
+        "SMOVL": false,
+        "CALL": false,
+        "PULSE": false,
+        "RECTAN": false
+      },
+      "first_inst": []
+    },
+    {
+      "file": "OTWORZ-BRAMA-STRONA-3.JBI",
+      "bytes": 230,
+      "name": "OTWORZ-BRAMA-STRONA-3",
+      "npos": "0,0,0,0,0,0",
+      "tool": null,
+      "postype": [],
+      "groups": [],
+      "counts": {
+        "C": 0,
+        "BC": 0,
+        "EC": 0
+      },
+      "flags": {
+        "ARCON": false,
+        "ARCOF": false,
+        "WVON": false,
+        "MACRO": false,
+        "SMOVL": false,
+        "CALL": false,
+        "PULSE": false,
+        "RECTAN": false
+      },
+      "first_inst": []
+    },
+    {
+      "file": "OTWORZ-BRAMA-STRONA-4.JBI",
+      "bytes": 213,
+      "name": "OTWORZ-BRAMA-STRONA-4",
+      "npos": "0,0,0,0,0,0",
+      "tool": null,
+      "postype": [],
+      "groups": [],
+      "counts": {
+        "C": 0,
+        "BC": 0,
+        "EC": 0
+      },
+      "flags": {
+        "ARCON": false,
+        "ARCOF": false,
+        "WVON": false,
+        "MACRO": false,
+        "SMOVL": false,
+        "CALL": false,
+        "PULSE": false,
+        "RECTAN": false
+      },
+      "first_inst": []
+    },
+    {
+      "file": "PRODUK-PONT.JBI",
+      "bytes": 12622,
+      "name": "PRODUK-PONT",
+      "npos": "86,86,86,0,0,0",
+      "tool": "0",
+      "postype": [
+        "PULSE"
+      ],
+      "groups": [
+        "RB1,BS1",
+        "ST2"
+      ],
+      "counts": {
+        "C": 86,
+        "BC": 86,
+        "EC": 86
+      },
+      "flags": {
+        "ARCON": true,
+        "ARCOF": true,
+        "WVON": true,
+        "MACRO": true,
+        "SMOVL": false,
+        "CALL": false,
+        "PULSE": true,
+        "RECTAN": false
+      },
+      "first_inst": [
+        "MOVJ C00000 BC00000 VJ=90.00 PL=0  +MOVJ EC00000 VJ=90.00",
+        "MOVJ C00001 BC00001 VJ=90.00 PL=0  +MOVJ EC00001 VJ=90.00",
+        "MOVJ C00002 BC00002 VJ=90.00 PL=0  +MOVJ EC00002 VJ=90.00",
+        "MOVJ C00003 BC00003 VJ=90.00 PL=0  +MOVJ EC00003 VJ=90.00",
+        "MOVJ C00004 BC00004 VJ=90.00 PL=0  +MOVJ EC00004 VJ=90.00",
+        "MACRO1 MJ#(0) ARGF2",
+        "ARCON",
+        "MOVL C00005 BC00005 V=4.0 PL=0  +MOVJ EC00005 VJ=90.00"
+      ]
+    },
+    {
+      "file": "REDUKCI-RYNA.JBI",
+      "bytes": 3715,
+      "name": "REDUKCI-RYNA",
+      "npos": "25,25,25,0,0,0",
+      "tool": "0",
+      "postype": [
+        "PULSE"
+      ],
+      "groups": [
+        "RB1,BS1",
+        "ST4"
+      ],
+      "counts": {
+        "C": 25,
+        "BC": 25,
+        "EC": 25
+      },
+      "flags": {
+        "ARCON": true,
+        "ARCOF": true,
+        "WVON": false,
+        "MACRO": true,
+        "SMOVL": false,
+        "CALL": false,
+        "PULSE": true,
+        "RECTAN": false
+      },
+      "first_inst": [
+        "MOVJ C00000 BC00000 VJ=90.00 PL=0  +MOVJ EC00000 VJ=0.78",
+        "MOVJ C00001 BC00001 VJ=90.00 PL=0  +MOVJ EC00001 VJ=90.00",
+        "MOVJ C00002 BC00002 VJ=90.00 PL=0  +MOVJ EC00002 VJ=90.00",
+        "MOVJ C00003 BC00003 VJ=90.00 PL=0  +MOVJ EC00003 VJ=90.00",
+        "MACRO1 MJ#(0) ARGF11",
+        "ARCON",
+        "MOVL C00004 BC00004 V=7.5 PL=0  +MOVJ EC00004 VJ=90.00",
+        "MOVL C00005 BC00005 V=7.5 PL=0  +MOVJ EC00005 VJ=90.00"
+      ]
+    },
+    {
+      "file": "RESET-KURTYNY.JBI",
+      "bytes": 259,
+      "name": "RESET-KURTYNY",
+      "npos": "0,0,0,0,0,0",
+      "tool": null,
+      "postype": [],
+      "groups": [],
+      "counts": {
+        "C": 0,
+        "BC": 0,
+        "EC": 0
+      },
+      "flags": {
+        "ARCON": false,
+        "ARCOF": false,
+        "WVON": false,
+        "MACRO": false,
+        "SMOVL": false,
+        "CALL": false,
+        "PULSE": false,
+        "RECTAN": false
+      },
+      "first_inst": []
+    },
+    {
+      "file": "RST1.JBI",
+      "bytes": 718,
+      "name": "RST1",
+      "npos": "4,4,4,0,0,0",
+      "tool": "0",
+      "postype": [
+        "PULSE"
+      ],
+      "groups": [
+        "RB1,BS1",
+        "ST1"
+      ],
+      "counts": {
+        "C": 4,
+        "BC": 4,
+        "EC": 4
+      },
+      "flags": {
+        "ARCON": false,
+        "ARCOF": false,
+        "WVON": false,
+        "MACRO": false,
+        "SMOVL": false,
+        "CALL": false,
+        "PULSE": true,
+        "RECTAN": false
+      },
+      "first_inst": [
+        "MOVJ C00000 BC00000 VJ=0.78  +MOVJ EC00000 VJ=0.78",
+        "MOVJ C00001 BC00001 VJ=0.78  +MOVJ EC00001 VJ=0.78",
+        "MOVJ C00002 BC00002 VJ=0.78  +MOVJ EC00002 VJ=0.78",
+        "MOVJ C00003 BC00003 VJ=0.78  +MOVJ EC00003 VJ=0.78"
+      ]
+    },
+    {
+      "file": "RST2.JBI",
+      "bytes": 717,
+      "name": "RST2",
+      "npos": "4,4,4,0,0,0",
+      "tool": "0",
+      "postype": [
+        "PULSE"
+      ],
+      "groups": [
+        "RB1,BS1",
+        "ST2"
+      ],
+      "counts": {
+        "C": 4,
+        "BC": 4,
+        "EC": 4
+      },
+      "flags": {
+        "ARCON": false,
+        "ARCOF": false,
+        "WVON": false,
+        "MACRO": false,
+        "SMOVL": false,
+        "CALL": false,
+        "PULSE": true,
+        "RECTAN": false
+      },
+      "first_inst": [
+        "MOVJ C00000 BC00000 VJ=90.00  +MOVJ EC00000 VJ=0.78",
+        "MOVJ C00001 BC00001 VJ=90.00  +MOVJ EC00001 VJ=0.78",
+        "MOVJ C00002 BC00002 VJ=90.00  +MOVJ EC00002 VJ=0.78",
+        "MOVJ C00003 BC00003 VJ=90.00  +MOVJ EC00003 VJ=0.78"
+      ]
+    },
+    {
+      "file": "SMAR.JBI",
+      "bytes": 1459,
+      "name": "SMAR",
+      "npos": "13,13,0,0,0,0",
+      "tool": "0",
+      "postype": [
+        "PULSE"
+      ],
+      "groups": [
+        "RB1,BS1"
+      ],
+      "counts": {
+        "C": 13,
+        "BC": 13,
+        "EC": 0
+      },
+      "flags": {
+        "ARCON": false,
+        "ARCOF": false,
+        "WVON": false,
+        "MACRO": false,
+        "SMOVL": false,
+        "CALL": false,
+        "PULSE": true,
+        "RECTAN": false
+      },
+      "first_inst": [
+        "MOVJ C00000 BC00000 VJ=100.00 PL=0",
+        "MOVJ C00001 BC00001 VJ=100.00 PL=0",
+        "MOVJ C00002 BC00002 VJ=100.00 PL=0",
+        "MOVJ C00003 BC00003 VJ=100.00 PL=0",
+        "MOVJ C00004 BC00004 VJ=100.00 PL=0",
+        "MOVJ C00005 BC00005 VJ=100.00 PL=0",
+        "MOVJ C00006 BC00006 VJ=100.00 PL=0",
+        "MOVJ C00007 BC00007 VJ=100.00 PL=0"
+      ]
+    },
+    {
+      "file": "SPAW-S3.JBI",
+      "bytes": 1518,
+      "name": "SPAW-S3",
+      "npos": "10,10,10,0,0,0",
+      "tool": "0",
+      "postype": [
+        "PULSE"
+      ],
+      "groups": [
+        "RB1,BS1",
+        "ST3"
+      ],
+      "counts": {
+        "C": 10,
+        "BC": 10,
+        "EC": 10
+      },
+      "flags": {
+        "ARCON": true,
+        "ARCOF": true,
+        "WVON": false,
+        "MACRO": true,
+        "SMOVL": false,
+        "CALL": false,
+        "PULSE": true,
+        "RECTAN": false
+      },
+      "first_inst": [
+        "MOVJ C00000 BC00000 VJ=50.00  +MOVJ EC00000 VJ=50.00",
+        "MOVJ C00001 BC00001 VJ=50.00  +MOVJ EC00001 VJ=50.00",
+        "MOVJ C00002 BC00002 VJ=50.00  +MOVJ EC00002 VJ=50.00",
+        "MOVJ C00003 BC00003 VJ=50.00  +MOVJ EC00003 VJ=50.00",
+        "MOVJ C00004 BC00004 VJ=50.00  +MOVJ EC00004 VJ=50.00",
+        "MOVJ C00005 BC00005 VJ=50.00  +MOVJ EC00005 VJ=50.00",
+        "MOVJ C00006 BC00006 VJ=50.00  +MOVJ EC00006 VJ=50.00",
+        "MOVJ C00007 BC00007 VJ=50.00  +MOVJ EC00007 VJ=50.00"
+      ]
+    },
+    {
+      "file": "SPAW-S4.JBI",
+      "bytes": 1678,
+      "name": "SPAW-S4",
+      "npos": "11,11,11,0,0,0",
+      "tool": "0",
+      "postype": [
+        "PULSE"
+      ],
+      "groups": [
+        "RB1,BS1",
+        "ST4"
+      ],
+      "counts": {
+        "C": 11,
+        "BC": 11,
+        "EC": 11
+      },
+      "flags": {
+        "ARCON": true,
+        "ARCOF": true,
+        "WVON": false,
+        "MACRO": true,
+        "SMOVL": false,
+        "CALL": false,
+        "PULSE": true,
+        "RECTAN": false
+      },
+      "first_inst": [
+        "MOVJ C00000 BC00000 VJ=50.00  +MOVJ EC00000 VJ=50.00",
+        "MOVJ C00001 BC00001 VJ=50.00  +MOVJ EC00001 VJ=50.00",
+        "MOVJ C00002 BC00002 VJ=50.00  +MOVJ EC00002 VJ=50.00",
+        "MOVJ C00003 BC00003 VJ=50.00  +MOVJ EC00003 VJ=50.00",
+        "MOVJ C00004 BC00004 VJ=50.00  +MOVJ EC00004 VJ=50.00",
+        "MOVJ C00005 BC00005 VJ=50.00  +MOVJ EC00005 VJ=50.00",
+        "MOVJ C00006 BC00006 VJ=50.00  +MOVJ EC00006 VJ=50.00",
+        "MOVJ C00007 BC00007 VJ=50.00  +MOVJ EC00007 VJ=50.00"
+      ]
+    },
+    {
+      "file": "SRCH-1D1.JBI",
+      "bytes": 802,
+      "name": "SRCH-1D1",
+      "npos": "0,0,0,3,0,0",
+      "tool": "0",
+      "postype": [
+        "ROBOT",
+        "BASE"
+      ],
+      "groups": [
+        "RB1,BS1"
+      ],
+      "counts": {
+        "C": 0,
+        "BC": 0,
+        "EC": 0
+      },
+      "flags": {
+        "ARCON": false,
+        "ARCOF": false,
+        "WVON": false,
+        "MACRO": false,
+        "SMOVL": false,
+        "CALL": false,
+        "PULSE": false,
+        "RECTAN": true
+      },
+      "first_inst": [
+        "MOVL P001 V=15.0 SRCH RIN#(1)=ON T=0.20 DIS=10.0"
+      ]
+    },
+    {
+      "file": "SRCH-2D1.JBI",
+      "bytes": 1418,
+      "name": "SRCH-2D1",
+      "npos": "0,0,0,7,0,0",
+      "tool": "0",
+      "postype": [
+        "ROBOT",
+        "PULSE",
+        "BASE"
+      ],
+      "groups": [
+        "RB1,BS1"
+      ],
+      "counts": {
+        "C": 0,
+        "BC": 0,
+        "EC": 0
+      },
+      "flags": {
+        "ARCON": false,
+        "ARCOF": false,
+        "WVON": false,
+        "MACRO": false,
+        "SMOVL": false,
+        "CALL": false,
+        "PULSE": true,
+        "RECTAN": true
+      },
+      "first_inst": [
+        "MOVL P001 V=33.3 PL=0",
+        "MOVL P002 V=15.0 SRCH RIN#(1)=ON T=0.20 DIS=20.0",
+        "MOVL P001 V=25.0",
+        "MOVL P001 V=25.0",
+        "MOVL P003 V=15.0 SRCH RIN#(1)=ON T=0.20 DIS=10.0",
+        "MOVL P001 V=25.0",
+        "MOVL P001 V=25.0"
+      ]
+    },
+    {
+      "file": "ST-BOLEC.JBI",
+      "bytes": 3930,
+      "name": "ST-BOLEC",
+      "npos": "26,26,26,0,0,0",
+      "tool": "0",
+      "postype": [
+        "PULSE"
+      ],
+      "groups": [
+        "RB1,BS1",
+        "ST1"
+      ],
+      "counts": {
+        "C": 26,
+        "BC": 26,
+        "EC": 26
+      },
+      "flags": {
+        "ARCON": true,
+        "ARCOF": true,
+        "WVON": true,
+        "MACRO": true,
+        "SMOVL": false,
+        "CALL": false,
+        "PULSE": true,
+        "RECTAN": false
+      },
+      "first_inst": [
+        "MOVJ C00000 BC00000 VJ=90.00 PL=0  +MOVJ EC00000 VJ=0.78",
+        "MOVJ C00001 BC00001 VJ=90.00 PL=0  +MOVJ EC00001 VJ=90.00",
+        "MOVJ C00002 BC00002 VJ=90.00 PL=0  +MOVJ EC00002 VJ=90.00",
+        "MOVJ C00003 BC00003 VJ=90.00 PL=0  +MOVJ EC00003 VJ=90.00",
+        "MACRO1 MJ#(0) ARGF11",
+        "ARCON",
+        "TIMER T=0.30",
+        "MOVJ C00004 BC00004 VJ=90.00 PL=0  +MOVJ EC00004 VJ=90.00"
+      ]
+    },
+    {
+      "file": "ST2.JBI",
+      "bytes": 331,
+      "name": "ST2",
+      "npos": "1,1,1,0,0,0",
+      "tool": "0",
+      "postype": [
+        "PULSE"
+      ],
+      "groups": [
+        "RB1,BS1",
+        "ST2"
+      ],
+      "counts": {
+        "C": 1,
+        "BC": 1,
+        "EC": 1
+      },
+      "flags": {
+        "ARCON": false,
+        "ARCOF": false,
+        "WVON": false,
+        "MACRO": false,
+        "SMOVL": false,
+        "CALL": false,
+        "PULSE": true,
+        "RECTAN": false
+      },
+      "first_inst": [
+        "MOVJ C00000 BC00000 VJ=0.78  +MOVJ EC00000 VJ=0.78",
+        "TIMER T=10.00"
+      ]
+    },
+    {
+      "file": "STACIA2-CERAD1700.JBI",
+      "bytes": 24366,
+      "name": "STACIA2-CERAD1700",
+      "npos": "179,179,179,0,0,0",
+      "tool": "0",
+      "postype": [
+        "PULSE"
+      ],
+      "groups": [
+        "RB1,BS1",
+        "ST1"
+      ],
+      "counts": {
+        "C": 179,
+        "BC": 179,
+        "EC": 179
+      },
+      "flags": {
+        "ARCON": true,
+        "ARCOF": true,
+        "WVON": false,
+        "MACRO": true,
+        "SMOVL": false,
+        "CALL": false,
+        "PULSE": true,
+        "RECTAN": false
+      },
+      "first_inst": [
+        "MOVJ C00000 BC00000 VJ=90.00  +MOVJ EC00000 VJ=90.00",
+        "MOVJ C00001 BC00001 VJ=90.00  +MOVJ EC00001 VJ=90.00",
+        "MOVJ C00002 BC00002 VJ=90.00  +MOVJ EC00002 VJ=90.00",
+        "MOVJ C00003 BC00003 VJ=90.00  +MOVJ EC00003 VJ=90.00",
+        "ARCON",
+        "TIMER T=1.00",
+        "MOVJ C00004 BC00004 VJ=90.00  +MOVJ EC00004 VJ=90.00",
+        "MOVJ C00005 BC00005 VJ=90.00  +MOVJ EC00005 VJ=90.00"
+      ]
+    },
+    {
+      "file": "STACJA_1.JBI",
+      "bytes": 788,
+      "name": "STACJA_1",
+      "npos": "0,0,0,0,0,0",
+      "tool": null,
+      "postype": [],
+      "groups": [
+        "RB1,BS1",
+        "ST1"
+      ],
+      "counts": {
+        "C": 0,
+        "BC": 0,
+        "EC": 0
+      },
+      "flags": {
+        "ARCON": false,
+        "ARCOF": false,
+        "WVON": false,
+        "MACRO": false,
+        "SMOVL": false,
+        "CALL": true,
+        "PULSE": false,
+        "RECTAN": false
+      },
+      "first_inst": [
+        "CALL JOB:RESET-KURTYNY",
+        "CALL JOB:ZAMKNIJ-KURTYNA-STRONA-1",
+        "CALL JOB:ZAMKNIJ-KURTYNA-STRONA-1",
+        "CALL JOB:ZAMKNIJ-KURTYNA-STRONA-1",
+        "CALL JOB:ZAMKNIJ-KURTYNA-STRONA-1",
+        "CALL JOB:OTWORZ-BRAMA-STRONA-1",
+        "TIMER T=1.00",
+        "CALL JOB:KANON-RAMKA120-60"
+      ]
+    },
+    {
+      "file": "STACJA_2.JBI",
+      "bytes": 798,
+      "name": "STACJA_2",
+      "npos": "0,0,0,0,0,0",
+      "tool": null,
+      "postype": [],
+      "groups": [
+        "RB1,BS1",
+        "ST2"
+      ],
+      "counts": {
+        "C": 0,
+        "BC": 0,
+        "EC": 0
+      },
+      "flags": {
+        "ARCON": false,
+        "ARCOF": false,
+        "WVON": false,
+        "MACRO": false,
+        "SMOVL": false,
+        "CALL": true,
+        "PULSE": false,
+        "RECTAN": false
+      },
+      "first_inst": [
+        "CALL JOB:RESET-KURTYNY",
+        "CALL JOB:ZAMKNIJ-KURTYNA-STRONA-2",
+        "CALL JOB:ZAMKNIJ-KURTYNA-STRONA-2",
+        "CALL JOB:ZAMKNIJ-KURTYNA-STRONA-3",
+        "CALL JOB:ZAMKNIJ-KURTYNA-STRONA-4",
+        "CALL JOB:OTWORZ-BRAMA-STRONA-2",
+        "TIMER T=1.00",
+        "CALL JOB:2025-RAMKI-KANION14-60NOWE2"
+      ]
+    },
+    {
+      "file": "STACJA_3-BEZ-CLEAN.JBI",
+      "bytes": 711,
+      "name": "STACJA_3-BEZ-CLEAN",
+      "npos": "0,0,0,0,0,0",
+      "tool": null,
+      "postype": [],
+      "groups": [
+        "RB1,BS1",
+        "ST3"
+      ],
+      "counts": {
+        "C": 0,
+        "BC": 0,
+        "EC": 0
+      },
+      "flags": {
+        "ARCON": false,
+        "ARCOF": false,
+        "WVON": false,
+        "MACRO": false,
+        "SMOVL": false,
+        "CALL": true,
+        "PULSE": false,
+        "RECTAN": false
+      },
+      "first_inst": [
+        "CALL JOB:RESET-KURTYNY",
+        "CALL JOB:ZAMKNIJ-KURTYNA-STRONA-1",
+        "CALL JOB:ZAMKNIJ-KURTYNA-STRONA-2",
+        "CALL JOB:ZAMKNIJ-KURTYNA-STRONA-3",
+        "CALL JOB:ZAMKNIJ-KURTYNA-STRONA-4",
+        "CALL JOB:OTWORZ-BRAMA-STRONA-3",
+        "TIMER T=1.00",
+        "CALL JOB:25RUKA"
+      ]
+    },
+    {
+      "file": "STACJA_3.JBI",
+      "bytes": 756,
+      "name": "STACJA_3",
+      "npos": "0,0,0,0,0,0",
+      "tool": null,
+      "postype": [],
+      "groups": [
+        "RB1,BS1",
+        "ST3"
+      ],
+      "counts": {
+        "C": 0,
+        "BC": 0,
+        "EC": 0
+      },
+      "flags": {
+        "ARCON": false,
+        "ARCOF": false,
+        "WVON": false,
+        "MACRO": false,
+        "SMOVL": false,
+        "CALL": true,
+        "PULSE": false,
+        "RECTAN": false
+      },
+      "first_inst": [
+        "CALL JOB:RESET-KURTYNY",
+        "CALL JOB:ZAMKNIJ-KURTYNA-STRONA-1",
+        "CALL JOB:ZAMKNIJ-KURTYNA-STRONA-2",
+        "CALL JOB:ZAMKNIJ-KURTYNA-STRONA-3",
+        "CALL JOB:ZAMKNIJ-KURTYNA-STRONA-4",
+        "CALL JOB:OTWORZ-BRAMA-STRONA-3",
+        "TIMER T=1.00",
+        "CALL JOB:CEUWKATYGULA"
+      ]
+    },
+    {
+      "file": "STACJA_4.JBI",
+      "bytes": 778,
+      "name": "STACJA_4",
+      "npos": "0,0,0,0,0,0",
+      "tool": null,
+      "postype": [],
+      "groups": [
+        "RB1,BS1",
+        "ST4"
+      ],
+      "counts": {
+        "C": 0,
+        "BC": 0,
+        "EC": 0
+      },
+      "flags": {
+        "ARCON": false,
+        "ARCOF": false,
+        "WVON": false,
+        "MACRO": false,
+        "SMOVL": false,
+        "CALL": true,
+        "PULSE": false,
+        "RECTAN": false
+      },
+      "first_inst": [
+        "CALL JOB:RESET-KURTYNY",
+        "CALL JOB:ZAMKNIJ-KURTYNA-STRONA-1",
+        "CALL JOB:ZAMKNIJ-KURTYNA-STRONA-2",
+        "CALL JOB:ZAMKNIJ-KURTYNA-STRONA-3",
+        "CALL JOB:ZAMKNIJ-KURTYNA-STRONA-4",
+        "CALL JOB:OTWORZ-BRAMA-STRONA-4",
+        "TIMER T=1.00",
+        "CALL JOB:25RUKA"
+      ]
+    },
+    {
+      "file": "SZUKAJ1.JBI",
+      "bytes": 868,
+      "name": "SZUKAJ1",
+      "npos": "6,6,0,1,0,0",
+      "tool": "0",
+      "postype": [
+        "PULSE",
+        "BASE"
+      ],
+      "groups": [
+        "RB1,BS1"
+      ],
+      "counts": {
+        "C": 6,
+        "BC": 6,
+        "EC": 0
+      },
+      "flags": {
+        "ARCON": false,
+        "ARCOF": false,
+        "WVON": false,
+        "MACRO": false,
+        "SMOVL": false,
+        "CALL": true,
+        "PULSE": true,
+        "RECTAN": true
+      },
+      "first_inst": [
+        "MOVL C00000 BC00000 V=8.3",
+        "CALL JOB:SRCH-2D1",
+        "MOVL C00004 BC00004 V=8.3",
+        "MOVL C00005 BC00005 V=8.3"
+      ]
+    },
+    {
+      "file": "TCP-R1-Y-BA.JBI",
+      "bytes": 7099,
+      "name": "TCP-R1-Y-BA",
+      "npos": "0,0,0,6,1,0",
+      "tool": "0",
+      "postype": [
+        "TOOL",
+        "BASE",
+        "USER",
+        "BASE",
+        "USER"
+      ],
+      "groups": [
+        "RB1,BS1"
+      ],
+      "counts": {
+        "C": 0,
+        "BC": 0,
+        "EC": 0
+      },
+      "flags": {
+        "ARCON": false,
+        "ARCOF": false,
+        "WVON": false,
+        "MACRO": false,
+        "SMOVL": false,
+        "CALL": true,
+        "PULSE": false,
+        "RECTAN": true
+      },
+      "first_inst": [
+        "MOVJ P121 BP121 VJ=50.00",
+        "TIMER T=0.10",
+        "TIMER T=0.30",
+        "MOVL P124 BP121 V=166.7 PL=0",
+        "MOVL LP004 V=83.3",
+        "TIMER T=0.20",
+        "MOVL LP001 V=33.3 SRCH RIN#(6)=ON DIS=0.0",
+        "TIMER T=0.20"
+      ]
+    },
+    {
+      "file": "TCP-R1-Y-BAREL.JBI",
+      "bytes": 7122,
+      "name": "TCP-R1-Y-BAREL",
+      "npos": "0,0,0,6,1,0",
+      "tool": "0",
+      "postype": [
+        "TOOL",
+        "BASE",
+        "USER",
+        "BASE",
+        "USER"
+      ],
+      "groups": [
+        "RB1,BS1"
+      ],
+      "counts": {
+        "C": 0,
+        "BC": 0,
+        "EC": 0
+      },
+      "flags": {
+        "ARCON": false,
+        "ARCOF": false,
+        "WVON": false,
+        "MACRO": false,
+        "SMOVL": false,
+        "CALL": true,
+        "PULSE": false,
+        "RECTAN": true
+      },
+      "first_inst": [
+        "MOVJ P121 BP121 VJ=50.00",
+        "TIMER T=0.10",
+        "TIMER T=0.30",
+        "MOVL P124 BP121 V=166.7 PL=0",
+        "MOVL LP004 V=83.3",
+        "TIMER T=0.20",
+        "MOVL LP001 V=33.3 SRCH RIN#(6)=ON DIS=0.0",
+        "TIMER T=0.20"
+      ]
+    },
+    {
+      "file": "TEST-S1.JBI",
+      "bytes": 1109,
+      "name": "TEST-S1",
+      "npos": "7,7,7,0,0,0",
+      "tool": "0",
+      "postype": [
+        "PULSE"
+      ],
+      "groups": [
+        "RB1,BS1",
+        "ST1"
+      ],
+      "counts": {
+        "C": 7,
+        "BC": 7,
+        "EC": 7
+      },
+      "flags": {
+        "ARCON": false,
+        "ARCOF": false,
+        "WVON": false,
+        "MACRO": false,
+        "SMOVL": false,
+        "CALL": false,
+        "PULSE": true,
+        "RECTAN": false
+      },
+      "first_inst": [
+        "MOVJ C00000 BC00000 VJ=10.00  +MOVJ EC00000 VJ=10.00",
+        "MOVJ C00001 BC00001 VJ=10.00  +MOVJ EC00001 VJ=10.00",
+        "MOVJ C00002 BC00002 VJ=10.00  +MOVJ EC00002 VJ=10.00",
+        "MOVJ C00003 BC00003 VJ=10.00  +MOVJ EC00003 VJ=10.00",
+        "MOVJ C00004 BC00004 VJ=50.00  +MOVJ EC00004 VJ=50.00",
+        "MOVJ C00005 BC00005 VJ=50.00  +MOVJ EC00005 VJ=50.00",
+        "TIMER T=5.00",
+        "MOVJ C00006 BC00006 VJ=10.00  +MOVJ EC00006 VJ=10.00"
+      ]
+    },
+    {
+      "file": "TEST-S2.JBI",
+      "bytes": 916,
+      "name": "TEST-S2",
+      "npos": "8,8,0,0,0,0",
+      "tool": "0",
+      "postype": [
+        "PULSE"
+      ],
+      "groups": [
+        "RB1,BS1"
+      ],
+      "counts": {
+        "C": 8,
+        "BC": 8,
+        "EC": 0
+      },
+      "flags": {
+        "ARCON": false,
+        "ARCOF": false,
+        "WVON": false,
+        "MACRO": false,
+        "SMOVL": false,
+        "CALL": false,
+        "PULSE": true,
+        "RECTAN": false
+      },
+      "first_inst": [
+        "MOVJ C00000 BC00000 VJ=10.00",
+        "MOVJ C00001 BC00001 VJ=10.00",
+        "MOVJ C00002 BC00002 VJ=10.00",
+        "MOVJ C00003 BC00003 VJ=50.00",
+        "MOVJ C00004 BC00004 VJ=50.00",
+        "MOVJ C00005 BC00005 VJ=50.00",
+        "TIMER T=5.00",
+        "MOVJ C00006 BC00006 VJ=50.00"
+      ]
+    },
+    {
+      "file": "TEST-S3.JBI",
+      "bytes": 1673,
+      "name": "TEST-S3",
+      "npos": "11,11,11,0,0,0",
+      "tool": "0",
+      "postype": [
+        "PULSE"
+      ],
+      "groups": [
+        "RB1,BS1",
+        "ST3"
+      ],
+      "counts": {
+        "C": 11,
+        "BC": 11,
+        "EC": 11
+      },
+      "flags": {
+        "ARCON": false,
+        "ARCOF": false,
+        "WVON": false,
+        "MACRO": false,
+        "SMOVL": false,
+        "CALL": false,
+        "PULSE": true,
+        "RECTAN": false
+      },
+      "first_inst": [
+        "MOVJ C00000 BC00000 VJ=10.00  +MOVJ EC00000 VJ=10.00",
+        "MOVJ C00001 BC00001 VJ=10.00  +MOVJ EC00001 VJ=10.00",
+        "MOVJ C00002 BC00002 VJ=10.00  +MOVJ EC00002 VJ=10.00",
+        "MOVJ C00003 BC00003 VJ=10.00  +MOVJ EC00003 VJ=10.00",
+        "MOVJ C00004 BC00004 VJ=10.00  +MOVJ EC00004 VJ=10.00",
+        "MOVJ C00005 BC00005 VJ=10.00  +MOVJ EC00005 VJ=10.00",
+        "MOVJ C00006 BC00006 VJ=10.00  +MOVJ EC00006 VJ=10.00",
+        "MOVJ C00007 BC00007 VJ=50.00  +MOVJ EC00007 VJ=50.00"
+      ]
+    },
+    {
+      "file": "TEST-S4.JBI",
+      "bytes": 1268,
+      "name": "TEST-S4",
+      "npos": "8,8,8,0,0,0",
+      "tool": "0",
+      "postype": [
+        "PULSE"
+      ],
+      "groups": [
+        "RB1,BS1",
+        "ST4"
+      ],
+      "counts": {
+        "C": 8,
+        "BC": 8,
+        "EC": 8
+      },
+      "flags": {
+        "ARCON": false,
+        "ARCOF": false,
+        "WVON": false,
+        "MACRO": false,
+        "SMOVL": false,
+        "CALL": false,
+        "PULSE": true,
+        "RECTAN": false
+      },
+      "first_inst": [
+        "MOVJ C00000 BC00000 VJ=10.00  +MOVJ EC00000 VJ=10.00",
+        "MOVJ C00001 BC00001 VJ=10.00  +MOVJ EC00001 VJ=10.00",
+        "MOVJ C00002 BC00002 VJ=10.00  +MOVJ EC00002 VJ=10.00",
+        "MOVJ C00003 BC00003 VJ=10.00  +MOVJ EC00003 VJ=10.00",
+        "MOVJ C00004 BC00004 VJ=10.00  +MOVJ EC00004 VJ=10.00",
+        "MOVJ C00005 BC00005 VJ=50.00  +MOVJ EC00005 VJ=50.00",
+        "TIMER T=5.00",
+        "MOVJ C00006 BC00006 VJ=50.00  +MOVJ EC00006 VJ=50.00"
+      ]
+    },
+    {
+      "file": "TEST-ST1.JBI",
+      "bytes": 865,
+      "name": "TEST-ST1",
+      "npos": "5,5,5,0,0,0",
+      "tool": "0",
+      "postype": [
+        "PULSE"
+      ],
+      "groups": [
+        "RB1,BS1",
+        "ST1"
+      ],
+      "counts": {
+        "C": 5,
+        "BC": 5,
+        "EC": 5
+      },
+      "flags": {
+        "ARCON": false,
+        "ARCOF": false,
+        "WVON": false,
+        "MACRO": false,
+        "SMOVL": true,
+        "CALL": false,
+        "PULSE": true,
+        "RECTAN": false
+      },
+      "first_inst": [
+        "MOVJ C00000 BC00000 VJ=30.00  +MOVJ EC00000 VJ=50.00",
+        "MOVJ C00001 BC00001 VJ=50.00  +MOVJ EC00001 VJ=50.00",
+        "MOVJ C00003 BC00003 VJ=50.00  +MOVJ EC00003 VJ=50.00",
+        "MOVJ C00004 BC00004 VJ=100.00  +MOVJ EC00004 VJ=100.00"
+      ]
+    },
+    {
+      "file": "TEST-ST2.JBI",
+      "bytes": 1265,
+      "name": "TEST-ST2",
+      "npos": "8,8,8,0,0,0",
+      "tool": "0",
+      "postype": [
+        "PULSE"
+      ],
+      "groups": [
+        "RB1,BS1",
+        "ST2"
+      ],
+      "counts": {
+        "C": 8,
+        "BC": 8,
+        "EC": 8
+      },
+      "flags": {
+        "ARCON": false,
+        "ARCOF": false,
+        "WVON": false,
+        "MACRO": false,
+        "SMOVL": true,
+        "CALL": false,
+        "PULSE": true,
+        "RECTAN": false
+      },
+      "first_inst": [
+        "MOVJ C00000 BC00000 VJ=30.00  +MOVJ EC00000 VJ=50.00",
+        "MOVJ C00001 BC00001 VJ=50.00  +MOVJ EC00001 VJ=50.00",
+        "MOVJ C00002 BC00002 VJ=50.00  +MOVJ EC00002 VJ=50.00",
+        "MOVJ C00003 BC00003 VJ=50.00  +MOVJ EC00003 VJ=50.00",
+        "MOVL C00006 BC00006 V=83.3  +MOVJ EC00006 VJ=50.00",
+        "MOVJ C00007 BC00007 VJ=50.00  +MOVJ EC00007 VJ=50.00"
+      ]
+    },
+    {
+      "file": "TEST0904.JBI",
+      "bytes": 327,
+      "name": "TEST0904",
+      "npos": "1,1,1,0,0,0",
+      "tool": "0",
+      "postype": [
+        "PULSE"
+      ],
+      "groups": [
+        "RB1,BS1",
+        "ST1"
+      ],
+      "counts": {
+        "C": 1,
+        "BC": 1,
+        "EC": 1
+      },
+      "flags": {
+        "ARCON": false,
+        "ARCOF": false,
+        "WVON": false,
+        "MACRO": false,
+        "SMOVL": false,
+        "CALL": false,
+        "PULSE": true,
+        "RECTAN": false
+      },
+      "first_inst": [
+        "MOVJ C00000 BC00000 VJ=55.00 ACC=20 DEC=20  +MOVJ EC00000 VJ=70.00"
+      ]
+    },
+    {
+      "file": "TEST2024.JBI",
+      "bytes": 4149,
+      "name": "TEST2024",
+      "npos": "27,27,27,0,0,0",
+      "tool": "0",
+      "postype": [
+        "PULSE"
+      ],
+      "groups": [
+        "RB1,BS1",
+        "ST1"
+      ],
+      "counts": {
+        "C": 27,
+        "BC": 27,
+        "EC": 27
+      },
+      "flags": {
+        "ARCON": true,
+        "ARCOF": true,
+        "WVON": false,
+        "MACRO": false,
+        "SMOVL": false,
+        "CALL": false,
+        "PULSE": true,
+        "RECTAN": false
+      },
+      "first_inst": [
+        "MOVJ C00000 BC00000 VJ=80.00 ACC=20 DEC=20  +MOVJ EC00000 VJ=0.78",
+        "MOVJ C00001 BC00001 VJ=50.00 ACC=20 DEC=20  +MOVJ EC00001 VJ=0.78",
+        "MOVJ C00002 BC00002 VJ=55.00 ACC=20 DEC=20  +MOVJ EC00002 VJ=80.00",
+        "MOVJ C00003 BC00003 VJ=55.00 ACC=20 DEC=20  +MOVJ EC00003 VJ=80.00",
+        "MOVJ C00004 BC00004 VJ=0.61 ACC=20 DEC=20  +MOVJ EC00004 VJ=80.00",
+        "ARCON",
+        "MOVL C00005 BC00005 V=11.0 ACC=20 DEC=20  +MOVJ EC00005 VJ=80.00",
+        "MOVJ C00006 BC00006 VJ=55.00 ACC=20 DEC=20  +MOVJ EC00006 VJ=80.00"
+      ]
+    },
+    {
+      "file": "test_r1s2.JBI",
+      "bytes": 1052,
+      "name": "test_r1s2",
+      "npos": "6,6,6,0,0,0",
+      "tool": "0",
+      "postype": [
+        "PULSE"
+      ],
+      "groups": [
+        "RB1,BS1",
+        "ST2"
+      ],
+      "counts": {
+        "C": 6,
+        "BC": 6,
+        "EC": 6
+      },
+      "flags": {
+        "ARCON": true,
+        "ARCOF": true,
+        "WVON": false,
+        "MACRO": true,
+        "SMOVL": false,
+        "CALL": false,
+        "PULSE": true,
+        "RECTAN": false
+      },
+      "first_inst": [
+        "MOVJ C00000 BC00000 VJ=20.00  +MOVJ EC00000 VJ=20.00",
+        "MOVJ C00001 BC00001 VJ=20.00  +MOVJ EC00001 VJ=20.00",
+        "MOVJ C00002 BC00002 VJ=20.00  +MOVJ EC00002 VJ=20.00",
+        "MOVJ C00003 BC00003 VJ=20.00 PL=0  +MOVJ EC00003 VJ=20.00",
+        "MACRO1 MJ#(0) ARGF2",
+        "ARCON",
+        "MOVL C00004 BC00004 V=11.0  +MOVJ EC00004 VJ=20.00",
+        "MOVJ C00005 BC00005 VJ=20.00  +MOVJ EC00005 VJ=20.00"
+      ]
+    },
+    {
+      "file": "test_rama.JBI",
+      "bytes": 1395,
+      "name": "test_rama",
+      "npos": "9,9,9,0,0,0",
+      "tool": "0",
+      "postype": [
+        "PULSE"
+      ],
+      "groups": [
+        "RB1,BS1",
+        "ST2"
+      ],
+      "counts": {
+        "C": 9,
+        "BC": 9,
+        "EC": 9
+      },
+      "flags": {
+        "ARCON": false,
+        "ARCOF": false,
+        "WVON": false,
+        "MACRO": false,
+        "SMOVL": false,
+        "CALL": false,
+        "PULSE": true,
+        "RECTAN": false
+      },
+      "first_inst": [
+        "MOVL C00000 BC00000 V=16.7  +MOVJ EC00000 VJ=20.00",
+        "MOVL C00001 BC00001 V=16.7  +MOVJ EC00001 VJ=20.00",
+        "MOVL C00002 BC00002 V=16.7  +MOVJ EC00002 VJ=20.00",
+        "MOVL C00003 BC00003 V=16.7  +MOVJ EC00003 VJ=20.00",
+        "MOVL C00004 BC00004 V=16.7  +MOVJ EC00004 VJ=20.00",
+        "MOVL C00005 BC00005 V=16.7  +MOVJ EC00005 VJ=20.00",
+        "MOVL C00006 BC00006 V=16.7  +MOVJ EC00006 VJ=20.00",
+        "MOVL C00007 BC00007 V=8.3  +MOVJ EC00007 VJ=20.00"
+      ]
+    },
+    {
+      "file": "tests2.JBI",
+      "bytes": 1061,
+      "name": "tests2",
+      "npos": "6,6,6,0,0,0",
+      "tool": "0",
+      "postype": [
+        "PULSE"
+      ],
+      "groups": [
+        "RB1,BS1",
+        "ST2"
+      ],
+      "counts": {
+        "C": 6,
+        "BC": 6,
+        "EC": 6
+      },
+      "flags": {
+        "ARCON": true,
+        "ARCOF": true,
+        "WVON": true,
+        "MACRO": true,
+        "SMOVL": false,
+        "CALL": false,
+        "PULSE": true,
+        "RECTAN": false
+      },
+      "first_inst": [
+        "MOVJ C00000 BC00000 VJ=80.00  +MOVJ EC00000 VJ=0.78",
+        "MOVJ C00001 BC00001 VJ=80.00  +MOVJ EC00001 VJ=0.78",
+        "MOVJ C00002 BC00002 VJ=80.00  +MOVJ EC00002 VJ=80.00",
+        "MOVL C00003 BC00003 V=333.3  +MOVJ EC00003 VJ=80.00",
+        "MACRO1 MJ#(0) ARGF2",
+        "ARCON",
+        "MOVL C00004 BC00004 V=1.7  +MOVJ EC00004 VJ=80.00",
+        "MOVJ C00005 BC00005 VJ=80.00  +MOVJ EC00005 VJ=80.00"
+      ]
+    },
+    {
+      "file": "UL-1-RACZKA-L.JBI",
+      "bytes": 6437,
+      "name": "UL-1-RACZKA-L",
+      "npos": "46,46,46,0,0,0",
+      "tool": "0",
+      "postype": [
+        "PULSE"
+      ],
+      "groups": [
+        "RB1,BS1",
+        "ST3"
+      ],
+      "counts": {
+        "C": 46,
+        "BC": 46,
+        "EC": 46
+      },
+      "flags": {
+        "ARCON": true,
+        "ARCOF": true,
+        "WVON": true,
+        "MACRO": true,
+        "SMOVL": false,
+        "CALL": false,
+        "PULSE": true,
+        "RECTAN": false
+      },
+      "first_inst": [
+        "MOVJ C00000 BC00000 VJ=90.00  +MOVJ EC00000 VJ=0.78",
+        "MOVJ C00001 BC00001 VJ=90.00  +MOVJ EC00001 VJ=90.00",
+        "MOVJ C00002 BC00002 VJ=90.00  +MOVJ EC00002 VJ=90.00",
+        "MOVJ C00003 BC00003 VJ=85.00  +MOVJ EC00003 VJ=90.00",
+        "MACRO1 MJ#(0) ARGF20",
+        "ARCON",
+        "MOVC C00004 BC00004 V=3.2 PL=0  +MOVJ EC00004 VJ=90.00",
+        "MOVC C00005 BC00005 V=3.2  +MOVJ EC00005 VJ=90.00"
+      ]
+    },
+    {
+      "file": "UL-1RACZKA-P.JBI",
+      "bytes": 5396,
+      "name": "UL-1RACZKA-P",
+      "npos": "39,39,39,0,0,0",
+      "tool": "0",
+      "postype": [
+        "PULSE"
+      ],
+      "groups": [
+        "RB1,BS1",
+        "ST3"
+      ],
+      "counts": {
+        "C": 39,
+        "BC": 39,
+        "EC": 39
+      },
+      "flags": {
+        "ARCON": true,
+        "ARCOF": true,
+        "WVON": true,
+        "MACRO": true,
+        "SMOVL": false,
+        "CALL": false,
+        "PULSE": true,
+        "RECTAN": false
+      },
+      "first_inst": [
+        "MOVJ C00000 BC00000 VJ=80.00  +MOVJ EC00000 VJ=80.00",
+        "MOVJ C00001 BC00001 VJ=80.00  +MOVJ EC00001 VJ=0.78",
+        "MOVJ C00002 BC00002 VJ=80.00  +MOVJ EC00002 VJ=80.00",
+        "MOVJ C00003 BC00003 VJ=80.00  +MOVJ EC00003 VJ=80.00",
+        "MACRO1 MJ#(0) ARGF20",
+        "ARCON",
+        "MOVC C00004 BC00004 V=3.0  +MOVJ EC00004 VJ=80.00",
+        "MOVC C00005 BC00005 V=3.0  +MOVJ EC00005 VJ=80.00"
+      ]
+    },
+    {
+      "file": "UL-2-RACZKA-L.JBI",
+      "bytes": 6001,
+      "name": "UL-2-RACZKA-L",
+      "npos": "43,43,43,0,0,0",
+      "tool": "0",
+      "postype": [
+        "PULSE"
+      ],
+      "groups": [
+        "RB1,BS1",
+        "ST3"
+      ],
+      "counts": {
+        "C": 43,
+        "BC": 43,
+        "EC": 43
+      },
+      "flags": {
+        "ARCON": true,
+        "ARCOF": true,
+        "WVON": true,
+        "MACRO": true,
+        "SMOVL": false,
+        "CALL": false,
+        "PULSE": true,
+        "RECTAN": false
+      },
+      "first_inst": [
+        "MOVJ C00000 BC00000 VJ=80.00  +MOVJ EC00000 VJ=80.00",
+        "MOVJ C00001 BC00001 VJ=80.00  +MOVJ EC00001 VJ=0.78",
+        "MOVJ C00002 BC00002 VJ=90.00 PL=0  +MOVJ EC00002 VJ=0.78",
+        "MOVJ C00003 BC00003 VJ=80.00  +MOVJ EC00003 VJ=80.00",
+        "MOVJ C00004 BC00004 VJ=80.00  +MOVJ EC00004 VJ=80.00",
+        "MACRO1 MJ#(0) ARGF20",
+        "ARCON",
+        "MOVC C00005 BC00005 V=4.3  +MOVJ EC00005 VJ=0.78"
+      ]
+    },
+    {
+      "file": "UL-2ROCKA-P.JBI",
+      "bytes": 6322,
+      "name": "UL-2ROCKA-P",
+      "npos": "44,44,44,0,0,0",
+      "tool": "0",
+      "postype": [
+        "PULSE"
+      ],
+      "groups": [
+        "RB1,BS1",
+        "ST3"
+      ],
+      "counts": {
+        "C": 44,
+        "BC": 44,
+        "EC": 44
+      },
+      "flags": {
+        "ARCON": true,
+        "ARCOF": true,
+        "WVON": true,
+        "MACRO": true,
+        "SMOVL": false,
+        "CALL": false,
+        "PULSE": true,
+        "RECTAN": false
+      },
+      "first_inst": [
+        "MOVJ C00000 BC00000 VJ=90.00  +MOVJ EC00000 VJ=0.78",
+        "MOVJ C00001 BC00001 VJ=75.00  +MOVJ EC00001 VJ=90.00",
+        "MOVJ C00002 BC00002 VJ=75.00  +MOVJ EC00002 VJ=90.00",
+        "MOVJ C00003 BC00003 VJ=90.00  +MOVJ EC00003 VJ=0.78",
+        "MOVJ C00004 BC00004 VJ=75.00  +MOVJ EC00004 VJ=90.00",
+        "MACRO1 MJ#(0) ARGF20",
+        "ARCON",
+        "MOVC C00005 BC00005 V=3.3  +MOVJ EC00005 VJ=90.00"
+      ]
+    },
+    {
+      "file": "UL1_S4.JBI",
+      "bytes": 6103,
+      "name": "UL1_S4",
+      "npos": "44,44,44,0,0,0",
+      "tool": "0",
+      "postype": [
+        "PULSE"
+      ],
+      "groups": [
+        "RB1,BS1",
+        "ST4"
+      ],
+      "counts": {
+        "C": 44,
+        "BC": 44,
+        "EC": 44
+      },
+      "flags": {
+        "ARCON": true,
+        "ARCOF": true,
+        "WVON": true,
+        "MACRO": true,
+        "SMOVL": false,
+        "CALL": false,
+        "PULSE": true,
+        "RECTAN": false
+      },
+      "first_inst": [
+        "MOVJ C00000 BC00000 VJ=90.00  +MOVJ EC00000 VJ=90.00",
+        "MOVJ C00001 BC00001 VJ=90.00  +MOVJ EC00001 VJ=90.00",
+        "MOVJ C00002 BC00002 VJ=90.00  +MOVJ EC00002 VJ=90.00",
+        "MOVJ C00003 BC00003 VJ=90.00  +MOVJ EC00003 VJ=90.00",
+        "MOVJ C00004 BC00004 VJ=90.00  +MOVJ EC00004 VJ=90.00",
+        "MOVJ C00005 BC00005 VJ=90.00  +MOVJ EC00005 VJ=90.00",
+        "MACRO1 MJ#(0) ARGF20",
+        "ARCON"
+      ]
+    },
+    {
+      "file": "UL2-STACJA4.JBI",
+      "bytes": 6049,
+      "name": "UL2-STACJA4",
+      "npos": "43,43,43,0,0,0",
+      "tool": "0",
+      "postype": [
+        "PULSE"
+      ],
+      "groups": [
+        "RB1,BS1",
+        "ST4"
+      ],
+      "counts": {
+        "C": 43,
+        "BC": 43,
+        "EC": 43
+      },
+      "flags": {
+        "ARCON": true,
+        "ARCOF": true,
+        "WVON": true,
+        "MACRO": true,
+        "SMOVL": false,
+        "CALL": false,
+        "PULSE": true,
+        "RECTAN": false
+      },
+      "first_inst": [
+        "MOVJ C00000 BC00000 VJ=90.00  +MOVJ EC00000 VJ=0.78",
+        "MOVJ C00001 BC00001 VJ=90.00  +MOVJ EC00001 VJ=90.00",
+        "MOVJ C00002 BC00002 VJ=90.00  +MOVJ EC00002 VJ=90.00",
+        "MOVJ C00003 BC00003 VJ=90.00  +MOVJ EC00003 VJ=90.00",
+        "MOVJ C00004 BC00004 VJ=90.00  +MOVJ EC00004 VJ=90.00",
+        "MACRO1 MJ#(0) ARGF20",
+        "ARCON",
+        "MOVC C00005 BC00005 V=3.3  +MOVJ EC00005 VJ=90.00"
+      ]
+    },
+    {
+      "file": "UP1-STACJA4.JBI",
+      "bytes": 5802,
+      "name": "UP1-STACJA4",
+      "npos": "41,41,41,0,0,0",
+      "tool": "0",
+      "postype": [
+        "PULSE"
+      ],
+      "groups": [
+        "RB1,BS1",
+        "ST4"
+      ],
+      "counts": {
+        "C": 41,
+        "BC": 41,
+        "EC": 41
+      },
+      "flags": {
+        "ARCON": true,
+        "ARCOF": true,
+        "WVON": true,
+        "MACRO": true,
+        "SMOVL": false,
+        "CALL": false,
+        "PULSE": true,
+        "RECTAN": false
+      },
+      "first_inst": [
+        "MOVJ C00000 BC00000 VJ=90.00  +MOVJ EC00000 VJ=0.78",
+        "MOVJ C00001 BC00001 VJ=90.00  +MOVJ EC00001 VJ=90.00",
+        "MOVJ C00002 BC00002 VJ=90.00  +MOVJ EC00002 VJ=90.00",
+        "MOVJ C00003 BC00003 VJ=90.00  +MOVJ EC00003 VJ=90.00",
+        "MOVJ C00004 BC00004 VJ=90.00  +MOVJ EC00004 VJ=90.00",
+        "MACRO1 MJ#(0) ARGF20",
+        "ARCON",
+        "MOVC C00005 BC00005 V=3.3  +MOVJ EC00005 VJ=90.00"
+      ]
+    },
+    {
+      "file": "UP2-STACJA4.JBI",
+      "bytes": 5626,
+      "name": "UP2-STACJA4",
+      "npos": "40,40,40,0,0,0",
+      "tool": "0",
+      "postype": [
+        "PULSE"
+      ],
+      "groups": [
+        "RB1,BS1",
+        "ST4"
+      ],
+      "counts": {
+        "C": 40,
+        "BC": 40,
+        "EC": 40
+      },
+      "flags": {
+        "ARCON": true,
+        "ARCOF": true,
+        "WVON": true,
+        "MACRO": true,
+        "SMOVL": false,
+        "CALL": false,
+        "PULSE": true,
+        "RECTAN": false
+      },
+      "first_inst": [
+        "MOVJ C00000 BC00000 VJ=90.00  +MOVJ EC00000 VJ=0.78",
+        "MOVJ C00001 BC00001 VJ=90.00  +MOVJ EC00001 VJ=90.00",
+        "MOVJ C00002 BC00002 VJ=90.00  +MOVJ EC00002 VJ=90.00",
+        "MOVJ C00003 BC00003 VJ=90.00  +MOVJ EC00003 VJ=90.00",
+        "MOVJ C00004 BC00004 VJ=90.00  +MOVJ EC00004 VJ=0.78",
+        "MOVJ C00005 BC00005 VJ=90.00  +MOVJ EC00005 VJ=90.00",
+        "MACRO1 MJ#(0) ARGF20",
+        "ARCON"
+      ]
+    },
+    {
+      "file": "ZAMKNIJ-KURTYNA-STRONA-1.JBI",
+      "bytes": 249,
+      "name": "ZAMKNIJ-KURTYNA-STRONA-1",
+      "npos": "0,0,0,0,0,0",
+      "tool": null,
+      "postype": [],
+      "groups": [],
+      "counts": {
+        "C": 0,
+        "BC": 0,
+        "EC": 0
+      },
+      "flags": {
+        "ARCON": false,
+        "ARCOF": false,
+        "WVON": false,
+        "MACRO": false,
+        "SMOVL": false,
+        "CALL": false,
+        "PULSE": false,
+        "RECTAN": false
+      },
+      "first_inst": []
+    },
+    {
+      "file": "ZAMKNIJ-KURTYNA-STRONA-2.JBI",
+      "bytes": 233,
+      "name": "ZAMKNIJ-KURTYNA-STRONA-2",
+      "npos": "0,0,0,0,0,0",
+      "tool": null,
+      "postype": [],
+      "groups": [],
+      "counts": {
+        "C": 0,
+        "BC": 0,
+        "EC": 0
+      },
+      "flags": {
+        "ARCON": false,
+        "ARCOF": false,
+        "WVON": false,
+        "MACRO": false,
+        "SMOVL": false,
+        "CALL": false,
+        "PULSE": false,
+        "RECTAN": false
+      },
+      "first_inst": []
+    },
+    {
+      "file": "ZAMKNIJ-KURTYNA-STRONA-3.JBI",
+      "bytes": 234,
+      "name": "ZAMKNIJ-KURTYNA-STRONA-3",
+      "npos": "0,0,0,0,0,0",
+      "tool": null,
+      "postype": [],
+      "groups": [],
+      "counts": {
+        "C": 0,
+        "BC": 0,
+        "EC": 0
+      },
+      "flags": {
+        "ARCON": false,
+        "ARCOF": false,
+        "WVON": false,
+        "MACRO": false,
+        "SMOVL": false,
+        "CALL": false,
+        "PULSE": false,
+        "RECTAN": false
+      },
+      "first_inst": []
+    },
+    {
+      "file": "ZAMKNIJ-KURTYNA-STRONA-4.JBI",
+      "bytes": 232,
+      "name": "ZAMKNIJ-KURTYNA-STRONA-4",
+      "npos": "0,0,0,0,0,0",
+      "tool": null,
+      "postype": [],
+      "groups": [],
+      "counts": {
+        "C": 0,
+        "BC": 0,
+        "EC": 0
+      },
+      "flags": {
+        "ARCON": false,
+        "ARCOF": false,
+        "WVON": false,
+        "MACRO": false,
+        "SMOVL": false,
+        "CALL": false,
+        "PULSE": false,
+        "RECTAN": false
+      },
+      "first_inst": []
+    }
+  ],
+  "dat": {
+    "ABSO.DAT": {
+      "bytes": 1225,
+      "lines": 66,
+      "first": [
+        "//ABSO",
+        "///RBPRM 63,63,1,1,1,3,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,4,1",
+        "1,-1883,1,-77806,1,70287,1,4070",
+        "1,-2798,1,-21047,0,0,0,0",
+        "1,893,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0",
+        "1,1582,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0",
+        "1,1250,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0",
+        "1,1684,1,9788,0,0,0,0",
+        "0,0,0,0,0,0,0,0",
+        "1,679,1,-8784,0,0,0,0",
+        "0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0"
+      ],
+      "headers": [
+        "//ABSO",
+        "///RBPRM 63,63,1,1,1,3,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,4,1"
+      ]
+    },
+    "ALMHIST.DAT": {
+      "bytes": 88147,
+      "lines": 4815,
+      "first": [
+        "//ALMHIST",
+        "///MAJOR",
+        "100",
+        "95",
+        "",
+        "1876,B��D MONIT. KARTY WEJ./WYJ. SYST,,[203],,ODTWARZANIE,MS#2",
+        "2025-RAMKI-KANION14-60NOWE2,199,127,ALARM",
+        ",0,0,********",
+        ",0,0,********",
+        ",0,0,********",
+        ",0,0,********",
+        ",0,0,********",
+        ",0,0,********",
+        ",0,0,********",
+        "2026/09/11 09:33:15",
+        "",
+        "",
+        "1865,B��D KOM. KARTY WEJ./WYJ. SYST. ,,[105],,ODTWARZANIE,MS#2",
+        "2025-RAMKI-KANION14-60NOWE2,199,127,ALARM",
+        ",0,0,********"
+      ],
+      "headers": [
+        "//ALMHIST",
+        "///MAJOR",
+        "///MINOR",
+        "///IO_SYS",
+        "///IO_USR",
+        "///IO_USR",
+        "///OFFLINE"
+      ]
+    },
+    "ARCSUP.DAT": {
+      "bytes": 1304,
+      "lines": 120,
+      "first": [
+        "//ARCSUP 1",
+        "0",
+        "1",
+        "0.10,10.0,0,5.0",
+        "100,100,17.0",
+        "0",
+        "5.0,5.0",
+        "100,100,17.0",
+        "0,0,0",
+        "3,1",
+        "110,0,0,0",
+        "120,0,0,0",
+        "19.0,0.0,0.0,0.0",
+        "0.30,0.00,0.00,0.00,0.0,0.0,2.0",
+        "0",
+        "//ARCSUP 2",
+        "0",
+        "1",
+        "0.10,10.0,0,5.0",
+        "100,100,17.0"
+      ],
+      "headers": [
+        "//ARCSUP 1",
+        "//ARCSUP 2",
+        "//ARCSUP 3",
+        "//ARCSUP 4",
+        "//ARCSUP 5",
+        "//ARCSUP 6",
+        "//ARCSUP 7",
+        "//ARCSUP 8"
+      ]
+    },
+    "CIOPRG.LST": {
+      "bytes": 23640,
+      "lines": 2231,
+      "first": [
+        "/CIOPRG DN",
+        "//NAME ARCWELD",
+        "//ATTR SC",
+        "//CIOAP ARC",
+        "//$M",
+        "30,10,2,3,5,1,1,3,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "//KEY 0",
+        "PART 1",
+        "STR-NOT #70016",
+        "OUT #70016",
+        "PART 2",
+        "STR #50054",
+        "TMR M476,5"
+      ],
+      "headers": [
+        "/CIOPRG DN",
+        "//NAME ARCWELD",
+        "//ATTR SC",
+        "//CIOAP ARC",
+        "//$M",
+        "//KEY 0",
+        "//ALARM1",
+        "//ALARM2",
+        "//MESSAGE1",
+        "//MESSAGE2"
+      ]
+    },
+    "EIOALLOC.DAT": {
+      "bytes": 18954,
+      "lines": 1037,
+      "first": [
+        "//EIOALLOC",
+        "///SYSTEM",
+        "5,5,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0",
+        "5,5,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0",
+        "1,6,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0",
+        "1,6,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0",
+        "8,55,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0",
+        "0",
+        "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0",
+        "///INPUT",
+        "0,1,0,0,0,0,0,5,YSF21",
+        "0,6,1,0,0,0,0,5,XOI02",
+        "0,0,0,0,0,0,0,0,",
+        "0,0,0,0,0,0,0,0,",
+        "0,0,0,0,0,0,0,0,",
+        "0,0,0,0,0,0,0,0,",
+        "0,0,0,0,0,0,0,0,",
+        "0,0,0,0,0,0,0,0,"
+      ],
+      "headers": [
+        "//EIOALLOC",
+        "///SYSTEM",
+        "///INPUT",
+        "///OUTPUT"
+      ]
+    },
+    "ENCHEAT.DAT": {
+      "bytes": 6007,
+      "lines": 224,
+      "first": [
+        "//ENCHEAT 1",
+        "0,0,0,0,0,0,0,0",
+        "1555116853,1555116853,1555116853,1555116853,1555116853,1555116853,1555116853,1555116853",
+        "0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0",
+        "//ENCHEAT 2",
+        "0,0,0,0,0,0,0,0",
+        "1555116853,1555116853,1555116853,1555116853,1555116853,1555116853,1555116853,1555116853",
+        "0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0",
+        "//ENCHEAT 3",
+        "0,0,0,0,0,0,0,0",
+        "1555116853,1555116853,1555116853,1555116853,1555116853,1555116853,1555116853,1555116853",
+        "0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0"
+      ],
+      "headers": [
+        "//ENCHEAT 1",
+        "//ENCHEAT 2",
+        "//ENCHEAT 3",
+        "//ENCHEAT 4",
+        "//ENCHEAT 5",
+        "//ENCHEAT 6",
+        "//ENCHEAT 7",
+        "//ENCHEAT 8",
+        "//ENCHEAT 9",
+        "//ENCHEAT 10",
+        "//ENCHEAT 11",
+        "//ENCHEAT 12",
+        "//ENCHEAT 13",
+        "//ENCHEAT 14",
+        "//ENCHEAT 15",
+        "//ENCHEAT 16",
+        "//ENCHEAT 17",
+        "//ENCHEAT 18",
+        "//ENCHEAT 19",
+        "//ENCHEAT 20",
+        "//ENCHEAT 21",
+        "//ENCHEAT 22",
+        "//ENCHEAT 23",
+        "//ENCHEAT 24",
+        "//ENCHEAT 25",
+        "//ENCHEAT 26",
+        "//ENCHEAT 27",
+        "//ENCHEAT 28",
+        "//ENCHEAT 29",
+        "//ENCHEAT 30"
+      ]
+    },
+    "EXIONAME.DAT": {
+      "bytes": 10268,
+      "lines": 2051,
+      "first": [
+        "/EXIONAME",
+        "//EXIN",
+        ",,,",
+        ",,,",
+        ",,,",
+        ",,,",
+        ",,,",
+        ",,,",
+        ",,,",
+        ",,,",
+        ",,,",
+        ",,,",
+        ",,,",
+        ",,,",
+        ",,,",
+        ",,,",
+        ",,,",
+        ",,,",
+        ",,,",
+        ",,,"
+      ],
+      "headers": [
+        "/EXIONAME",
+        "//EXIN",
+        "//EXOUT"
+      ]
+    },
+    "HOME2.DAT": {
+      "bytes": 829,
+      "lines": 98,
+      "first": [
+        "//HOME2",
+        "///GROUP 63,63,1,1,1,3,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,4,1",
+        "0,0",
+        "0,0,0,0",
+        "0,0,0,0",
+        "0,0",
+        "0,0,0,0",
+        "0,0,0,0",
+        "0,0",
+        "0,0,0,0",
+        "0,0,0,0",
+        "0,0",
+        "0,0,0,0",
+        "0,0,0,0",
+        "0,0",
+        "0,0,0,0",
+        "0,0,0,0",
+        "0,0",
+        "0,0,0,0",
+        "0,0,0,0"
+      ],
+      "headers": [
+        "//HOME2",
+        "///GROUP 63,63,1,1,1,3,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,4,1"
+      ]
+    },
+    "IFPANEL.DAT": {
+      "bytes": 20763,
+      "lines": 510,
+      "first": [
+        "//IFPANEL 1",
+        "///NAME Panel 1,Panel 1",
+        "1A,0,0,0,0,,,,0,0,0,0,0,0,0,0,0,0,0,,,,0",
+        "1B,0,0,0,0,,,,0,0,0,0,0,0,0,0,0,0,0,,,,0",
+        "1C,0,0,0,0,,,,0,0,0,0,0,0,0,0,0,0,0,,,,0",
+        "1D,0,0,0,0,,,,0,0,0,0,0,0,0,0,0,0,0,,,,0",
+        "1E,0,0,0,0,,,,0,0,0,0,0,0,0,0,0,0,0,,,,0",
+        "1F,0,0,0,0,,,,0,0,0,0,0,0,0,0,0,0,0,,,,0",
+        "1G,0,0,0,0,,,,0,0,0,0,0,0,0,0,0,0,0,,,,0",
+        "1H,0,0,0,0,,,,0,0,0,0,0,0,0,0,0,0,0,,,,0",
+        "2A,0,0,0,0,,,,0,0,0,0,0,0,0,0,0,0,0,,,,0",
+        "2B,0,0,0,0,,,,0,0,0,0,0,0,0,0,0,0,0,,,,0",
+        "2C,0,0,0,0,,,,0,0,0,0,0,0,0,0,0,0,0,,,,0",
+        "2D,0,0,0,0,,,,0,0,0,0,0,0,0,0,0,0,0,,,,0",
+        "2E,0,0,0,0,,,,0,0,0,0,0,0,0,0,0,0,0,,,,0",
+        "2F,0,0,0,0,,,,0,0,0,0,0,0,0,0,0,0,0,,,,0",
+        "2G,0,0,0,0,,,,0,0,0,0,0,0,0,0,0,0,0,,,,0",
+        "2H,0,0,0,0,,,,0,0,0,0,0,0,0,0,0,0,0,,,,0",
+        "3A,0,0,0,0,,,,0,0,0,0,0,0,0,0,0,0,0,,,,0",
+        "3B,0,0,0,0,,,,0,0,0,0,0,0,0,0,0,0,0,,,,0"
+      ],
+      "headers": [
+        "//IFPANEL 1",
+        "///NAME Panel 1,Panel 1",
+        "//IFPANEL 2",
+        "///NAME Panel 2,Panel 2",
+        "//IFPANEL 3",
+        "///NAME Panel 3,Panel 3",
+        "//IFPANEL 4",
+        "///NAME Panel 4,Panel 4",
+        "//IFPANEL 5",
+        "///NAME Panel 5,Panel 5",
+        "//IFPANEL 6",
+        "///NAME Panel 6,Panel 6",
+        "//IFPANEL 7",
+        "///NAME Panel 7,Panel 7",
+        "//IFPANEL 8",
+        "///NAME Panel 8,Panel 8",
+        "//IFPANEL 9",
+        "///NAME Panel 9,Panel 9",
+        "//IFPANEL 10",
+        "///NAME Panel 10,Panel 10",
+        "//IFPANEL_EX 11",
+        "///NAME Panel 11,Panel 11",
+        "//IFPANEL_EX 12",
+        "///NAME Panel 12,Panel 12",
+        "//IFPANEL_EX 13",
+        "///NAME Panel 13,Panel 13",
+        "//IFPANEL_EX 14",
+        "///NAME Panel 14,Panel 14",
+        "//IFPANEL_EX 15",
+        "///NAME Panel 15,Panel 15"
+      ]
+    },
+    "IOAXIS.DAT": {
+      "bytes": 1872,
+      "lines": 165,
+      "first": [
+        "//IOAXIS",
+        "///GROUP 63,63,1,1,1,3,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,4,1",
+        "0",
+        "0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0",
+        "0,0,0,0,0",
+        "0,0",
+        "0",
+        "0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0",
+        "0,0,0,0,0",
+        "0,0",
+        "3",
+        "4,0,0,0,0,0,0,0",
+        "5,0,0,0,0,0,0,0",
+        "0,0,3,0,0",
+        "4,0",
+        "6",
+        "7,0,0,0,0,0,0,0",
+        "8,0,0,0,0,0,0,0"
+      ],
+      "headers": [
+        "//IOAXIS",
+        "///GROUP 63,63,1,1,1,3,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,4,1",
+        "///COORD"
+      ]
+    },
+    "IOMNAME.DAT": {
+      "bytes": 2018,
+      "lines": 1002,
+      "first": [
+        "/IOMMAME",
+        "//NAME",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "headers": [
+        "/IOMMAME",
+        "//NAME"
+      ]
+    },
+    "IOMSGHST.DAT": {
+      "bytes": 77112,
+      "lines": 3003,
+      "first": [
+        "//IOMSGHST",
+        "1000",
+        "50",
+        "WIRE STICKING/SHORT",
+        "2025-RAMKI-KANION14-60NOWE2,165,105",
+        "2026/09/15 08:13:14,ODTWARZANIE",
+        "WIRE STICKING/SHORT",
+        "2025-RAMKI-KANION14-60NOWE2,199,127",
+        "2026/09/11 09:28:32,ODTWARZANIE",
+        "WIRE STICKING/SHORT",
+        "2025-RAMKI-KANION14-60NOWE2,89,55",
+        "2026/09/09 08:54:45,ODTWARZANIE",
+        "WIRE STICKING/SHORT",
+        "KANON-RAMKA120-60,136,91",
+        "2026/09/09 07:37:30,ODTWARZANIE",
+        "WIRE STICKING/SHORT",
+        "2025-RAMKI-KANION14-60NOWE2,42,26",
+        "2026/09/09 07:23:36,ODTWARZANIE",
+        "WIRE STICKING/SHORT",
+        "KANON-RAMKA120-60,149,100"
+      ],
+      "headers": [
+        "//IOMSGHST"
+      ]
+    },
+    "IONAME.DAT": {
+      "bytes": 10818,
+      "lines": 2051,
+      "first": [
+        "/IONAME",
+        "//IN",
+        "Q-SET X,Q-SET Y,JOG-ST1 ON,JOG+ ST1",
+        "JOG-ST1,JOG ON ST2,JOG+ ST2,JOG- ST2",
+        ",POWIETRZE OK,START_ST1,START_ST2",
+        ",,JOG ST3 ON,JOG ST4 ON",
+        ",,,",
+        ",,,",
+        ",,,",
+        ",,,",
+        ",,,",
+        ",KURTYNA-4-G,KURTYNA-3-G,KURTYNA-3-D",
+        "KURTYNA-3-G,KURTYNA-3-D,KURTYNA-4-G,KURTYNA-4-D",
+        ",,,",
+        ",,,LORCH OK",
+        ",,,",
+        "KURTYNA-2-G,KURTYNA-2-D,KURTYNA-2-G,KURTYNA-2-D",
+        "KURTYNA-1-G,KURTYNA-1-D,KURTYNA-1-D,KURTYNA-1-G",
+        ",,,",
+        ",,,"
+      ],
+      "headers": [
+        "/IONAME",
+        "//IN",
+        "//OUT"
+      ]
+    },
+    "IPNETCFG.DAT": {
+      "bytes": 133,
+      "lines": 19,
+      "first": [
+        "//IPNETCFG",
+        "///HOST",
+        "1",
+        "MY-HOST",
+        "LOCAL.DOMAIN",
+        "///DHCPC",
+        "0",
+        "0",
+        "///DNSC",
+        "0",
+        "1,0",
+        "0.0.0.0",
+        "///SNTPC",
+        "0",
+        "1,3",
+        "0.0.0.0",
+        "0,0",
+        "24",
+        "///END"
+      ],
+      "headers": [
+        "//IPNETCFG",
+        "///HOST",
+        "///DHCPC",
+        "///DNSC",
+        "///SNTPC",
+        "///END"
+      ]
+    },
+    "KEYALLOC.DAT": {
+      "bytes": 51662,
+      "lines": 2460,
+      "first": [
+        "//KEYALLOC",
+        "///APPLI 0,255,255,255,255,255,255,255",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0"
+      ],
+      "headers": [
+        "//KEYALLOC",
+        "///APPLI 0,255,255,255,255,255,255,255"
+      ]
+    },
+    "LOGDATA.DAT": {
+      "bytes": 132629,
+      "lines": 5542,
+      "first": [
+        "//LOGDATA",
+        "///INDEX 1",
+        "DATA              :2026/09/15 16:54:04",
+        "ZDARZENIE         :ZAK. ZAPISU PLIKU",
+        "LOGIN             :",
+        "NAZWA PLIKU       :TRQDAT.DAT",
+        "",
+        "///INDEX 2",
+        "DATA              :2026/09/15 16:54:04",
+        "ZDARZENIE         :ZAK. ZAPISU PLIKU",
+        "LOGIN             :",
+        "NAZWA PLIKU       :IPNETCFG.DAT",
+        "",
+        "///INDEX 3",
+        "DATA              :2026/09/15 16:54:04",
+        "ZDARZENIE         :ZAK. ZAPISU PLIKU",
+        "LOGIN             :",
+        "NAZWA PLIKU       :EIOALLOC.DAT",
+        "",
+        "///INDEX 4"
+      ],
+      "headers": [
+        "//LOGDATA",
+        "///INDEX 1",
+        "///INDEX 2",
+        "///INDEX 3",
+        "///INDEX 4",
+        "///INDEX 5",
+        "///INDEX 6",
+        "///INDEX 7",
+        "///INDEX 8",
+        "///INDEX 9",
+        "///INDEX 10",
+        "///INDEX 11",
+        "///INDEX 12",
+        "///INDEX 13",
+        "///INDEX 14",
+        "///INDEX 15",
+        "///INDEX 16",
+        "///INDEX 17",
+        "///INDEX 18",
+        "///INDEX 19",
+        "///INDEX 20",
+        "///INDEX 21",
+        "///INDEX 22",
+        "///INDEX 23",
+        "///INDEX 24",
+        "///INDEX 25",
+        "///INDEX 26",
+        "///INDEX 27",
+        "///INDEX 28",
+        "///INDEX 29"
+      ]
+    },
+    "OPEORG.DAT": {
+      "bytes": 1071,
+      "lines": 105,
+      "first": [
+        "//OPEORG",
+        "///GROUP 63,63,1,1,1,3,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,4,1",
+        "///ORGPOS",
+        "0,0",
+        "0,0,0,0",
+        "0,0,0,0",
+        "0,0",
+        "0,0,0,0",
+        "0,0,0,0",
+        "0,0",
+        "0,0,0,0",
+        "0,0,0,0",
+        "0,0",
+        "0,0,0,0",
+        "0,0,0,0",
+        "0,0",
+        "0,0,0,0",
+        "0,0,0,0",
+        "0,0",
+        "0,0,0,0"
+      ],
+      "headers": [
+        "//OPEORG",
+        "///GROUP 63,63,1,1,1,3,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,4,1",
+        "///ORGPOS",
+        "///ORGSPD",
+        "///CUBE64"
+      ]
+    },
+    "PANELBOX.LOG": {
+      "bytes": 18773,
+      "lines": 428,
+      "first": [
+        "/SYSTEM 7",
+        "//DATE      : 2026/09/15 16:54:01",
+        "//SYSTEM NO : DN2.27.00A(US/PL)-00",
+        "//PARAM  NO : 2.06",
+        "//APPLI     : ARC WELDING     ",
+        "//LANGUAGE  :  2.27-00-00, 2.27-00-00",
+        "//REVISION",
+        "YCP21    2.27.00,-----,     ",
+        "YPP      2.21-00, 1.03-00, 2.03",
+        "YSF21-1  2.50-00, 2.00,",
+        "YSF21-2  2.50-00, 2.00,",
+        "EAXA*#0  2.11-00, 2.00,",
+        "EAXA*#1  2.11-00, 2.00,",
+        "//ROBOT NAME",
+        "R1 : MA02010-A0*                                  0011_1111,  B1 : RECT-X                                       0000_0001",
+        "S1 : TURN-1                                       0000_0001",
+        "S2 : TURN-1                                       0000_0001",
+        "S3 : TURN-2                                       0000_0011",
+        "S4 : TURN-2                                       0000_0011",
+        "//CONTROL POWER"
+      ],
+      "headers": [
+        "/SYSTEM 7",
+        "//DATE      : 2026/09/15 16:54:01",
+        "//SYSTEM NO : DN2.27.00A(US/PL)-00",
+        "//PARAM  NO : 2.06",
+        "//APPLI     : ARC WELDING     ",
+        "//LANGUAGE  :  2.27-00-00, 2.27-00-00",
+        "//REVISION",
+        "//ROBOT NAME",
+        "//CONTROL POWER",
+        "//SERVO POWER",
+        "//PLAYBACK TIME",
+        "//MOVING TIME",
+        "//OPERATING TIME",
+        "//ENERGY TIME",
+        "//CONTROLLER SETTING"
+      ]
+    },
+    "PMLOG.DAT": {
+      "bytes": 8107,
+      "lines": 403,
+      "first": [
+        "//PMLOG",
+        "///REDUCER",
+        "R1 :S  Replaced:0 times",
+        "  ****/**/** **:**",
+        "  ****/**/** **:**",
+        "  ****/**/** **:**",
+        "  ****/**/** **:**",
+        "  ****/**/** **:**",
+        "  ****/**/** **:**",
+        "  ****/**/** **:**",
+        "  ****/**/** **:**",
+        "  ****/**/** **:**",
+        "  ****/**/** **:**",
+        "  ****/**/** **:**",
+        "  ****/**/** **:**",
+        "  ****/**/** **:**",
+        "  ****/**/** **:**",
+        "  ****/**/** **:**",
+        "  ****/**/** **:**",
+        "  ****/**/** **:**"
+      ],
+      "headers": [
+        "//PMLOG",
+        "///REDUCER",
+        "///INSPECTION"
+      ]
+    },
+    "PMTMMNG.DAT": {
+      "bytes": 60503,
+      "lines": 9225,
+      "first": [
+        "//PMTMMNG",
+        "///REDUCER",
+        "15",
+        "129600000,129539958,129482200,129422678,129363461,129303841,129245010,129185775,129126867,129067302",
+        "129007200,128947355,128889436,128827535,128766060,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "15",
+        "129600000,129539958,129482200,129422678,129363461,129303841,129245010,129185775,129126867,129067302",
+        "129007200,128947355,128889436,128827535,128766060,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0"
+      ],
+      "headers": [
+        "//PMTMMNG",
+        "///REDUCER",
+        "///MEASURED",
+        "///EXCHANGE",
+        "///INSPECTION",
+        "///LOG(REDUCER)",
+        "///LOG(INSPECTION)"
+      ]
+    },
+    "PMTRQDB.DAT": {
+      "bytes": 213617,
+      "lines": 4366,
+      "first": [
+        "//PMTRQDB",
+        "0,0,0,0,0,0,0,0,0,",
+        "0,0,0,0,0,0,0,0,0,",
+        "0,0,0,0,0,0,0,0,0,",
+        "0,0,0,0,0,0,0,0,0,",
+        "0,0,0,0,0,0,0,0,0,",
+        "0,0,0,0,0,0,0,0,0,",
+        "0,0,0,0,0,0,0,0,0,",
+        "0,0,0,0,0,0,0,0,0",
+        "0",
+        "1714",
+        "1992/00/00,1992/00/00,1992/00/00,1992/00/00,1992/00/00,1992/00/00,1992/00/00,1992/00/00,1992/00/00,",
+        "1992/00/00,1992/00/00,1992/00/00,1992/00/00,1992/00/00,1992/00/00,1992/00/00,1992/00/00,1992/00/00,",
+        "1992/00/00,1992/00/00,1992/00/00,1992/00/00,1992/00/00,1992/00/00,1992/00/00,1992/00/00,1992/00/00,",
+        "1992/00/00,1992/00/00,1992/00/00,1992/00/00,1992/00/00,1992/00/00,1992/00/00,1992/00/00,1992/00/00,",
+        "1992/00/00,1992/00/00,1992/00/00,1992/00/00,1992/00/00,1992/00/00,1992/00/00,1992/00/00,1992/00/00,",
+        "1992/00/00,1992/00/00,1992/00/00,1992/00/00,1992/00/00,1992/00/00,1992/00/00,1992/00/00,1992/00/00,",
+        "1992/00/00,1992/00/00,1992/00/00,1992/00/00,1992/00/00,1992/00/00,1992/00/00,1992/00/00,1992/00/00,",
+        "1992/00/00,1992/00/00,1992/00/00,1992/00/00,1992/00/00,1992/00/00,1992/00/00,1992/00/00,1992/00/00",
+        "2026/09/15"
+      ],
+      "headers": [
+        "//PMTRQDB"
+      ]
+    },
+    "PSEUDOIN.DAT": {
+      "bytes": 92,
+      "lines": 12,
+      "first": [
+        "//PSEUDOIN",
+        "///DATA",
+        "64,0,0,0,0,0,0,0,0,0",
+        "///NAME",
+        ",,,",
+        ",,,",
+        ",,,",
+        ",,,",
+        ",,,",
+        ",,,",
+        ",,,",
+        ",,,"
+      ],
+      "headers": [
+        "//PSEUDOIN",
+        "///DATA",
+        "///NAME"
+      ]
+    },
+    "RBCALIB.DAT": {
+      "bytes": 1661,
+      "lines": 46,
+      "first": [
+        "//RBCALIB 3",
+        "///MTOOL 0",
+        "///MGROUP 1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0",
+        "///MPULSE",
+        "////MRBC1 C0000=-100635,31620,-55585,111413,-13230,-54456",
+        "////MBSC1 B0000=881499",
+        "////MRBC2 C0001=-97828,35477,-51291,105606,-14280,-52559",
+        "////MBSC2 B0001=881499",
+        "////MRBC3 C0002=-98024,42522,-43564,101265,-13972,-50514",
+        "////MBSC3 B0002=881499",
+        "////MRBC4 C0003=-84975,59579,-30851,87777,-33811,-42132",
+        "////MBSC4 B0003=881499",
+        "////MRBC5 C0004=-74832,85195,-17250,92922,-53367,-41453",
+        "////MBSC5 B0004=881499",
+        "///STOOL 0",
+        "///SGROUP 0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0",
+        "///SPULSE",
+        "////SSTC1 E0000=1081,0",
+        "////SSTC2 E0001=1081,-91771",
+        "////SSTC3 E0002=1081,-190564"
+      ],
+      "headers": [
+        "//RBCALIB 3",
+        "///MTOOL 0",
+        "///MGROUP 1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0",
+        "///MPULSE",
+        "////MRBC1 C0000=-100635,31620,-55585,111413,-13230,-54456",
+        "////MBSC1 B0000=881499",
+        "////MRBC2 C0001=-97828,35477,-51291,105606,-14280,-52559",
+        "////MBSC2 B0001=881499",
+        "////MRBC3 C0002=-98024,42522,-43564,101265,-13972,-50514",
+        "////MBSC3 B0002=881499",
+        "////MRBC4 C0003=-84975,59579,-30851,87777,-33811,-42132",
+        "////MBSC4 B0003=881499",
+        "////MRBC5 C0004=-74832,85195,-17250,92922,-53367,-41453",
+        "////MBSC5 B0004=881499",
+        "///STOOL 0",
+        "///SGROUP 0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0",
+        "///SPULSE",
+        "////SSTC1 E0000=1081,0",
+        "////SSTC2 E0001=1081,-91771",
+        "////SSTC3 E0002=1081,-190564",
+        "////SSTC4 E0003=-27755,-190564",
+        "////SSTC5 E0004=-56786,-190564",
+        "////SRANG 5839.889,-1527.299,-697.191,-0.9106,0.5432,-179.5831",
+        "//RBCALIB 4",
+        "///MTOOL 0",
+        "///MGROUP 1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0",
+        "///MPULSE",
+        "////MRBC1 C0000=-94631,50324,-37963,118004,-13337,-58053",
+        "////MBSC1 B0000=184959",
+        "////MRBC2 C0001=-93239,34248,-55717,125327,-15183,-61796"
+      ]
+    },
+    "RBSTPFCT.DAT": {
+      "bytes": 8125,
+      "lines": 781,
+      "first": [
+        "//RBSTOPFCTR",
+        "///FCTRHIST 1",
+        "****/**/** **:**:**,",
+        "ZADEN,",
+        "ZADEN  ,",
+        "ZADEN  ,",
+        "ZADEN  ,",
+        "ZADEN  ,",
+        "ZADEN  ,",
+        "ZADEN  ,",
+        "ZADEN  ,",
+        "ZADEN  ,",
+        "ZADEN  ,",
+        "ZADEN  ,",
+        "ZADEN  ,",
+        "ZADEN  ,",
+        "ZADEN  ,",
+        "ZADEN  ,",
+        "ZADEN  ,",
+        "ZADEN  ,"
+      ],
+      "headers": [
+        "//RBSTOPFCTR",
+        "///FCTRHIST 1",
+        "///FCTRHIST 2",
+        "///FCTRHIST 3",
+        "///FCTRHIST 4",
+        "///FCTRHIST 5",
+        "///FCTRHIST 6",
+        "///FCTRHIST 7",
+        "///FCTRHIST 8",
+        "///FCTRHIST 9",
+        "///FCTRHIST 10",
+        "///FCTRHIST 11",
+        "///FCTRHIST 12",
+        "///FCTRHIST 13",
+        "///FCTRHIST 14",
+        "///FCTRHIST 15",
+        "///FCTRHIST 16",
+        "///FCTRHIST 17",
+        "///FCTRHIST 18",
+        "///FCTRHIST 19",
+        "///FCTRHIST 20"
+      ]
+    },
+    "SETTM.DAT": {
+      "bytes": 2270,
+      "lines": 420,
+      "first": [
+        "//SETTM 0",
+        "0,",
+        "0,",
+        "0,",
+        "0,",
+        "0,",
+        "0,0,",
+        "//SETTM 1",
+        "0,",
+        "0,",
+        "0,",
+        "0,",
+        "0,",
+        "0,0,",
+        "//SETTM 2",
+        "0,",
+        "0,",
+        "0,",
+        "0,",
+        "0,"
+      ],
+      "headers": [
+        "//SETTM 0",
+        "//SETTM 1",
+        "//SETTM 2",
+        "//SETTM 3",
+        "//SETTM 4",
+        "//SETTM 5",
+        "//SETTM 6",
+        "//SETTM 7",
+        "//SETTM 8",
+        "//SETTM 9",
+        "//SETTM 10",
+        "//SETTM 11",
+        "//SETTM 12",
+        "//SETTM 13",
+        "//SETTM 14",
+        "//SETTM 15",
+        "//SETTM 16",
+        "//SETTM 17",
+        "//SETTM 18",
+        "//SETTM 19",
+        "//SETTM 20",
+        "//SETTM 21",
+        "//SETTM 22",
+        "//SETTM 23",
+        "//SETTM 24",
+        "//SETTM 25",
+        "//SETTM 26",
+        "//SETTM 27",
+        "//SETTM 28",
+        "//SETTM 29"
+      ]
+    },
+    "SVMON.DAT": {
+      "bytes": 1305,
+      "lines": 145,
+      "first": [
+        "//SVMON",
+        "1,0,0,0",
+        "1,0,0,0",
+        "1,0,0,0",
+        "1,0,0,0",
+        "1,0,0,0",
+        "1,0,0,0",
+        "0,0,0,0",
+        "0,0,0,0",
+        "0,0,0,0",
+        "0,0,0,0",
+        "0,0,0,0",
+        "0,0,0,0",
+        "0,0,0,0",
+        "0,0,0,0",
+        "0,0,0,0",
+        "0,0,0,0",
+        "0,0,0,0",
+        "0,0,0,0",
+        "0,0,0,0"
+      ],
+      "headers": [
+        "//SVMON"
+      ]
+    },
+    "SYSTEM.SYS": {
+      "bytes": 1624,
+      "lines": 46,
+      "first": [
+        "/SYSTEM 7",
+        "//DATE      : 2026/09/15 16:54:00",
+        "//SYSTEM NO : DN2.27.00A(US/PL)-00",
+        "//PARAM  NO : 2.06",
+        "//APPLI     : ARC WELDING     ",
+        "//LANGUAGE  :  2.27-00-00, 2.27-00-00",
+        "//REVISION",
+        "YCP21    2.27.00,-----,     ",
+        "YPP      2.21-00, 1.03-00, 2.03",
+        "YSF21-1  2.50-00, 2.00,",
+        "YSF21-2  2.50-00, 2.00,",
+        "EAXA*#0  2.11-00, 2.00,",
+        "EAXA*#1  2.11-00, 2.00,",
+        "//ROBOT NAME",
+        "R1 : MA02010-A0*                                  0011_1111,  B1 : RECT-X                                       0000_0001",
+        "S1 : TURN-1                                       0000_0001",
+        "S2 : TURN-1                                       0000_0001",
+        "S3 : TURN-2                                       0000_0011",
+        "S4 : TURN-2                                       0000_0011",
+        "//CONTROL POWER"
+      ],
+      "headers": [
+        "/SYSTEM 7",
+        "//DATE      : 2026/09/15 16:54:00",
+        "//SYSTEM NO : DN2.27.00A(US/PL)-00",
+        "//PARAM  NO : 2.06",
+        "//APPLI     : ARC WELDING     ",
+        "//LANGUAGE  :  2.27-00-00, 2.27-00-00",
+        "//REVISION",
+        "//ROBOT NAME",
+        "//CONTROL POWER",
+        "//SERVO POWER",
+        "//PLAYBACK TIME",
+        "//MOVING TIME",
+        "//OPERATING TIME",
+        "//ENERGY TIME"
+      ]
+    },
+    "TMNAME.DAT": {
+      "bytes": 384,
+      "lines": 123,
+      "first": [
+        "//TMNAME",
+        "///TM",
+        ",",
+        ",",
+        ",",
+        ",",
+        ",",
+        ",",
+        ",",
+        ",",
+        ",",
+        ",",
+        ",",
+        ",",
+        ",",
+        ",",
+        ",",
+        ",",
+        ",",
+        ","
+      ],
+      "headers": [
+        "//TMNAME",
+        "///TM",
+        "///TF"
+      ]
+    },
+    "TMVAR.DAT": {
+      "bytes": 287,
+      "lines": 15,
+      "first": [
+        "//TMVAR",
+        "///TM",
+        "0,0,0,0,0,0,0,0,0,0,",
+        "0,0,0,0,0,0,0,0,0,0,",
+        "0,0,0,0,0,0,0,0,0,0,",
+        "0,0,0,0,0,0,0,0,0,0,",
+        "0,0,0,0,0,0,0,0,0,0,",
+        "0,0,0,0,0,0,0,0,0,0,",
+        "///TF",
+        "1,1,1,1,1,1,1,1,1,1,",
+        "1,1,1,1,1,1,1,1,1,1,",
+        "1,1,1,1,1,1,1,1,1,1,",
+        "1,1,1,1,1,1,1,1,1,1,",
+        "1,1,1,1,1,1,1,1,1,1,",
+        "1,1,1,1,1,1,1,1,1,1,"
+      ],
+      "headers": [
+        "//TMVAR",
+        "///TM",
+        "///TF"
+      ]
+    },
+    "TRQDAT.DAT": {
+      "bytes": 183,
+      "lines": 18,
+      "first": [
+        "//TRQDAT",
+        "///NUM_ELEMENT",
+        "8,8,24",
+        "6,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0",
+        "3,0",
+        "2,0",
+        "3,0",
+        "5,0",
+        "0,0",
+        "8,0",
+        "17,0",
+        "0,0",
+        "1,0",
+        "0,0",
+        "0,0",
+        "0,0",
+        "0,0",
+        ""
+      ],
+      "headers": [
+        "//TRQDAT",
+        "///NUM_ELEMENT"
+      ]
+    },
+    "USERMENU.DAT": {
+      "bytes": 610,
+      "lines": 32,
+      "first": [
+        "//USERMENU 0",
+        "JOB,ZADANIE,0,1,0,0,0,0,0,0,0",
+        "//USERMENU 1",
+        "RES. START(JOB),REZ. START(ZADANIE),0,1,5,0,0,0,0,0,0",
+        "//USERMENU 2",
+        ",,0,0,0,0,0,0,0,0,0",
+        "//USERMENU 3",
+        ",,0,0,0,0,0,0,0,0,0",
+        "//USERMENU 4",
+        ",,0,0,0,0,0,0,0,0,0",
+        "//USERMENU 5",
+        ",,0,0,0,0,0,0,0,0,0",
+        "//USERMENU 6",
+        ",,0,0,0,0,0,0,0,0,0",
+        "//USERMENU 7",
+        ",,0,0,0,0,0,0,0,0,0",
+        "//USERMENU 8",
+        ",,0,0,0,0,0,0,0,0,0",
+        "//USERMENU 9",
+        ",,0,0,0,0,0,0,0,0,0"
+      ],
+      "headers": [
+        "//USERMENU 0",
+        "//USERMENU 1",
+        "//USERMENU 2",
+        "//USERMENU 3",
+        "//USERMENU 4",
+        "//USERMENU 5",
+        "//USERMENU 6",
+        "//USERMENU 7",
+        "//USERMENU 8",
+        "//USERMENU 9",
+        "//USERMENU 10",
+        "//USERMENU 11",
+        "//USERMENU 12",
+        "//USERMENU 13",
+        "//USERMENU 14",
+        "//USERMENU 15"
+      ]
+    },
+    "UWORD.DAT": {
+      "bytes": 160,
+      "lines": 33,
+      "first": [
+        "//UWORD",
+        "1,",
+        "2,",
+        "3,",
+        "4,",
+        "5,",
+        "6,",
+        "7,",
+        "8,",
+        "9,",
+        "10,",
+        "11,",
+        "12,",
+        "13,",
+        "14,",
+        "15,",
+        "16,",
+        "17,",
+        "18,",
+        "19,"
+      ],
+      "headers": [
+        "//UWORD"
+      ]
+    },
+    "VAR.DAT": {
+      "bytes": 6764,
+      "lines": 535,
+      "first": [
+        "//VAR",
+        "///PFNUM 6,1,2,1",
+        "///SHARE 100,100,100,100,100,128,128,128",
+        "///B",
+        "0,100,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "///I",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0"
+      ],
+      "headers": [
+        "//VAR",
+        "///PFNUM 6,1,2,1",
+        "///SHARE 100,100,100,100,100,128,128,128",
+        "///B",
+        "///I",
+        "///D",
+        "///R",
+        "///S",
+        "///P",
+        "///BP",
+        "///EX"
+      ]
+    },
+    "VARNAME.DAT": {
+      "bytes": 80172,
+      "lines": 40010,
+      "first": [
+        "//VARNAME",
+        "///SHARE 2000,2000,2000,2000,2000,10000,10000,10000",
+        "///B",
+        "0000 1,0,CZYSZ AKT CYKL",
+        "0001 1,0,TAKT CZYSZCZARKI",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "headers": [
+        "//VARNAME",
+        "///SHARE 2000,2000,2000,2000,2000,10000,10000,10000",
+        "///B",
+        "///I",
+        "///D",
+        "///R",
+        "///S",
+        "///P",
+        "///BP",
+        "///EX"
+      ]
+    },
+    "WELDER.DAT": {
+      "bytes": 2160,
+      "lines": 104,
+      "first": [
+        "//WELDER 1",
+        "///NAME 1,MOTOWELD-E Series 350A class",
+        "0",
+        "0",
+        "1.2,0,15,0.1,0.60",
+        "///COMMENT COMBINATION GAS AND WIRE",
+        "0,1.00",
+        "0.00,1.35,2.70,10.80,12.15,13.50,0.00,0.00",
+        "30,62,94,286,318,350,0,0",
+        "0,1.00",
+        "0.00,7.20,7.50,7.80,14.00,0.00,0.00,0.00",
+        "50,99,100,101,150,0,0,0",
+        "0",
+        "//WELDER 2",
+        "///NAME 1,MOTOWELD-E Series 350A class",
+        "1",
+        "0",
+        "1.2,0,15,0.1,0.60",
+        "///COMMENT COMBINATION GAS AND WIRE",
+        "0,1.00"
+      ],
+      "headers": [
+        "//WELDER 1",
+        "///NAME 1,MOTOWELD-E Series 350A class",
+        "///COMMENT COMBINATION GAS AND WIRE",
+        "//WELDER 2",
+        "///NAME 1,MOTOWELD-E Series 350A class",
+        "///COMMENT COMBINATION GAS AND WIRE",
+        "//WELDER 3",
+        "///NAME 1,MOTOWELD-E Series 350A class",
+        "///COMMENT COMBINATION GAS AND WIRE",
+        "//WELDER 4",
+        "///NAME 1,MOTOWELD-E Series 350A class",
+        "///COMMENT COMBINATION GAS AND WIRE",
+        "//WELDER 5",
+        "///NAME 1,MOTOWELD-E Series 350A class",
+        "///COMMENT COMBINATION GAS AND WIRE",
+        "//WELDER 6",
+        "///NAME 1,MOTOWELD-E Series 350A class",
+        "///COMMENT COMBINATION GAS AND WIRE",
+        "//WELDER 7",
+        "///NAME 1,MOTOWELD-E Series 350A class",
+        "///COMMENT COMBINATION GAS AND WIRE",
+        "//WELDER 8",
+        "///NAME 1,MOTOWELD-E Series 350A class",
+        "///COMMENT COMBINATION GAS AND WIRE"
+      ]
+    },
+    "WELDUDEF.DAT": {
+      "bytes": 15178,
+      "lines": 832,
+      "first": [
+        "//WELDUDEF 1",
+        "///NAME 1,USER-1",
+        "1",
+        "0",
+        "1.2,0,15,0.3,1.50",
+        "///COMMENT",
+        "0,1.00",
+        "0.50,2.50,5.00,6.50,8.80,9.50,10.50,11.00",
+        "70,110,150,190,250,290,330,350",
+        "0,1.00",
+        "4.00,5.00,6.00,7.00,8.00,9.00,10.00,11.00",
+        "89,92,95,98,100,102,105,109",
+        "0",
+        "//WELDUDEF 2",
+        "///NAME 2,USER-2",
+        "1",
+        "0",
+        "1.2,1,15,0.3,1.50",
+        "///COMMENT",
+        "0,1.00"
+      ],
+      "headers": [
+        "//WELDUDEF 1",
+        "///NAME 1,USER-1",
+        "///COMMENT",
+        "//WELDUDEF 2",
+        "///NAME 2,USER-2",
+        "///COMMENT",
+        "//WELDUDEF 3",
+        "///NAME 3,USER-3",
+        "///COMMENT",
+        "//WELDUDEF 4",
+        "///NAME 4,USER-4",
+        "///COMMENT",
+        "//WELDUDEF 5",
+        "///NAME 1,USER-5",
+        "///COMMENT",
+        "//WELDUDEF 6",
+        "///NAME 2,USER-6",
+        "///COMMENT",
+        "//WELDUDEF 7",
+        "///NAME 3,USER-7",
+        "///COMMENT",
+        "//WELDUDEF 8",
+        "///NAME 4,USER-8",
+        "///COMMENT",
+        "//WELDUDEF 9",
+        "///NAME 1,USER-9",
+        "///COMMENT",
+        "//WELDUDEF 10",
+        "///NAME 1,USER-10",
+        "///COMMENT"
+      ]
+    },
+    "YSFLOGIC.DAT": {
+      "bytes": 4738,
+      "lines": 421,
+      "first": [
+        "/SFLOGIC",
+        "//SFLCIRCUIT",
+        " , , , , , , ,",
+        " , , , , , , ,",
+        " , , , , , , ,",
+        " , , , , , , ,",
+        " , , , , , , ,",
+        " , , , , , , ,",
+        " , , , , , , ,",
+        " , , , , , , ,",
+        " , , , , , , ,",
+        " , , , , , , ,",
+        " , , , , , , ,",
+        " , , , , , , ,",
+        " , , , , , , ,",
+        " , , , , , , ,",
+        " , , , , , , ,",
+        " , , , , , , ,",
+        " , , , , , , ,",
+        " , , , , , , ,"
+      ],
+      "headers": [
+        "/SFLOGIC",
+        "//SFLCIRCUIT",
+        "//YSFSET",
+        "///YSF22-E# 1",
+        "///YSF22-E# 2",
+        "///YSF22-E# 3",
+        "///YSF22-E# 4",
+        "///YSF22-E# 5",
+        "///YSF22-E# 6",
+        "///YSF22-E# 7",
+        "///YSF22-E# 8",
+        "//YSFTMR",
+        "///TMR 1",
+        "///TMR 2",
+        "///TMR 3",
+        "///TMR 4",
+        "//SFBSET",
+        "///SFBIN 0",
+        "///SFBIN 1",
+        "///SFBIN 2",
+        "///SFBIN 3",
+        "///SFBIN 4",
+        "///SFBIN 5",
+        "///SFBIN 6",
+        "///SFBIN 7",
+        "///SFBIN 8",
+        "///SFBIN 9",
+        "///SFBIN 10",
+        "///SFBIN 11",
+        "///SFBIN 12"
+      ]
+    }
+  },
+  "cnd": {
+    "ARCEND.CND": {
+      "bytes": 227893,
+      "lines": 20000,
+      "first": [
+        "//ARCEND EN 1",
+        "1",
+        "0",
+        "///COMMENT",
+        "0,0.2",
+        "2",
+        "160,160,160,0",
+        "80,80,80,0",
+        "0.00,0.00,0.00,0.00",
+        "0.00,0.00,0.00,0.00",
+        "0.20,0.20,0.20,0.00",
+        "10000",
+        "0,0.0",
+        "0.0,0.0,0.0",
+        "0,0,0",
+        "160,16.0,80",
+        "0.00,0.00,10.0",
+        "0.01,0.1,8.3",
+        "0.0,0.0,0.0",
+        "0",
+        "//ARCEND EN 2",
+        "1",
+        "0",
+        "///COMMENT",
+        "0,0.2"
+      ],
+      "headers": [
+        "//ARCEND EN 1",
+        "///COMMENT",
+        "//ARCEND EN 2",
+        "///COMMENT",
+        "//ARCEND EN 3",
+        "///COMMENT",
+        "//ARCEND EN 4",
+        "///COMMENT",
+        "//ARCEND EN 5",
+        "///COMMENT",
+        "//ARCEND EN 6",
+        "///COMMENT",
+        "//ARCEND EN 7",
+        "///COMMENT",
+        "//ARCEND EN 8",
+        "///COMMENT",
+        "//ARCEND EN 9",
+        "///COMMENT",
+        "//ARCEND EN 10",
+        "///COMMENT",
+        "//ARCEND EN 11",
+        "///COMMENT",
+        "//ARCEND EN 12",
+        "///COMMENT",
+        "//ARCEND EN 13",
+        "///COMMENT",
+        "//ARCEND EN 14",
+        "///COMMENT",
+        "//ARCEND EN 15",
+        "///COMMENT",
+        "//ARCEND EN 16",
+        "///COMMENT",
+        "//ARCEND EN 17",
+        "///COMMENT",
+        "//ARCEND EN 18",
+        "///COMMENT",
+        "//ARCEND EN 19",
+        "///COMMENT",
+        "//ARCEND EN 20",
+        "///COMMENT",
+        "//ARCEND EN 21",
+        "///COMMENT",
+        "//ARCEND EN 22",
+        "///COMMENT",
+        "//ARCEND EN 23",
+        "///COMMENT",
+        "//ARCEND EN 24",
+        "///COMMENT",
+        "//ARCEND EN 25",
+        "///COMMENT"
+      ],
+      "note": "see first/headers"
+    },
+    "ARCSRT.CND": {
+      "bytes": 246893,
+      "lines": 21000,
+      "first": [
+        "//ARCSRT EN 1",
+        "1",
+        "0",
+        "///COMMENT",
+        "1,13.3",
+        "3,1",
+        "200,200,200,0",
+        "100,100,100,0",
+        "0.00,0.00,0.00,0.00",
+        "0.00,0.00,0.00,0.00",
+        "0.00,0.00,0.00,0.00,1",
+        "0,10000",
+        "0,0.0",
+        "0.0,0.0,0.0",
+        "0,0,0",
+        "200,20.0,100",
+        "0.00,0.00,10.0",
+        "0.01,0.1,13.3",
+        "0.0,0.0,0.0",
+        "0,0,0",
+        "0",
+        "//ARCSRT EN 2",
+        "1",
+        "0",
+        "///COMMENT"
+      ],
+      "headers": [
+        "//ARCSRT EN 1",
+        "///COMMENT",
+        "//ARCSRT EN 2",
+        "///COMMENT",
+        "//ARCSRT EN 3",
+        "///COMMENT",
+        "//ARCSRT EN 4",
+        "///COMMENT",
+        "//ARCSRT EN 5",
+        "///COMMENT",
+        "//ARCSRT EN 6",
+        "///COMMENT",
+        "//ARCSRT EN 7",
+        "///COMMENT",
+        "//ARCSRT EN 8",
+        "///COMMENT",
+        "//ARCSRT EN 9",
+        "///COMMENT",
+        "//ARCSRT EN 10",
+        "///COMMENT",
+        "//ARCSRT EN 11",
+        "///COMMENT",
+        "//ARCSRT EN 12",
+        "///COMMENT",
+        "//ARCSRT EN 13",
+        "///COMMENT",
+        "//ARCSRT EN 14",
+        "///COMMENT",
+        "//ARCSRT EN 15",
+        "///COMMENT",
+        "//ARCSRT EN 16",
+        "///COMMENT",
+        "//ARCSRT EN 17",
+        "///COMMENT",
+        "//ARCSRT EN 18",
+        "///COMMENT",
+        "//ARCSRT EN 19",
+        "///COMMENT",
+        "//ARCSRT EN 20",
+        "///COMMENT",
+        "//ARCSRT EN 21",
+        "///COMMENT",
+        "//ARCSRT EN 22",
+        "///COMMENT",
+        "//ARCSRT EN 23",
+        "///COMMENT",
+        "//ARCSRT EN 24",
+        "///COMMENT",
+        "//ARCSRT EN 25",
+        "///COMMENT"
+      ],
+      "note": "see first/headers"
+    },
+    "CUBEINTF.CND": {
+      "bytes": 6594,
+      "lines": 512,
+      "first": [
+        "//CUBEINTF 1",
+        "///NAME STACJA_1",
+        "2,0,1",
+        "632891,-23550,139716,0,0,0,0,0",
+        "622891,-33550,129716,0,0,0,0,0",
+        "0",
+        "0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0",
+        "//CUBEINTF 2",
+        "///NAME STACJA_2",
+        "2,0,1",
+        "633450,15097,139701,0,0,0,0,0",
+        "623450,5097,129701,0,0,0,0,0",
+        "0",
+        "0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0",
+        "//CUBEINTF 3",
+        "///NAME",
+        "0,0,0",
+        "0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0",
+        "0",
+        "0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0",
+        "//CUBEINTF 4"
+      ],
+      "headers": [
+        "//CUBEINTF 1",
+        "///NAME STACJA_1",
+        "//CUBEINTF 2",
+        "///NAME STACJA_2",
+        "//CUBEINTF 3",
+        "///NAME",
+        "//CUBEINTF 4",
+        "///NAME",
+        "//CUBEINTF 5",
+        "///NAME",
+        "//CUBEINTF 6",
+        "///NAME",
+        "//CUBEINTF 7",
+        "///NAME",
+        "//CUBEINTF 8",
+        "///NAME",
+        "//CUBEINTF 9",
+        "///NAME",
+        "//CUBEINTF 10",
+        "///NAME",
+        "//CUBEINTF 11",
+        "///NAME",
+        "//CUBEINTF 12",
+        "///NAME",
+        "//CUBEINTF 13",
+        "///NAME",
+        "//CUBEINTF 14",
+        "///NAME",
+        "//CUBEINTF 15",
+        "///NAME",
+        "//CUBEINTF 16",
+        "///NAME",
+        "//CUBEINTF 17",
+        "///NAME",
+        "//CUBEINTF 18",
+        "///NAME",
+        "//CUBEINTF 19",
+        "///NAME",
+        "//CUBEINTF 20",
+        "///NAME",
+        "//CUBEINTF 21",
+        "///NAME",
+        "//CUBEINTF 22",
+        "///NAME",
+        "//CUBEINTF 23",
+        "///NAME",
+        "//CUBEINTF 24",
+        "///NAME",
+        "//CUBEINTF 25",
+        "///NAME"
+      ],
+      "note": "see first/headers"
+    },
+    "PMCOND.CND": {
+      "bytes": 1995,
+      "lines": 65,
+      "first": [
+        "//PMCOND",
+        "50",
+        "0",
+        "0",
+        "3",
+        "30",
+        "60",
+        "5",
+        "200,0,0,0,0,0,0,0,0,",
+        "0,0,0,0,0,0,0,0,0,",
+        "0,0,0,0,0,0,0,0,0,",
+        "0,0,0,0,0,0,0,0,0,",
+        "0,0,0,0,0,0,0,0,0,",
+        "0,0,0,0,0,0,0,0,0,",
+        "0,0,0,0,0,0,0,0,0,",
+        "0,0,0,0,0,0,0,0,0",
+        "0",
+        "0",
+        "40,20",
+        "0,0",
+        "",
+        "",
+        "0",
+        "0,1,1,0,1,1,0,1,1,0,1,1,0,1,1,0,1,1,0,1,1,0,1,1,0,1,1",
+        "0,1,1,0,1,1,0,1,1,0,1,1,0,1,1,0,1,1,0,1,1,0,1,1,0,1,1"
+      ],
+      "headers": [
+        "//PMCOND"
+      ],
+      "note": "see first/headers"
+    },
+    "SHOCKLVL.CND": {
+      "bytes": 6850,
+      "lines": 594,
+      "first": [
+        "//SHOCKLVL 1",
+        "1,100",
+        "0,100",
+        "0,100",
+        "0,100",
+        "0,0",
+        "0,0",
+        "0,0",
+        "0,0",
+        "0,0",
+        "0,0",
+        "0,0",
+        "0,0",
+        "0,0",
+        "0,0",
+        "0,0",
+        "0,0",
+        "0,0",
+        "0,0",
+        "0,0",
+        "0,0",
+        "0,0",
+        "0,0",
+        "0,0",
+        "0,0"
+      ],
+      "headers": [
+        "//SHOCKLVL 1",
+        "///AXISLVL",
+        "//SHOCKLVL 2",
+        "///AXISLVL",
+        "//SHOCKLVL 3",
+        "///AXISLVL",
+        "//SHOCKLVL 4",
+        "///AXISLVL",
+        "//SHOCKLVL 5",
+        "///AXISLVL",
+        "//SHOCKLVL 6",
+        "///AXISLVL",
+        "//SHOCKLVL 7",
+        "///AXISLVL",
+        "//SHOCKLVL 8",
+        "///AXISLVL",
+        "//SHOCKLVL 9",
+        "///AXISLVL"
+      ],
+      "note": "see first/headers"
+    },
+    "TOOL.CND": {
+      "bytes": 7443,
+      "lines": 448,
+      "first": [
+        "//TOOL 0",
+        "///NAME STANDARD TOOL11",
+        "-54.280,1.052,415.702,1.3119,-42.6215,-6.8387",
+        "-34.329,-59.651,325.206",
+        "1.836",
+        "0.001,0.001,0.001",
+        "0.000,0,2",
+        "//TOOL 1",
+        "///NAME",
+        "0.000,0.000,0.000,0.0000,0.0000,0.0000",
+        "0.000,0.000,0.000",
+        "0.000",
+        "0.000,0.000,0.000",
+        "0.000,0,1",
+        "//TOOL 2",
+        "///NAME",
+        "0.000,0.000,0.000,0.0000,0.0000,0.0000",
+        "0.000,0.000,0.000",
+        "0.000",
+        "0.000,0.000,0.000",
+        "0.000,0,1",
+        "//TOOL 3",
+        "///NAME",
+        "0.000,0.000,0.000,0.0000,0.0000,0.0000",
+        "0.000,0.000,0.000"
+      ],
+      "headers": [
+        "//TOOL 0",
+        "///NAME STANDARD TOOL11",
+        "//TOOL 1",
+        "///NAME",
+        "//TOOL 2",
+        "///NAME",
+        "//TOOL 3",
+        "///NAME",
+        "//TOOL 4",
+        "///NAME",
+        "//TOOL 5",
+        "///NAME",
+        "//TOOL 6",
+        "///NAME",
+        "//TOOL 7",
+        "///NAME",
+        "//TOOL 8",
+        "///NAME",
+        "//TOOL 9",
+        "///NAME",
+        "//TOOL 10",
+        "///NAME",
+        "//TOOL 11",
+        "///NAME",
+        "//TOOL 12",
+        "///NAME",
+        "//TOOL 13",
+        "///NAME",
+        "//TOOL 14",
+        "///NAME",
+        "//TOOL 15",
+        "///NAME",
+        "//TOOL 16",
+        "///NAME",
+        "//TOOL 17",
+        "///NAME",
+        "//TOOL 18",
+        "///NAME",
+        "//TOOL 19",
+        "///NAME",
+        "//TOOL 20",
+        "///NAME",
+        "//TOOL 21",
+        "///NAME",
+        "//TOOL 22",
+        "///NAME",
+        "//TOOL 23",
+        "///NAME",
+        "//TOOL 24",
+        "///NAME"
+      ],
+      "tool_blocks": "see first/headers"
+    },
+    "WEAV.CND": {
+      "bytes": 27128,
+      "lines": 1530,
+      "first": [
+        "//WEAV 1",
+        "0,0,0",
+        "00000000",
+        "2.000,2.000,70.00,70.00,2.000,2.0",
+        "0.1,0.0,0.1,0.0,0.1,0.0,0.1,0.0",
+        "0,0.0,0",
+        "//WEAV 2",
+        "0,0,0",
+        "00000000",
+        "4.000,0.000,0.00,0.00,2.000,2.0",
+        "0.1,0.0,0.1,0.0,0.1,0.0,0.1,0.0",
+        "0,0.0,0",
+        "//WEAV 3",
+        "0,0,0",
+        "00000000",
+        "0.000,3.000,0.00,45.00,1.500,5.0",
+        "0.1,0.5,0.1,0.0,0.1,0.5,0.1,0.0",
+        "0,0.0,0",
+        "//WEAV 4",
+        "0,0,0",
+        "00000000",
+        "1.500,0.000,55.00,55.00,1.500,2.5",
+        "0.1,0.2,0.1,0.0,0.1,0.2,0.1,0.0",
+        "0,0.0,0",
+        "//WEAV 5"
+      ],
+      "headers": [
+        "//WEAV 1",
+        "//WEAV 2",
+        "//WEAV 3",
+        "//WEAV 4",
+        "//WEAV 5",
+        "//WEAV 6",
+        "//WEAV 7",
+        "//WEAV 8",
+        "//WEAV 9",
+        "//WEAV 10",
+        "//WEAV 11",
+        "//WEAV 12",
+        "//WEAV 13",
+        "//WEAV 14",
+        "//WEAV 15",
+        "//WEAV 16",
+        "//WEAV 17",
+        "//WEAV 18",
+        "//WEAV 19",
+        "//WEAV 20",
+        "//WEAV 21",
+        "//WEAV 22",
+        "//WEAV 23",
+        "//WEAV 24",
+        "//WEAV 25",
+        "//WEAV 26",
+        "//WEAV 27",
+        "//WEAV 28",
+        "//WEAV 29",
+        "//WEAV 30",
+        "//WEAV 31",
+        "//WEAV 32",
+        "//WEAV 33",
+        "//WEAV 34",
+        "//WEAV 35",
+        "//WEAV 36",
+        "//WEAV 37",
+        "//WEAV 38",
+        "//WEAV 39",
+        "//WEAV 40",
+        "//WEAV 41",
+        "//WEAV 42",
+        "//WEAV 43",
+        "//WEAV 44",
+        "//WEAV 45",
+        "//WEAV 46",
+        "//WEAV 47",
+        "//WEAV 48",
+        "//WEAV 49",
+        "//WEAV 50"
+      ],
+      "note": "see first/headers"
+    }
+  },
+  "params": {
+    "ALL.PRM": {
+      "bytes": 959884,
+      "lines": 45519,
+      "sections": [
+        "///RCD",
+        "///RC1G",
+        "///RC2G",
+        "///RC3G",
+        "///RC4G",
+        "///RC5G",
+        "///RC6G",
+        "///RC7G",
+        "///RC8G",
+        "///RC9G",
+        "///RC10G",
+        "///RC11G",
+        "///RC12G",
+        "///RC13G",
+        "///RC14G",
+        "///RC15G",
+        "///RC16G",
+        "///RC17G",
+        "///RC18G",
+        "///RC19G",
+        "///RC20G",
+        "///RC21G",
+        "///RC22G",
+        "///RC23G",
+        "///RC24G",
+        "///RC25G",
+        "///RC26G",
+        "///RC27G",
+        "///RC28G",
+        "///RC29G",
+        "///RC30G",
+        "///RC31G",
+        "///RC32G",
+        "///S1D",
+        "///S2D",
+        "///S3D",
+        "///S4D",
+        "///RO1G",
+        "///RO2G",
+        "///RO3G",
+        "///RO4G",
+        "///RO5G",
+        "///RO6G",
+        "///RO7G",
+        "///RO8G",
+        "///RO9G",
+        "///RO10G",
+        "///RO11G",
+        "///RO12G",
+        "///RO13G",
+        "///RO14G",
+        "///RO15G",
+        "///RO16G",
+        "///RO17G",
+        "///RO18G",
+        "///RO19G",
+        "///RO20G",
+        "///RO21G",
+        "///RO22G",
+        "///RO23G",
+        "///RO24G",
+        "///RO25G",
+        "///RO26G",
+        "///RO27G",
+        "///RO28G",
+        "///RO29G",
+        "///RO30G",
+        "///RO31G",
+        "///RO32G",
+        "///S1C1G",
+        "///S1C2G",
+        "///S1C3G",
+        "///S1C4G",
+        "///S1C5G",
+        "///S1C6G",
+        "///S1C7G",
+        "///S1C8G",
+        "///S1C9G",
+        "///S1C10G",
+        "///S1C11G"
+      ],
+      "section_count": 337,
+      "first": [
+        "/ALL DN",
+        "//RC DN",
+        "///RCD",
+        "20,100,1,0,0,90,1,1,1,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "1,11,0,1,13,0,0,255,49,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,1,0,0,7,0,0,1,0",
+        "0,0,0,0,14,0,0,3,7,0",
+        "1,1,0,2,0,15,1,0,1,0",
+        "0,1,0,7,0,1,1,1,0,0",
+        "0,0,1,0,0,0,0,0,0,0",
+        "///RC1G",
+        "84,150000,0,760000,0,200000,0,0,1082000,0"
+      ]
+    },
+    "AMC.PRM": {
+      "bytes": 135490,
+      "lines": 6433,
+      "sections": [
+        "///AMC1G",
+        "///AMC2G",
+        "///AMC3G",
+        "///AMC4G",
+        "///AMC5G",
+        "///AMC6G",
+        "///AMC7G",
+        "///AMC8G",
+        "///AMC9G",
+        "///AMC10G",
+        "///AMC11G",
+        "///AMC12G",
+        "///AMC13G",
+        "///AMC14G",
+        "///AMC15G",
+        "///AMC16G",
+        "///AMC17G",
+        "///AMC18G",
+        "///AMC19G",
+        "///AMC20G",
+        "///AMC21G",
+        "///AMC22G",
+        "///AMC23G",
+        "///AMC24G",
+        "///AMC25G",
+        "///AMC26G",
+        "///AMC27G",
+        "///AMC28G",
+        "///AMC29G",
+        "///AMC30G",
+        "///AMC31G",
+        "///AMC32G"
+      ],
+      "section_count": 32,
+      "first": [
+        "//AMC DN",
+        "///AMC1G",
+        "29,29,29,29,29,29,0,0,800,750",
+        "750,500,500,500,0,0,800,750,750,500",
+        "500,500,0,0,800,750,750,500,500,500",
+        "0,0,800,750,750,500,500,500,0,0",
+        "800,750,750,500,500,500,0,0,2,1",
+        "2,1,1,1,0,0,19400,0,15500,0",
+        "0,0,0,0,40000,0,18500,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,20000,17000,0,0,0,0,0,30000,0"
+      ]
+    },
+    "AP.PRM": {
+      "bytes": 8568,
+      "lines": 409,
+      "sections": [
+        "///A1P",
+        "///A2P",
+        "///A3P",
+        "///A4P",
+        "///A5P",
+        "///A6P",
+        "///A7P",
+        "///A8P"
+      ],
+      "section_count": 8,
+      "first": [
+        "//AP DN",
+        "///A1P",
+        "0,0,0,0,0,0,0,51,1,0",
+        "1,1,80,180,30,10,10,10,0,0",
+        "0,20,0,0,0,0,17,18,19,20",
+        "0,0,-1,-1,-1,-1,0,0,0,0",
+        "0,410,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,-1,-1,-1,-1,-1,-1,-1,-1,-1",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "101788,42,-2684,-141,3573,32,6412,4541,36,11953",
+        "46,9817,3300,-234,2500,500,-200,100,0,0"
+      ]
+    },
+    "CIO.PRM": {
+      "bytes": 6312,
+      "lines": 301,
+      "sections": [],
+      "section_count": 0,
+      "first": [
+        "//CIO DN",
+        "5,5,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "5,5,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "1,6,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "1,6,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0"
+      ]
+    },
+    "FD.PRM": {
+      "bytes": 2127,
+      "lines": 102,
+      "sections": [],
+      "section_count": 0,
+      "first": [
+        "//FD DN",
+        "0,2,0,1,0,0,7,1,0,0",
+        "0,0,0,2,0,1,0,0,0,2",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,1,0,1,0,1,0,0,0",
+        "1,0,0,0,0,2,0,0,0,0",
+        "0,1,0,0,0,0,0,0,1,0",
+        "1,0,1,0,1,0,1,1,3,1",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "1,0,0,1,1,2,0,0,0,1",
+        "0,1,1,0,1,0,0,0,0,1"
+      ]
+    },
+    "MF.PRM": {
+      "bytes": 175344,
+      "lines": 8353,
+      "sections": [
+        "///MF1G",
+        "///MF2G",
+        "///MF3G",
+        "///MF4G",
+        "///MF5G",
+        "///MF6G",
+        "///MF7G",
+        "///MF8G",
+        "///MF9G",
+        "///MF10G",
+        "///MF11G",
+        "///MF12G",
+        "///MF13G",
+        "///MF14G",
+        "///MF15G",
+        "///MF16G",
+        "///MF17G",
+        "///MF18G",
+        "///MF19G",
+        "///MF20G",
+        "///MF21G",
+        "///MF22G",
+        "///MF23G",
+        "///MF24G",
+        "///MF25G",
+        "///MF26G",
+        "///MF27G",
+        "///MF28G",
+        "///MF29G",
+        "///MF30G",
+        "///MF31G",
+        "///MF32G"
+      ],
+      "section_count": 32,
+      "first": [
+        "//MF DN",
+        "///MF1G",
+        "0,0,0,20,170,0,0,0,0,0",
+        "0,0,0,0,500,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,17443,-317,100,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0"
+      ]
+    },
+    "RC.PRM": {
+      "bytes": 116271,
+      "lines": 5484,
+      "sections": [
+        "///RCD",
+        "///RC1G",
+        "///RC2G",
+        "///RC3G",
+        "///RC4G",
+        "///RC5G",
+        "///RC6G",
+        "///RC7G",
+        "///RC8G",
+        "///RC9G",
+        "///RC10G",
+        "///RC11G",
+        "///RC12G",
+        "///RC13G",
+        "///RC14G",
+        "///RC15G",
+        "///RC16G",
+        "///RC17G",
+        "///RC18G",
+        "///RC19G",
+        "///RC20G",
+        "///RC21G",
+        "///RC22G",
+        "///RC23G",
+        "///RC24G",
+        "///RC25G",
+        "///RC26G",
+        "///RC27G",
+        "///RC28G",
+        "///RC29G",
+        "///RC30G",
+        "///RC31G",
+        "///RC32G"
+      ],
+      "section_count": 33,
+      "first": [
+        "//RC DN",
+        "///RCD",
+        "20,100,1,0,0,90,1,1,1,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "1,11,0,1,13,0,0,255,49,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,1,0,0,7,0,0,1,0",
+        "0,0,0,0,14,0,0,3,7,0",
+        "1,1,0,2,0,15,1,0,1,0",
+        "0,1,0,7,0,1,1,1,0,0",
+        "0,0,1,0,0,0,0,0,0,0",
+        "///RC1G",
+        "84,150000,0,760000,0,200000,0,0,1082000,0",
+        "0,0,100000,0,0,0,0,0,0,0"
+      ]
+    },
+    "RE.PRM": {
+      "bytes": 121960,
+      "lines": 5793,
+      "sections": [
+        "///RE1G",
+        "///RE2G",
+        "///RE3G",
+        "///RE4G",
+        "///RE5G",
+        "///RE6G",
+        "///RE7G",
+        "///RE8G",
+        "///RE9G",
+        "///RE10G",
+        "///RE11G",
+        "///RE12G",
+        "///RE13G",
+        "///RE14G",
+        "///RE15G",
+        "///RE16G",
+        "///RE17G",
+        "///RE18G",
+        "///RE19G",
+        "///RE20G",
+        "///RE21G",
+        "///RE22G",
+        "///RE23G",
+        "///RE24G",
+        "///RE25G",
+        "///RE26G",
+        "///RE27G",
+        "///RE28G",
+        "///RE29G",
+        "///RE30G",
+        "///RE31G",
+        "///RE32G"
+      ],
+      "section_count": 32,
+      "first": [
+        "//RE DN",
+        "///RE1G",
+        "4262912,1,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,541935,900",
+        "-860,0,0,0,-2000000,1800,2500,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,650000,-500,-1700,1350,-1100",
+        "1100,-500,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "3,4,-980,-830,0,-1200,1000,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0"
+      ]
+    },
+    "RO.PRM": {
+      "bytes": 3968,
+      "lines": 225,
+      "sections": [
+        "///RO1G",
+        "///RO2G",
+        "///RO3G",
+        "///RO4G",
+        "///RO5G",
+        "///RO6G",
+        "///RO7G",
+        "///RO8G",
+        "///RO9G",
+        "///RO10G",
+        "///RO11G",
+        "///RO12G",
+        "///RO13G",
+        "///RO14G",
+        "///RO15G",
+        "///RO16G",
+        "///RO17G",
+        "///RO18G",
+        "///RO19G",
+        "///RO20G",
+        "///RO21G",
+        "///RO22G",
+        "///RO23G",
+        "///RO24G",
+        "///RO25G",
+        "///RO26G",
+        "///RO27G",
+        "///RO28G",
+        "///RO29G",
+        "///RO30G",
+        "///RO31G",
+        "///RO32G"
+      ],
+      "section_count": 32,
+      "first": [
+        "//RO DN",
+        "///RO1G",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "///RO2G",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0"
+      ]
+    },
+    "RS.PRM": {
+      "bytes": 2155,
+      "lines": 101,
+      "sections": [],
+      "section_count": 0,
+      "first": [
+        "//RS DN",
+        "2,0,0,9,0,1,1,2,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,1,0,0,0,5,3,0,1",
+        "8,0,2,7,200,200,10,3,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "8,0,2,6,0,0,0,0,3,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "192,168,255,1,255,255,255,0,0,0",
+        "0,0,0,0,0,0,150,0,0,1",
+        "60,255,0,1,0,0,0,0,0,0",
+        "8,2,0,8,100,20,100,3,100,0",
+        "8,0,0,8,10,3,10,1,0,0",
+        "0,0,0,24,0,0,0,0,0,0",
+        "8,0,0,7,10,2,0,0,0,0"
+      ]
+    },
+    "SC.PRM": {
+      "bytes": 97345,
+      "lines": 4576,
+      "sections": [
+        "///S1C1G",
+        "///S1C2G",
+        "///S1C3G",
+        "///S1C4G",
+        "///S1C5G",
+        "///S1C6G",
+        "///S1C7G",
+        "///S1C8G",
+        "///S1C9G",
+        "///S1C10G",
+        "///S1C11G",
+        "///S1C12G",
+        "///S1C13G",
+        "///S1C14G",
+        "///S1C15G",
+        "///S1C16G",
+        "///S1C17G",
+        "///S1C18G",
+        "///S1C19G",
+        "///S1C20G",
+        "///S1C21G",
+        "///S1C22G",
+        "///S1C23G",
+        "///S1C24G",
+        "///S1C25G",
+        "///S1C26G",
+        "///S1C27G",
+        "///S1C28G",
+        "///S1C29G",
+        "///S1C30G",
+        "///S1C31G",
+        "///S1C32G",
+        "///S2C",
+        "///S3C",
+        "///S4C"
+      ],
+      "section_count": 35,
+      "first": [
+        "//SC DN",
+        "///S1C1G",
+        "1666,1000,78,156,312,625,1250,2500,5000,10000",
+        "110,230,460,930,1870,3750,7500,15000,29,57",
+        "113,225,450,900,1800,3600,30,200,1000,2000",
+        "1,100,1000,12500,25000,50000,100000,200000,300000,400000",
+        "500000,0,0,0,1000,134,1000,5000,10000,0",
+        "0,0,0,0,0,0,5000,1000,10,0",
+        "2000,5000,7500,1000,1000000,41,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0"
+      ]
+    },
+    "SD.PRM": {
+      "bytes": 7933,
+      "lines": 365,
+      "sections": [
+        "///S1D",
+        "///S2D",
+        "///S3D",
+        "///S4D"
+      ],
+      "section_count": 4,
+      "first": [
+        "//SD DN",
+        "///S1D",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0"
+      ]
+    },
+    "SE.PRM": {
+      "bytes": 5129,
+      "lines": 249,
+      "sections": [
+        "///S1E",
+        "///S2E",
+        "///S3E",
+        "///S4E",
+        "///S5E",
+        "///S6E",
+        "///S7E",
+        "///S8E"
+      ],
+      "section_count": 8,
+      "first": [
+        "//SE DN",
+        "///S1E",
+        "255,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0"
+      ]
+    },
+    "SV.PRM": {
+      "bytes": 136558,
+      "lines": 6474,
+      "sections": [
+        "///SVD",
+        "///SV1G",
+        "///SV2G",
+        "///SV3G",
+        "///SV4G",
+        "///SV5G",
+        "///SV6G",
+        "///SV7G",
+        "///SV8G",
+        "///SV9G",
+        "///SV10G",
+        "///SV11G",
+        "///SV12G",
+        "///SV13G",
+        "///SV14G",
+        "///SV15G",
+        "///SV16G",
+        "///SV17G",
+        "///SV18G",
+        "///SV19G",
+        "///SV20G",
+        "///SV21G",
+        "///SV22G",
+        "///SV23G",
+        "///SV24G",
+        "///SV25G",
+        "///SV26G",
+        "///SV27G",
+        "///SV28G",
+        "///SV29G",
+        "///SV30G",
+        "///SV31G",
+        "///SV32G"
+      ],
+      "section_count": 33,
+      "first": [
+        "//SV DN",
+        "///SVD",
+        "0,0,0,0,1024,0,0,4,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "1,2,3,4,5,6,7,8,9,1",
+        "2,3,4,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0"
+      ]
+    },
+    "SVC.PRM": {
+      "bytes": 15245,
+      "lines": 729,
+      "sections": [
+        "///SVC1B",
+        "///SVC2B",
+        "///SVC3B",
+        "///SVC4B",
+        "///SVC5B",
+        "///SVC6B",
+        "///SVC7B",
+        "///SVC8B"
+      ],
+      "section_count": 8,
+      "first": [
+        "//SVC DN",
+        "///SVC1B",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "113,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0"
+      ]
+    },
+    "SVM.PRM": {
+      "bytes": 55047,
+      "lines": 2593,
+      "sections": [
+        "///SVM1G",
+        "///SVM2G",
+        "///SVM3G",
+        "///SVM4G",
+        "///SVM5G",
+        "///SVM6G",
+        "///SVM7G",
+        "///SVM8G",
+        "///SVM9G",
+        "///SVM10G",
+        "///SVM11G",
+        "///SVM12G",
+        "///SVM13G",
+        "///SVM14G",
+        "///SVM15G",
+        "///SVM16G",
+        "///SVM17G",
+        "///SVM18G",
+        "///SVM19G",
+        "///SVM20G",
+        "///SVM21G",
+        "///SVM22G",
+        "///SVM23G",
+        "///SVM24G",
+        "///SVM25G",
+        "///SVM26G",
+        "///SVM27G",
+        "///SVM28G",
+        "///SVM29G",
+        "///SVM30G",
+        "///SVM31G",
+        "///SVM32G"
+      ],
+      "section_count": 32,
+      "first": [
+        "//SVM DN",
+        "///SVM1G",
+        "10,10,10,6,6,6,0,0,9,9",
+        "9,9,9,9,0,0,10002,10030,10001,10011",
+        "10003,10003,0,0,57,140,52,15,9,9",
+        "0,0,539,834,286,64,32,32,0,0",
+        "140,350,140,53,28,28,0,0,18000,18000",
+        "7240,180,53,53,0,0,3900,5300,5000,6200",
+        "6200,6200,0,0,1500,1500,1500,3000,3000,3000",
+        "0,0,0,0,0,0,0,0,0,0",
+        "366,226,216,157,131,131,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,1,1,1,1,1,1",
+        "0,0,360,140,470,1210,1040,1040,0,0",
+        "5,5,5,2,2,2,0,0,180,180"
+      ]
+    },
+    "SVP.PRM": {
+      "bytes": 55107,
+      "lines": 2593,
+      "sections": [
+        "///SVP1G",
+        "///SVP2G",
+        "///SVP3G",
+        "///SVP4G",
+        "///SVP5G",
+        "///SVP6G",
+        "///SVP7G",
+        "///SVP8G",
+        "///SVP9G",
+        "///SVP10G",
+        "///SVP11G",
+        "///SVP12G",
+        "///SVP13G",
+        "///SVP14G",
+        "///SVP15G",
+        "///SVP16G",
+        "///SVP17G",
+        "///SVP18G",
+        "///SVP19G",
+        "///SVP20G",
+        "///SVP21G",
+        "///SVP22G",
+        "///SVP23G",
+        "///SVP24G",
+        "///SVP25G",
+        "///SVP26G",
+        "///SVP27G",
+        "///SVP28G",
+        "///SVP29G",
+        "///SVP30G",
+        "///SVP31G",
+        "///SVP32G"
+      ],
+      "section_count": 32,
+      "first": [
+        "//SVP DN",
+        "///SVP1G",
+        "32767,32767,32767,32767,32767,32767,0,0,8192,8192",
+        "8192,8192,8192,8192,0,0,2,2,2,2",
+        "2,2,0,0,12,13,12,2,2,2",
+        "0,0,140,350,140,65,65,65,0,0",
+        "43,40,43,31,31,31,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,58062,58062"
+      ]
+    },
+    "SVS.PRM": {
+      "bytes": 13544,
+      "lines": 649,
+      "sections": [
+        "///SVS1B",
+        "///SVS2B",
+        "///SVS3B",
+        "///SVS4B",
+        "///SVS5B",
+        "///SVS6B",
+        "///SVS7B",
+        "///SVS8B"
+      ],
+      "section_count": 8,
+      "first": [
+        "//SVS DN",
+        "///SVS1B",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,15,0,0,0,0,0,600,0,0",
+        "0,0,0,1,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0",
+        "0,0,0,0,0,0,0,0,0,0"
+      ]
+    }
+  },
+  "cmos": {
+    "bytes": 24487040,
+    "hex64": "24244e582e434d4f535459504520203074295fc3202031302e3030200000c04000002000ea07090f10382a00464145383545424632313731304334440d0a0000",
+    "ascii": "$$NX.CMOSTYPE  0t)_.  10.00 ...@.. ......8*.FAE85EBF21710C4D...."
+  }
+}
