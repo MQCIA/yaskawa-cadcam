@@ -17,3 +17,14 @@ backend/out/
 .env.local
 .DS_Store
 /tmp/
+
+# Local dumps (Verbotics / Yaskawa SDK extracts) — not for git
+reference/
+
+# DX200 CF dumps (keep under reference/, never commit binaries)
+*.BIN
+CMOS.BIN
+reference/robot-cell-dx200/params/
+reference/robot-cell-dx200/CMOS.BIN
+reference/robot-cell-dx200/cnd/ARCSRT.CND
+reference/robot-cell-dx200/cnd/ARCEND.CND

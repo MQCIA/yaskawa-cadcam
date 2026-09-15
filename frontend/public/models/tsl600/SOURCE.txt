@@ -1,0 +1,7 @@
+"""
+Yaskawa TSL-600 style travel-axis meshes (STL), sourced from a Verbotics Weld
+example cell dump for visual reference. Geometry units are millimetres — the
+React component scales them by 0.001 into the metre-based scene.
+
+Not an official Yaskawa CAD release; replace with OEM meshes when available.
+"""

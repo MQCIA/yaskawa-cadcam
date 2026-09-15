@@ -53,11 +53,13 @@ def main() -> None:
     print(f"[3] IK solved: {reached}/{len(ik['diagnostics'])} points reachable "
           f"(all_reachable={ik['all_reachable']})")
 
-    # Phase 3: DX200 .JBI (Cartesian RECTAN job with ARCON/ARCOF)
+    # Phase 3: DX200 .JBI — PULSE C# when IK succeeds
     jbi = generate_jbi(
         planned.points,
         planned.weld_segments,
         PostprocessorConfig(job_name="WELD_AUTO"),
+        station_deg=[0.0] * len(planned.points),
+        joint_angles_deg=ik["joint_angles_deg"] if ik["all_reachable"] else None,
     )
     out = "out/WELD_AUTO.JBI"
     with open(out, "w", encoding="utf-8") as f:

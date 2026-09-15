@@ -19,6 +19,22 @@ export type BuiltinModel = {
 // Example Yaskawa models vendored from ROS-Industrial `motoman` (Apache-2.0).
 export const ROBOT_MODELS: BuiltinModel[] = [
   {
+    id: "ma2010",
+    label: "Yaskawa MOTOMAN-MA2010 (production cell)",
+    kind: "urdf",
+    url: withBase("/models/ma2010/ma2010.urdf"),
+    color: 0x1f4fb0,
+    jointMap: {
+      S: "joint_1_s",
+      L: "joint_2_l",
+      U: "joint_3_u",
+      R: "joint_4_r",
+      B: "joint_5_b",
+      T: "joint_6_t",
+    },
+    source: "ros-industrial/motoman · motoman_ma2010_support (Apache-2.0)",
+  },
+  {
     id: "ar2010",
     label: "Yaskawa MOTOMAN-AR2010 (real model + torch)",
     kind: "urdf",
@@ -57,6 +73,16 @@ export type PositionerModel = {
 };
 
 export const POSITIONER_MODELS: PositionerModel[] = [
+  {
+    id: "turn_st1",
+    label: "TURN ST1 (cell positioner, 1-axis)",
+    kind: "procedural",
+    color: 0x9aa4b2,
+    hasTilt: false,
+    hasRotate: true,
+    source: "Production DX200 cell — SYSTEM.SYS S1 TURN-1",
+    approximate: false,
+  },
   {
     id: "h1000d",
     label: "H1000D (1-axis horizontal rotary, ~1000 kg)",

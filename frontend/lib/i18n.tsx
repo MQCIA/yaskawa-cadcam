@@ -144,6 +144,10 @@ const pl: Dict = {
   "status.imported": "Zaimportowano {name}: {n} kandydat(ów) spoiny.",
   "status.cadFallback":
     "Backend CAD niedostępny ({err}). Załadowano demo T-fillet.",
+  "status.exportIk": "Liczenie IK → eksport PULSE…",
+  "status.exportPulse": "Wyeksportowano PULSE .JBI ({n} punktów). Sprawdź w MotoSim.",
+  "status.exportRectan":
+    "Wyeksportowano RECTAN review .JBI (brak IK / backend). EC/BC w impulsach komórki.",
   "arcnc.workflow": "Przepływ ArcNC",
   "arcnc.cad": "1. CAD",
   "arcnc.detect": "2. Spoiny",
@@ -286,6 +290,10 @@ const en: Dict = {
   "status.imported": "Imported {name}: {n} candidate seam(s).",
   "status.cadFallback":
     "CAD backend unavailable ({err}). Loaded demo T-fillet instead.",
+  "status.exportIk": "Solving IK → PULSE export…",
+  "status.exportPulse": "Exported PULSE .JBI ({n} points). Validate in MotoSim.",
+  "status.exportRectan":
+    "Exported RECTAN review .JBI (no IK / backend). EC/BC use cell pulse units.",
   "arcnc.workflow": "ArcNC workflow",
   "arcnc.cad": "1. CAD",
   "arcnc.detect": "2. Seams",

@@ -7,7 +7,9 @@ bundled and load out of the box:
 | Model | Type | Folder | Source |
 |-------|------|--------|--------|
 | MOTOMAN-AR2010 | 6-axis welding robot | `frontend/public/models/ar2010/` | ROS-Industrial `motoman_ar2010_support` |
+| MOTOMAN-MA2010 | 6-axis handling robot | `frontend/public/models/ma2010/` | ROS-Industrial `motoman_ma2010_support` |
 | MotoPos D500 | 2-axis rotary positioner | `frontend/public/models/motopos_d500/` | ROS-Industrial `motoman_motopos_d500_support` |
+| TSL-600 style rail | travel-axis meshes | `frontend/public/models/tsl600/` | Verbotics example cell dump (visual only, mm) |
 
 Positioners available in the UI:
 

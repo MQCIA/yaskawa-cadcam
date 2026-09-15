@@ -16,12 +16,13 @@ import dynamic from "next/dynamic";
 import AxisSliders, { defaultJoints, type Joints } from "@/components/AxisSliders";
 import { useI18n, LanguageToggle } from "@/lib/i18n";
 import type { SeamSegment } from "@/components/RobotWorkspace";
-import { analyzeCad } from "@/lib/api";
+import { analyzeCad, calculateIk } from "@/lib/api";
 import { ROBOT_MODELS, POSITIONER_MODELS } from "@/lib/models";
 import {
   buildDemoProgram,
   sampleProgram,
   generateJbi,
+  waypointsToIkPoints,
   DEMO_MOUNT,
   LORCH_S8_SCHEDULES,
   ensureTouchSense,
@@ -48,12 +49,12 @@ const btnRibbon =
 
 export default function Home() {
   const { t } = useI18n();
-  const [modelId, setModelId] = useState("ar2010");
+  const [modelId, setModelId] = useState("ma2010");
   const [joints, setJoints] = useState<Joints>(defaultJoints());
   const [seams, setSeams] = useState<SeamSegment[]>([]);
   const [status, setStatus] = useState("");
 
-  const [positionerId, setPositionerId] = useState<string | null>("h1000d");
+  const [positionerId, setPositionerId] = useState<string | null>("turn_st1");
   const [railTravel, setRailTravel] = useState(0);
   const [stations, setStations] = useState([
     { tilt: 0, rotate: 0 },
@@ -111,7 +112,7 @@ export default function Home() {
     setProgram(prog);
     setSimT(0);
     setSimPlaying(false);
-    setModelId("ar2010");
+    setModelId("ma2010");
     setRailTravel(Math.max(-1.6, Math.min(1.6, DEMO_MOUNT[2])));
     setStation(0, { rotate: 0 });
     setLeftTab("welds");
@@ -179,15 +180,36 @@ export default function Home() {
     if (program) makeProgram(c);
   }
 
-  function downloadJbi() {
+  async function downloadJbi() {
     if (!program) return;
-    const blob = new Blob([generateJbi(program)], { type: "text/plain" });
+    const stIdx = selectedStation ?? 0;
+    const stationAngle = stations[stIdx]?.rotate ?? 0;
+    let jointAnglesDeg: number[][] | undefined;
+    try {
+      setStatus(t("status.exportIk"));
+      const ik = await calculateIk(waypointsToIkPoints(program));
+      if (ik?.all_reachable && Array.isArray(ik.joint_angles_deg)) {
+        jointAnglesDeg = ik.joint_angles_deg as number[][];
+      }
+    } catch {
+      // Backend offline — fall back to local RECTAN review export.
+    }
+    const text = generateJbi(program, {
+      stationDeg: stationAngle,
+      jointAnglesDeg,
+    });
+    const blob = new Blob([text], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
     a.download = `${program.name}.JBI`;
     a.click();
     URL.revokeObjectURL(url);
+    setStatus(
+      jointAnglesDeg
+        ? t("status.exportPulse", { n: jointAnglesDeg.length })
+        : t("status.exportRectan"),
+    );
   }
 
   function togglePlay() {

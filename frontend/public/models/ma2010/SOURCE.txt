@@ -1,0 +1,5 @@
+Yaskawa MOTOMAN-MA2010 URDF + visual STLs
+Source: https://github.com/ros-industrial/motoman (branch noetic-devel)
+Package: motoman_ma2010_support
+License: Apache-2.0
+Converted with tools/xacro_to_urdf.py for browser urdf-loader.

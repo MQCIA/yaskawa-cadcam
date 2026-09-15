@@ -1,53 +1,33 @@
 # Cell hardware configuration
 
-This project is configured for the following welding cell:
+Production dump: `reference/robot-cell-dx200` (see [CELL.md](CELL.md)).
 
-| Component     | Value                          | Where configured                        |
-|---------------|--------------------------------|------------------------------------------|
-| Robot         | Yaskawa **AR series** (DX200)  | `backend/app/robot_config.py` (`MODELS`) |
-| Positioner    | **H1000D** (external axis)     | `backend/app/robot_config.py` (`POSITIONER_H1000D`) |
-| Power source  | **Lorch S8**                   | `backend/app/welding_config.py`          |
+| Component | Value | Where configured |
+|-----------|--------|------------------|
+| Robot | Yaskawa **MA2010** (MA02010-A0*) on DX200 | `backend/app/robot_config.py` (`ROBOT_MODEL=MA2010`) |
+| Base | **RECT-X** → INFORM **BS1** | postprocessor `BC#` park pulse |
+| Positioner | **TURN ST1** (S1–S4 TURN) | `POSITIONER=TURN-ST1` |
+| Power source | **MOTOWELD-E Series 350A** | `backend/app/welding_config.py` |
+| Pulse↔deg | RC1G / RBCALIB | `backend/app/pulse_config.py` |
 
-## Robot (Yaskawa AR series)
+## Robot (MA2010)
 
-You told me "AR series" but not the exact model. The catalogue in
-`robot_config.py` contains selectable placeholders for **AR900, AR1440,
-AR1730, AR2010, AR3120**. The active one defaults to **AR1440** and is chosen
-with an environment variable:
+Default model matches the CF dump. DH link lengths are still approximate;
+**pulse-per-degree** values are mined from `RC.PRM` softlimits and are used
+when exporting `///POSTYPE PULSE` jobs.
 
 ```bash
-ROBOT_MODEL=AR2010 uvicorn app.main:app --reload
+ROBOT_MODEL=MA2010 POSITIONER=TURN-ST1 uvicorn app.main:app --reload
 ```
 
-> The **reach** and **joint ranges** follow the public AR specs, but the
-> per-link DH lengths, motor directions, home pose and pulse-per-degree
-> constants are **approximate placeholders**. Replace them with the certified
-> values from the Yaskawa data sheet / MotoSim model / DX200 parameter file for
-> your exact unit, then verify FK against the pendant.
+Validate FK / pulse jobs against the pendant and MotoSim before any controller load.
 
-To finish the model correctly, please provide:
-- the exact AR model number (e.g. AR1440 / AR2010 / …),
-- its data sheet (P-point / reach diagram) or the MotoSim robot definition,
-- the DX200 parameter file (pulse↔degree, TOOL/USER frames),
-- a reference `.JBI` exported from your controller (to match `RCONF`, speeds,
-  and weld-condition numbers).
+## Positioner (TURN ST1)
 
-## Positioner (H1000D)
+Jobs use `///GROUP2 ST1` with `EC#=pulse,0` (TURN-1). Scaling ≈ **1019.7 pulse/°**
+from `RBCALIB.DAT`. Optional `POSITIONER=H1000D` keeps the older UI placeholder.
 
-Modelled as an **external / station axis** (`S1E`), assumed to be a single
-rotary headstock of the ~1000 kg class. If your H1000D is a 2-axis (tilt +
-rotate) or head/tail unit, add the extra axis in `POSITIONER_H1000D.axes`.
+## Power source (Motoweld-E)
 
-When a per-point positioner angle is supplied, the postprocessor switches robot
-moves to coordinated **`SMOVL`** and declares a `RB1,ST1` group. Coordinated
-robot+positioner motion **must** be validated in MotoSim before use — the exact
-EC/base-axis encoding depends on your controller setup.
-
-## Power source (Lorch S8)
-
-`welding_config.py` maps logical weld conditions (referenced by DX200
-`ARCON ASF#(n)`) to Lorch S8 jobs plus example amps/volts/wire-speed/process.
-These are **example values, not a qualified WPS** — replace them with your
-welding procedure and validate on coupons. The robot↔S8 link is typically a
-digital fieldbus (EtherNet/IP, DeviceNet, PROFINET) or the analog/arc
-interface; confirm how yours is wired with your integrator.
+Cell jobs use plain `ARCON` / `ARCOF` (no `ASF#`). UI schedule numbers are examples
+only — real amps/volts live in `ARCSRT.CND` / macros on the controller.

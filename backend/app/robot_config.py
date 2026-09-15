@@ -1,28 +1,20 @@
 """
 Robot + external-axis kinematic configuration.
 
-Target cell:
-  * Robot        : Yaskawa AR series (arc welding) on a DX200 controller
-  * Positioner   : H1000D (external / station axis)
-  * Power source : Lorch S8 (see welding_config.py)
+Production cell (``reference/robot-cell-dx200`` / SYSTEM.SYS):
+  * Robot        : Yaskawa **MA2010** (MA02010-A0*) on DX200 ARC WELDING
+  * Base         : RECT-X → INFORM **BS1**
+  * Station      : TURN S1–S4 → INFORM **ST1** (jobs use GROUP2 ST1)
+  * Power source : MOTOWELD-E Series 350A (see welding_config.py)
+
+Pulse↔degree for MA2010 + TURN is mined in ``pulse_config.py`` from RC.PRM /
+RBCALIB. DH link lengths remain approximate until verified against MotoSim.
 
 ============================================================================
   !!!  UWAGA / WARNING  -  CRITICAL SAFETY NOTICE  !!!
 ============================================================================
-The Denavit-Hartenberg link lengths below are APPROXIMATE PLACEHOLDERS. They
-reproduce the AR-series topology (shoulder + elbow-offset 6R arm) and use the
-published *reach* and *joint ranges* per model, but the exact per-link lengths,
-offsets, motor directions, home pose and pulse-per-degree constants are NOT
-certified here and differ per unit.
-
-Before this engine may drive anything real you MUST:
-  1. Replace the numbers with the exact values from the Yaskawa data sheet /
-     MotoSim model / DX200 parameter file for YOUR specific AR model.
-  2. Verify FK of several known poses against the pendant read-out.
-  3. Validate every path in MotoSim EG-VRC with collision checking, with a
-     qualified integrator, before loading onto the controller.
-
 Wrong numbers => wrong joint solutions => crashes, damage, injury.
+Validate every path in MotoSim EG-VRC before loading the controller.
 ============================================================================
 """
 
@@ -31,6 +23,11 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass, field
 import numpy as np
+
+from .pulse_config import (
+    MA2010_PULSES_PER_DEGREE,
+    STATION_PULSES_PER_DEGREE,
+)
 
 
 @dataclass
@@ -108,24 +105,29 @@ MODELS: dict[str, RobotModel] = {
     "AR1440": _ar_model("AR1440", 1440, 6, 0.505, 0.155, 0.614, 0.200, 0.640, 0.100, _AR_LIMITS),
     "AR1730": _ar_model("AR1730", 1730, 8, 0.540, 0.160, 0.760, 0.200, 0.780, 0.100, _AR_LIMITS),
     "AR2010": _ar_model("AR2010", 2010, 12, 0.540, 0.150, 0.760, 0.200, 1.082, 0.100, _AR_LIMITS),
+    # Production cell (SYSTEM.SYS): R1 = MA02010-A0*.
+    # Joint qlim stays AR-catalogue (placeholder DH); pulses from RC1G dump.
+    "MA2010": _ar_model("MA2010", 2010, 10, 0.540, 0.150, 0.760, 0.200, 1.082, 0.100, _AR_LIMITS),
     "AR3120": _ar_model("AR3120", 3124, 20, 0.650, 0.155, 1.150, 0.250, 1.412, 0.100, _AR_LIMITS),
 }
+
+# Override placeholder pulses for the production model (RC1G softlimits).
+MODELS["MA2010"].pulses_per_degree = list(MA2010_PULSES_PER_DEGREE)
+MODELS["MA2010"].approximate = True
 
 AXIS_NAMES = ["S", "L", "U", "R", "B", "T"]
 
 
 # ---------------------------------------------------------------------------
-# External axis: H1000D positioner (station / coordinated axis).
-# Configure to match your actual unit: 1-axis (rotary headstock) or 2-axis
-# (tilt + rotate). Defaults assume a single rotary axis, ~1000 kg class.
+# External axes: production TURN station + optional H1000D placeholder.
 # ---------------------------------------------------------------------------
 @dataclass
 class ExternalAxis:
     name: str
     kind: str            # "rotary" or "linear"
-    axis_label: str      # DX200 external/station axis label, e.g. "S1E"
+    axis_label: str      # DX200 external/station axis label, e.g. "ST1"
     qlim_deg: tuple[float, float] = (-360.0, 360.0)
-    pulses_per_degree: float = 1000.0  # PLACEHOLDER from DX200 param file
+    pulses_per_degree: float = 1000.0
 
 
 @dataclass
@@ -136,16 +138,32 @@ class Positioner:
     approximate: bool = True
 
 
+# SYSTEM.SYS: S1/S2 TURN-1, S3/S4 TURN-2. Jobs coordinate via GROUP2 ST1.
+POSITIONER_TURN_ST1 = Positioner(
+    name="TURN-ST1",
+    payload_kg=0.0,
+    axes=[
+        ExternalAxis(
+            name="TURN-1",
+            kind="rotary",
+            axis_label="ST1",
+            qlim_deg=(-360.0, 360.0),
+            pulses_per_degree=STATION_PULSES_PER_DEGREE,
+        ),
+    ],
+    approximate=False,  # pulses from RBCALIB; mechanical limits still cell-specific
+)
+
 POSITIONER_H1000D = Positioner(
     name="H1000D",
-    payload_kg=1000.0,  # nominal class; confirm against the rating plate
+    payload_kg=1000.0,
     axes=[
         ExternalAxis(
             name="H1000D-rotary",
             kind="rotary",
-            axis_label="S1E",           # station axis 1; confirm on your DX200
+            axis_label="ST1",
             qlim_deg=(-360.0, 360.0),
-            pulses_per_degree=1000.0,   # PLACEHOLDER
+            pulses_per_degree=STATION_PULSES_PER_DEGREE,
         ),
     ],
 )
@@ -155,7 +173,8 @@ POSITIONER_H1000D = Positioner(
 # Active selection (override with env vars, e.g. ROBOT_MODEL=AR2010).
 # ---------------------------------------------------------------------------
 def _select_model() -> RobotModel:
-    key = os.getenv("ROBOT_MODEL", "AR1440").upper()
+    # Default MA2010 matches the production DX200 dump (SYSTEM.SYS R1: MA02010-A0*).
+    key = os.getenv("ROBOT_MODEL", "MA2010").upper()
     if key not in MODELS:
         raise ValueError(
             f"Unknown ROBOT_MODEL '{key}'. Available: {', '.join(MODELS)}"
@@ -163,5 +182,14 @@ def _select_model() -> RobotModel:
     return MODELS[key]
 
 
+def _select_positioner() -> Positioner:
+    key = os.getenv("POSITIONER", "TURN-ST1").upper().replace("_", "-")
+    if key in ("TURN-ST1", "TURN", "ST1"):
+        return POSITIONER_TURN_ST1
+    if key in ("H1000D", "H1000"):
+        return POSITIONER_H1000D
+    raise ValueError(f"Unknown POSITIONER '{key}'. Available: TURN-ST1, H1000D")
+
+
 ACTIVE_MODEL: RobotModel = _select_model()
-ACTIVE_POSITIONER: Positioner = POSITIONER_H1000D
+ACTIVE_POSITIONER: Positioner = _select_positioner()

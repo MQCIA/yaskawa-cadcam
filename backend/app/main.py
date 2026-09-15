@@ -83,7 +83,11 @@ class JbiRequest(BaseModel):
     tool_no: int = 0
     move_speed: float = 10.0
     station_deg: list[float] | None = Field(
-        default=None, description="Optional per-point H1000D positioner angle (deg)."
+        default=None, description="Optional per-point TURN ST1 angle (deg)."
+    )
+    joint_angles_deg: list[list[float]] | None = Field(
+        default=None,
+        description="Optional per-point [S,L,U,R,B,T] deg — enables PULSE C# export.",
     )
 
 
@@ -105,9 +109,10 @@ def robot_info():
              round(j.qlim[1] * 57.29577951308232, 3)]
             for j in ACTIVE_MODEL.joints
         ],
+        "pulses_per_degree": ACTIVE_MODEL.pulses_per_degree,
         "warning": (
-            "Approximate/placeholder kinematics. Replace robot_config.ACTIVE_MODEL "
-            "with certified values for your exact AR model before any real use."
+            "DH link lengths are approximate; pulse scaling for MA2010 is from the "
+            "DX200 CF dump (RC1G). Validate in MotoSim before controller load."
         ),
     }
 
@@ -125,8 +130,13 @@ def cell_config():
             "name": ACTIVE_POSITIONER.name,
             "payload_kg": ACTIVE_POSITIONER.payload_kg,
             "axes": [
-                {"name": a.name, "kind": a.kind, "label": a.axis_label,
-                 "qlim_deg": a.qlim_deg}
+                {
+                    "name": a.name,
+                    "kind": a.kind,
+                    "label": a.axis_label,
+                    "qlim_deg": a.qlim_deg,
+                    "pulses_per_degree": a.pulses_per_degree,
+                }
                 for a in ACTIVE_POSITIONER.axes
             ],
         },
@@ -140,7 +150,7 @@ def cell_config():
                 for s in LORCH_S8_SCHEDULES.values()
             ],
         },
-        "warning": "Placeholder/example values. Validate against your real cell.",
+        "warning": "Validate pulse jobs in MotoSim before loading the DX200.",
     }
 
 
@@ -202,6 +212,7 @@ def generate_job(req: JbiRequest):
         segments,
         cfg,
         station_deg=req.station_deg,
+        joint_angles_deg=req.joint_angles_deg,
     )
 
 

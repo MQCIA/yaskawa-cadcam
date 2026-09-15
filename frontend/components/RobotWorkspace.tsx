@@ -235,7 +235,9 @@ export default function RobotWorkspace({
       <hemisphereLight intensity={0.4} groundColor="#d8dee6" />
 
       {/* Dedicated Yaskawa travel rail with the robot mounted on the carriage */}
-      <RobotTrack length={4.6} carriage={railTravel} />
+      <Suspense fallback={null}>
+        <RobotTrack length={4.6} carriage={railTravel} />
+      </Suspense>
       <group position={[0, CARRIAGE_TOP_Y, railTravel]}>
         <Suspense key={`robot-${modelId}`} fallback={<Loading />}>
           <SelectedRobot

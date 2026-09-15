@@ -51,11 +51,12 @@ backend/    FastAPI + roboticstoolbox-python + spatialmath + trimesh
 - `components/RobotWorkspace.tsx` — `<Canvas>` with `OrbitControls`, an
   infinite `Grid` floor, and multi-source lighting.
 - **Real example models** (see [`docs/MODELS.md`](docs/MODELS.md)): a "Robot
-  model" dropdown loads an articulated **Yaskawa MOTOMAN-AR2010** (URDF + STL,
-  6 axes) and a "Positioner" dropdown loads a **MotoPos D500** 2-axis rotary
-  positioner — both driven by the sliders. Models are vendored from
-  ROS-Industrial `motoman` (Apache-2.0) and served from `public/models/`.
-  `components/UrdfModel.tsx` loads them with `urdf-loader`.
+  model" dropdown loads articulated **Yaskawa MOTOMAN-AR2010** or **MA2010**
+  (URDF + STL, 6 axes) and a "Positioner" dropdown loads a **MotoPos D500**
+  2-axis rotary positioner — both driven by the sliders. The travel rail can
+  use TSL-600 style meshes. Models are vendored from ROS-Industrial `motoman`
+  (Apache-2.0) / Verbotics visual dump and served from `public/models/`.
+  `components/UrdfModel.tsx` / `WeldUrdfRobot.tsx` load them with `urdf-loader`.
 - `components/YaskawaManipulator.tsx` — a "Procedural placeholder" option: a
   **nested** kinematic chain (base → S → L → U → R → B → T) built from
   primitives, for when no mesh model is loaded.
@@ -73,10 +74,10 @@ To add your exact AR model or the H1000D positioner, follow
   (continuous configuration along the path).
 
 ### Phase 3 — DX200 postprocessor (`backend/app/dx200_postprocessor.py`)
-- Converts a path into INFORM III `.JBI` with the requested header
-  (`/JOB`, `//NAME`, `//POS`, `///NPOS`, `///TOOL`, `///POSTYPE ROBOT`,
-  `///RECTAN`, `///RCONF`), a `//INST` + `///DATE` section, `MOVL` moves with
-  `V=` speeds, `ARCON`/`ARCOF` around detected seams, ending with `END`.
+- Converts a path into INFORM III `.JBI` aligned with a real DX200 reference
+  job (`DROP01.JBI`): `/JOB`, `///USER` + `///POSTYPE USER`, `///RECTAN`,
+  `///POSTYPE PULSE` + `EC#`, `///ATTR SC,RW,RJ`, `MOVJ`/`MOVL C# EC# V=`/`VJ=`,
+  `ARCON`/`ARCOF`, `END`.
 - `POST /api/generate-jbi`.
 
 ### Phase 4 — CAD seam detection (`backend/app/cad_analysis.py`)
@@ -96,7 +97,7 @@ A static export of the 3D workspace is auto-deployed on every push to `main`:
 **https://mqcia.github.io/yaskawa-cadcam/**
 
 The preview runs entirely client-side: you can select the robot model
-(AR2010 URDF) and positioner (MotoPos D500), and jog all axes. Backend-powered
+(AR2010 / MA2010 URDF) and positioner (MotoPos D500), and jog all axes. Backend-powered
 features (CAD seam analysis, IK, `.JBI` generation) require the FastAPI server
 and are **not** available on the static preview — run the backend locally or
 deploy it separately, and point `NEXT_PUBLIC_API_URL` at it.

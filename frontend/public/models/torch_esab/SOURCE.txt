@@ -1,0 +1,3 @@
+ESAB-style torch mesh (rm62_36deg)
+Converted from Verbotics Weld 2026 example cell PLY → STL.
+Units: millimetres. Visual reference only — not an official ESAB CAD release.

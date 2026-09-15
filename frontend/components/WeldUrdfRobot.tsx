@@ -19,7 +19,7 @@ const CHAIN = [
   "joint_5_b",
   "joint_6_t",
 ];
-const TORCH_LEN = 0.33; // flange -> torch contact tip along the tool axis
+const TORCH_LEN = 0.416; // TOOL 0 tip Z ≈ 415.7 mm from production TOOL.CND
 const deg2rad = (d: number) => (d * Math.PI) / 180;
 
 type URDFJointLike = THREE.Object3D & {

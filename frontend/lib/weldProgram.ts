@@ -54,11 +54,11 @@ export type WeldProgram = {
   };
 };
 
-// Mirror of backend welding_config.LORCH_S8_SCHEDULES (EXAMPLE values only).
+// Mirror of backend welding schedules — Motoweld-E cell (travel V≈5–8).
 export const LORCH_S8_SCHEDULES: WeldScheduleRow[] = [
-  { condition: 1, job: 1, currentA: 180, voltageV: 22.0, wireMmin: 6.5, travelCmMin: 40, process: "SpeedPulse" },
-  { condition: 2, job: 2, currentA: 240, voltageV: 26.0, wireMmin: 9.0, travelCmMin: 35, process: "SpeedPulse" },
-  { condition: 3, job: 3, currentA: 120, voltageV: 18.5, wireMmin: 4.0, travelCmMin: 45, process: "SpeedArc" },
+  { condition: 1, job: 8, currentA: 180, voltageV: 22.0, wireMmin: 6.5, travelCmMin: 5.0, process: "Motoweld" },
+  { condition: 2, job: 8, currentA: 220, voltageV: 24.0, wireMmin: 8.0, travelCmMin: 6.7, process: "Motoweld" },
+  { condition: 3, job: 4, currentA: 140, voltageV: 19.0, wireMmin: 5.0, travelCmMin: 7.5, process: "Motoweld" },
 ];
 
 // Mount point on work-station 1's positioner faceplate (world coords, metres).
@@ -442,44 +442,144 @@ export function sampleProgram(prog: WeldProgram, p: number) {
   };
 }
 
+const f3 = (v: number) => v.toFixed(3);
 const f4 = (v: number) => v.toFixed(4);
+const f1 = (v: number) => v.toFixed(1);
 
 /**
- * Client-side DX200 .JBI generator — mirrors the backend postprocessor format
- * (coordinated robot+station group) for offline demo/export. Structurally
- * plausible template only; validate on the real controller / MotoSim.
+ * Pulse scaling mined from the production DX200 dump
+ * (`reference/robot-cell-dx200`: RC1G softlimits + RBCALIB station step).
  */
-export function generateJbi(prog: WeldProgram): string {
+export const CELL_PULSE = {
+  /** S,L,U,R,B,T pulses per degree (RC1G ↔ MA2010 URDF limits). */
+  robotPulsesPerDeg: [
+    1341.3833333333334,
+    1907.6768049155146,
+    1592.8945494186046,
+    1022.8666666666667,
+    980.2444444444444,
+    454.75714285714287,
+  ] as const,
+  /** TURN ST1: RBCALIB ΔE≈91771 over ~90°. */
+  stationPulsesPerDeg: 91771 / 90,
+  /** RECT-X park from jobs/000.JBI. */
+  baseParkPulse: 878036,
+} as const;
+
+export function degToJointPulses(qDeg: number[]): number[] {
+  if (qDeg.length !== 6) throw new Error("Expected 6 joint angles");
+  return qDeg.map((q, i) => Math.round(q * CELL_PULSE.robotPulsesPerDeg[i]));
+}
+
+/** Approximate Motoman RECTAN Rx,Ry,Rz [deg] from torch direction (tool −Z). */
+export function torchDirToRpy(dir: Vec3): [number, number, number] {
+  const d = norm(dir);
+  const rx = (Math.atan2(d[1], -d[2]) * 180) / Math.PI;
+  const ry = (Math.asin(Math.max(-1, Math.min(1, -d[0]))) * 180) / Math.PI;
+  return [rx, ry, 0];
+}
+
+/** Parse planner speed labels into DX200 V= / VJ= magnitudes. */
+function parseSpeed(label: string, fallbackLinear: number): { kind: "V" | "VJ"; value: number } {
+  const vj = label.match(/VJ\s*=\s*([\d.]+)/i);
+  if (vj) return { kind: "VJ", value: Number(vj[1]) };
+  const v = label.match(/V\s*=\s*([\d.]+)/i);
+  if (v) {
+    const n = Number(v[1]);
+    // "cm/min" weld tags stay as V=; bare air VJ already handled above.
+    if (/cm\/min/i.test(label)) return { kind: "V", value: n };
+    return { kind: "V", value: n };
+  }
+  return { kind: "V", value: fallbackLinear };
+}
+
+/** TCP poses for backend IK (`/api/calculate-ik`). Positions in metres. */
+export function waypointsToIkPoints(
+  prog: WeldProgram,
+): { x: number; y: number; z: number; rx: number; ry: number; rz: number }[] {
+  return prog.waypoints.map((p, i) => {
+    const [rx, ry, rz] = torchDirToRpy(torchDirAt(prog, i));
+    return { x: p.pos[0], y: p.pos[1], z: p.pos[2], rx, ry, rz };
+  });
+}
+
+/**
+ * Client-side DX200 .JBI generator aligned with the production MA2010 cell
+ * (`reference/robot-cell-dx200/jobs/000.JBI`): GROUP1 RB1,BS1 + GROUP2 ST1,
+ * ARCON/WVON, coordinated +MOVJ EC#.
+ * Pass `jointAnglesDeg` ([S,L,U,R,B,T] per waypoint) for full PULSE C# export;
+ * otherwise C# stays RECTAN for offline review.
+ */
+export function generateJbi(
+  prog: WeldProgram,
+  opts?: {
+    userFrame?: number;
+    stationPulsesPerDeg?: number;
+    stationDeg?: number | number[];
+    weaveNo?: number;
+    jointAnglesDeg?: number[][];
+    baseParkPulse?: number;
+  },
+): string {
   const pts = prog.waypoints;
   const npos = pts.length;
+  const pulsesPerDeg = opts?.stationPulsesPerDeg ?? CELL_PULSE.stationPulsesPerDeg;
+  const basePark = opts?.baseParkPulse ?? CELL_PULSE.baseParkPulse;
+  const weaveNo = opts?.weaveNo ?? 21;
+  const usePulse =
+    Array.isArray(opts?.jointAnglesDeg) && opts!.jointAnglesDeg!.length === npos;
+  const stationDeg = pts.map((_, i) => {
+    if (Array.isArray(opts?.stationDeg)) return opts!.stationDeg![i] ?? opts!.stationDeg![0] ?? 0;
+    return opts?.stationDeg ?? 0;
+  });
   const lines: string[] = [];
+  const sch = prog.schedule;
 
   lines.push("/JOB");
   lines.push(`//NAME ${prog.name}`);
+  if (usePulse) {
+    lines.push("' PULSE export — MA2010 cell (RC1G / RBCALIB scaling)");
+  } else {
+    lines.push("' Offline RECTAN review — supply IK joints for PULSE C#");
+  }
+  lines.push("' Cell: MA2010 + RECT-X (BS1) + TURN (ST1); TOOL0 TCP Z≈415.7 mm");
+  lines.push(`' Station pulses/deg~${pulsesPerDeg.toFixed(4)}; BC park=${basePark}`);
   lines.push("//POS");
-  lines.push(`///NPOS ${npos},0,0,0,0,0`);
+  lines.push(`///NPOS ${npos},${npos},${npos},0,0,0`);
   lines.push("///TOOL 0");
-  lines.push("///POSTYPE ROBOT");
-  lines.push("///RECTAN");
-  lines.push(
-    "///RCONF " +
-      Array(24)
-        .fill(0)
-        .map((v, i) => (i === 0 ? 1 : v))
-        .join(","),
-  );
 
-  pts.forEach((p, i) => {
-    const x = p.pos[0] * 1000;
-    const y = p.pos[1] * 1000;
-    const z = p.pos[2] * 1000;
-    lines.push(
-      `C${String(i).padStart(5, "0")}=${f4(x)},${f4(y)},${f4(z)},${f4(0)},${f4(0)},${f4(0)}`,
-    );
+  if (usePulse) {
+    lines.push("///POSTYPE PULSE");
+    lines.push("///PULSE");
+    opts!.jointAnglesDeg!.forEach((q, i) => {
+      const pulses = degToJointPulses(q);
+      lines.push(`C${String(i).padStart(5, "0")}=${pulses.join(",")}`);
+    });
+  } else {
+    lines.push("///POSTYPE USER");
+    lines.push("///RECTAN");
+    lines.push(`///RCONF ${Array(24).fill(0).join(",")}`);
+    pts.forEach((p, i) => {
+      const x = p.pos[0] * 1000;
+      const y = p.pos[1] * 1000;
+      const z = p.pos[2] * 1000;
+      const [rx, ry, rz] = torchDirToRpy(torchDirAt(prog, i));
+      lines.push(
+        `C${String(i).padStart(5, "0")}=${f3(x)},${f3(y)},${f3(z)},${f4(rx)},${f4(ry)},${f4(rz)}`,
+      );
+    });
+  }
+
+  lines.push(`' BC# RECT-X park pulse (${basePark})`);
+  pts.forEach((_, i) => lines.push(`BC${String(i).padStart(5, "0")}=${basePark}`));
+
+  if (!usePulse) {
+    lines.push("///POSTYPE PULSE");
+    lines.push("///PULSE");
+  }
+  stationDeg.forEach((ang, i) => {
+    lines.push(`EC${String(i).padStart(5, "0")}=${Math.round(ang * pulsesPerDeg)},0`);
   });
-
-  lines.push("//POS-EX S1E");
-  pts.forEach((_, i) => lines.push(`EC${String(i).padStart(5, "0")}=${f4(0)}`));
 
   lines.push("//INST");
   const now = new Date();
@@ -490,26 +590,43 @@ export function generateJbi(prog: WeldProgram): string {
   ).padStart(2, "0")}`;
   lines.push(`///DATE ${stamp}`);
   lines.push("///ATTR SC,RW");
-  lines.push("///GROUP1 RB1,ST1");
+  lines.push("///GROUP1 RB1,BS1");
+  lines.push("///GROUP2 ST1");
   lines.push("NOP");
 
-  const sch = prog.schedule;
   pts.forEach((p, i) => {
-    lines.push(`SMOVL C${String(i).padStart(5, "0")} V=${f4(10)}`);
-    if (p.tag === "TOUCH") {
-      lines.push("' TouchSense search (CAD↔reality offset)");
-      lines.push("' TOUCH");
-    }
+    const c = `C${String(i).padStart(5, "0")}`;
+    const bc = `BC${String(i).padStart(5, "0")}`;
+    const ec = `EC${String(i).padStart(5, "0")}`;
+    const parsed = parseSpeed(p.speedLabel, p.kind === "weld" ? sch.travelCmMin : 80);
+    const useJoint = p.move === "MOVJ" || p.kind === "approach" || p.kind === "retract" || p.kind === "travel";
+
     if (p.tag === "ARCON") {
+      lines.push("TIMER T=0.50");
+      lines.push(`MACRO1 MJ#(0) ARGF${sch.job}`);
       lines.push(
-        `' Lorch S8 job ${sch.job}: ${sch.currentA}A / ${sch.voltageV.toFixed(1)}V / wire ${sch.wireMmin.toFixed(
+        `' Motoweld cond ${sch.condition}: ${sch.currentA}A / ${sch.voltageV.toFixed(1)}V / wire ${sch.wireMmin.toFixed(
           1,
         )} m/min / ${sch.process}`,
       );
-      lines.push(`ARCON ASF#(${sch.condition})`);
+      lines.push("ARCON");
+      lines.push(`WVON WEV#(${weaveNo})`);
+    }
+
+    if (useJoint && p.kind !== "weld" && p.kind !== "sense") {
+      const vj = parsed.kind === "VJ" ? parsed.value : 80;
+      lines.push(`MOVJ ${c} ${bc} VJ=${f1(vj)} DEC=20  +MOVJ ${ec} VJ=${f1(vj)}`);
+    } else {
+      const v = p.kind === "weld" || p.kind === "sense" ? (parsed.kind === "V" ? parsed.value : sch.travelCmMin) : 5.0;
+      lines.push(`MOVL ${c} ${bc} V=${f1(v)} DEC=20  +MOVJ ${ec} VJ=80.00`);
+    }
+
+    if (p.tag === "TOUCH") {
+      lines.push("' TouchSense search (CAD↔reality offset)");
     }
     if (p.tag === "ARCOF") {
       lines.push("ARCOF");
+      lines.push("WVOF");
     }
   });
   lines.push("END");
