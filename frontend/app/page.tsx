@@ -79,6 +79,16 @@ export default function Home() {
   const rafRef = useRef<number | undefined>(undefined);
   const lastRef = useRef<number | undefined>(undefined);
 
+  // Expodrew audit: ESC closes mobile sheets (same as drawer).
+  useEffect(() => {
+    if (!mobileSheet) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMobileSheet(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [mobileSheet]);
+
   const setStation = (i: number, patch: Partial<{ tilt: number; rotate: number }>) =>
     setStations((prev) => prev.map((s, idx) => (idx === i ? { ...s, ...patch } : s)));
 
@@ -520,7 +530,7 @@ export default function Home() {
             <button
               type="button"
               onClick={() => setMobileSheet(null)}
-              className="text-xs font-semibold text-[#e87722]"
+              className="mobile-sheet-close text-xs font-semibold text-[#e87722]"
             >
               {t("common.close")}
             </button>
@@ -838,7 +848,7 @@ export default function Home() {
             <button
               type="button"
               onClick={() => setMobileSheet(null)}
-              className="text-xs font-semibold text-[#e87722] lg:hidden"
+              className="mobile-sheet-close text-xs font-semibold text-[#e87722] lg:hidden"
             >
               {t("common.close")}
             </button>
@@ -931,7 +941,7 @@ export default function Home() {
       </div>
 
       <nav
-        className="flex shrink-0 items-stretch border-t border-slate-200 bg-white pb-[env(safe-area-inset-bottom)] lg:hidden"
+        className="mobile-bottom-nav flex shrink-0 items-stretch border-t border-slate-200 bg-white pb-[env(safe-area-inset-bottom)] lg:hidden"
         aria-label="Mobile"
       >
         {(

@@ -8,11 +8,10 @@ export const metadata: Metadata = {
     "Prototypowy planer ścieżek spawania dla robotów Yaskawa AR (DX200) — UI w stylu Verbotics Weld",
 };
 
+// Expodrew audit: allow pinch-zoom (do not lock maximumScale / userScalable).
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
   viewportFit: "cover",
   themeColor: "#e87722",
 };
