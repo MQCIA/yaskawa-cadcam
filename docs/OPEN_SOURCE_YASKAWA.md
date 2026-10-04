@@ -8,9 +8,12 @@ None of these replace a certified integrator sign-off on a live DX200/YRC cell.
 | Project | License | What you get |
 |---------|---------|--------------|
 | [ros-industrial/motoman](https://github.com/ros-industrial/motoman) (`noetic-devel`) | Apache-2.0 | URDFs + meshes for AR/MA/GP…, `motoman_driver` (ROS 1), MoveIt configs (e.g. `motoman_ma2010_moveit_config`) |
+| [ros-industrial/motoman](https://github.com/ros-industrial/motoman/tree/melodic-devel) (`melodic-devel` / newer branches) | Apache-2.0 | Same stack; pick the branch matching your ROS distro |
 | [Yaskawa-Global/motoros2](https://github.com/Yaskawa-Global/motoros2) | Yaskawa / see repo | **ROS 2** MotoPlus node: `FollowJointTrajectory`, joint state — the supported path to drive a real Motoman from ROS 2 |
 | [Yaskawa-Global/motoros2_interfaces](https://github.com/Yaskawa-Global/motoros2_interfaces) | see repo | Msg/srv/action definitions for MotoROS2 |
+| [Yaskawa-Global/motoros2_client_examples](https://github.com/Yaskawa-Global/motoros2_client_examples) | see repo | Ready client examples talking to MotoROS2 |
 | [ros-industrial/industrial_core](https://github.com/ros-industrial/industrial_core) | BSD | Simple message / trajectory download helpers (ROS 1 era) |
+| [ros-industrial/industrial_ci](https://github.com/ros-industrial/industrial_ci) | Apache-2.0 | CI helpers used by the Motoman packages |
 
 Clone examples:
 
@@ -18,6 +21,7 @@ Clone examples:
 git clone -b noetic-devel https://github.com/ros-industrial/motoman.git
 git clone https://github.com/Yaskawa-Global/motoros2.git
 git clone https://github.com/Yaskawa-Global/motoros2_interfaces.git
+git clone https://github.com/Yaskawa-Global/motoros2_client_examples.git
 ```
 
 MoveIt planning (ROS 1 MA2010):

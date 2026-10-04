@@ -5,11 +5,11 @@ import { useLoader } from "@react-three/fiber";
 import { STLLoader } from "three/examples/jsm/loaders/STLLoader.js";
 import { withBase } from "@/lib/models";
 import { TOOL0_LENGTH_M } from "@/lib/tool0";
+import { TORCH_MESH_ALIGN_QUAT, TORCH_MESH_TIP_MM } from "@/lib/torchMesh";
 
 /**
- * MIG/MAG welding torch. Visual tip is at local origin; body extends along −Z
- * (Motoman TOOL approach = +Z into the work). Mount the group at the TOOL TCP
- * with TOOL RPY so the tip matches production TOOL.CND.
+ * MIG/MAG welding torch. Visual tip is at local origin; wire approach = +Z
+ * (Motoman TOOL). Mount the group at flange × TOOL0 so the tip matches TOOL.CND.
  */
 export default function WeldingTorch({
   arcOn = false,
@@ -36,14 +36,16 @@ export default function WeldingTorch({
 
 function EsabTorchMesh() {
   const geo = useLoader(STLLoader, withBase("/models/torch_esab/rm62_36deg.stl"));
-  // Mesh units: millimetres. Tip ≈ (0,0,352); shift so tip sits at local origin,
-  // then scale mm→m. Body lies along −Z after the shift.
-  const tipZmm = 352;
+  const [tx, ty, tz] = TORCH_MESH_TIP_MM;
+  const [qx, qy, qz, qw] = TORCH_MESH_ALIGN_QUAT;
+  // mm → m after tip→origin and wire→+Z (see lib/torchMesh.ts).
   return (
     <group scale={[0.001, 0.001, 0.001]}>
-      <mesh geometry={geo} position={[0, 0, -tipZmm]} castShadow>
-        <meshStandardMaterial color={0x3a4553} metalness={0.45} roughness={0.45} />
-      </mesh>
+      <group quaternion={[qx, qy, qz, qw]}>
+        <mesh geometry={geo} position={[-tx, -ty, -tz]} castShadow>
+          <meshStandardMaterial color={0x3a4553} metalness={0.45} roughness={0.45} />
+        </mesh>
+      </group>
     </group>
   );
 }
