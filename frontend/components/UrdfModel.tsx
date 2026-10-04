@@ -29,6 +29,9 @@ export default function UrdfModel({
     url,
     (loader) => {
       const urdfLoader = loader as unknown as InstanceType<typeof URDFLoader>;
+      // Visual CAD only — never load the simplified collision hulls.
+      urdfLoader.parseVisual = true;
+      urdfLoader.parseCollision = false;
       urdfLoader.loadMeshCb = (path, manager, material, done) => {
         new STLLoader(manager).load(
           path,

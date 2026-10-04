@@ -10,7 +10,7 @@
       </visual>
       <collision>
         <geometry>
-          <mesh filename="visual/base_link.stl"/>
+          <mesh filename="collision/base_link.stl"/>
         </geometry>
       </collision>
     </link>
@@ -23,7 +23,7 @@
       </visual>
       <collision>
         <geometry>
-          <mesh filename="visual/link_1.stl"/>
+          <mesh filename="collision/link_1.stl"/>
         </geometry>
       </collision>
     </link>
@@ -36,7 +36,7 @@
       </visual>
       <collision>
         <geometry>
-          <mesh filename="visual/link_2.stl"/>
+          <mesh filename="collision/link_2.stl"/>
         </geometry>
       </collision>
     </link>

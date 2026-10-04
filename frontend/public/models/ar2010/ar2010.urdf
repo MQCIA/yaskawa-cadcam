@@ -10,7 +10,7 @@
       </visual>
       <collision>
         <geometry>
-          <mesh filename="visual/base_link.stl"/>
+          <mesh filename="collision/base_link.stl"/>
         </geometry>
       </collision>
     </link>
@@ -23,7 +23,7 @@
       </visual>
       <collision>
         <geometry>
-          <mesh filename="visual/link_1_s.stl"/>
+          <mesh filename="collision/link_1_s.stl"/>
         </geometry>
       </collision>
     </link>
@@ -36,7 +36,7 @@
       </visual>
       <collision>
         <geometry>
-          <mesh filename="visual/link_2_l.stl"/>
+          <mesh filename="collision/link_2_l.stl"/>
         </geometry>
       </collision>
     </link>
@@ -49,7 +49,7 @@
       </visual>
       <collision>
         <geometry>
-          <mesh filename="visual/link_3_u.stl"/>
+          <mesh filename="collision/link_3_u.stl"/>
         </geometry>
       </collision>
     </link>
@@ -62,7 +62,7 @@
       </visual>
       <collision>
         <geometry>
-          <mesh filename="visual/link_4_r.stl"/>
+          <mesh filename="collision/link_4_r.stl"/>
         </geometry>
       </collision>
     </link>
@@ -75,7 +75,7 @@
       </visual>
       <collision>
         <geometry>
-          <mesh filename="visual/link_5_b.stl"/>
+          <mesh filename="collision/link_5_b.stl"/>
         </geometry>
       </collision>
     </link>
@@ -88,7 +88,7 @@
       </visual>
       <collision>
         <geometry>
-          <mesh filename="visual/link_6_t.stl"/>
+          <mesh filename="collision/link_6_t.stl"/>
         </geometry>
       </collision>
     </link>

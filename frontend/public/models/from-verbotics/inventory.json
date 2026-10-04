@@ -1,0 +1,48 @@
+{
+  "ok": false,
+  "host": {
+    "hostname": "cursor",
+    "system": "Linux",
+    "release": "6.12.94+",
+    "machine": "x86_64",
+    "python": "3.12.3",
+    "cwd": "/workspace"
+  },
+  "placementError": "This dump ran on Linux host 'cursor', not a Windows Verbotics PC. C:\\Program Files is unreachable. Re-run on self-hosted worker verbotics-pc (workerId bfb7e410-b0af-4fb8-8243-15bad1b54d7d) via: python tools/verbotics_full_dump.py --copy-torch-meshes",
+  "scannedRoots": [],
+  "missingRoots": [
+    "C:\\Program Files/Verbotics Weld 2026",
+    "C:\\Program Files/Verbotics Weld",
+    "C:\\Program Files/Verbotics",
+    "C:\\Program Files/Verbotics Cell Editor",
+    "C:\\Program Files/Verbotics Cell Editor 2026",
+    "C:\\Program Files (x86)/Verbotics Weld 2026",
+    "C:\\Program Files (x86)/Verbotics Weld",
+    "C:\\Program Files (x86)/Verbotics",
+    "C:\\Program Files (x86)/Verbotics Cell Editor",
+    "C:\\Program Files (x86)/Verbotics Cell Editor 2026",
+    "/home/ubuntu/Documents/Verbotics",
+    "/home/ubuntu/Documents/Verbotics Weld",
+    "/home/ubuntu/Documents/VerboticsWeld",
+    "/home/ubuntu/Documents/Verbotics Cell Editor"
+  ],
+  "trees": {},
+  "counts": {
+    "cellsOrPresets": 0,
+    "cadFiles": 0,
+    "configFiles": 0,
+    "generators": 0,
+    "projects": 0,
+    "licenseFilesSeen": 0,
+    "tcpHints": 0
+  },
+  "tcpIndex": [],
+  "cellsOrPresets": [],
+  "configFiles": [],
+  "generators": [],
+  "projects": [],
+  "licenseFilesSeen": [],
+  "exeVersions": [],
+  "cadFiles": [],
+  "note": "Full application dump for learning/personal use. Binary meshes are listed (and torch-like ones optionally copied if <5MB). Do not redistribute Verbotics IP. License secrets (.vblicense) are noted by path only."
+}

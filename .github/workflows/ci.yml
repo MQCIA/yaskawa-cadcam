@@ -6,6 +6,17 @@ on:
   pull_request:
 
 jobs:
+  vendor-meshes:
+    name: Vendored meshes (unmodified)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Verify STL SHA-256 against pinned ROS-Industrial originals
+        run: python3 tools/verify_vendor_meshes.py
+
   backend:
     name: Backend (pytest)
     runs-on: ubuntu-latest

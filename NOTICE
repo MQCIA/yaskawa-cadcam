@@ -14,7 +14,8 @@ Specifically:
 
 The URDF files were generated from the packages' xacro sources using
 tools/xacro_to_urdf.py; the STL meshes are unmodified copies of the
-packages' visual meshes. A copy of the Apache-2.0 license is available at:
+packages' visual *and* collision meshes (collision hulls are not rendered).
+A copy of the Apache-2.0 license is available at:
 
   http://www.apache.org/licenses/LICENSE-2.0
 
