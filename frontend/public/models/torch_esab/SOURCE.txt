@@ -1,3 +1,8 @@
 ESAB-style torch mesh (rm62_36deg)
 Converted from Verbotics Weld 2026 example cell PLY → STL.
 Units: millimetres. Visual reference only — not an official ESAB CAD release.
+
+Viewer alignment (frontend/lib/torchMesh.ts):
+  tip ≈ (75.599, -0.021, 352.266) mm → shifted to TOOL origin
+  quaternion aligns contact-tip axis to Motoman TOOL +Z
+  (mount then aims within ~4° of flange from TOOL.CND)
