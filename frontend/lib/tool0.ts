@@ -30,3 +30,6 @@ export const TOOL0_RPY_RAD: [number, number, number] = [
   (TOOL0_RPY_DEG.ry * Math.PI) / 180,
   (TOOL0_RPY_DEG.rz * Math.PI) / 180,
 ];
+
+/** Motoman Rx,Ry,Rz → Three.js Euler order (ROS/URDF RPY = Rz·Ry·Rx). */
+export const TOOL0_EULER_ORDER = "XYZ" as const;

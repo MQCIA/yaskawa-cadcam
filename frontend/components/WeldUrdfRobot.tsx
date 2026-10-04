@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { useLoader, useFrame } from "@react-three/fiber";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal, useLoader, useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { STLLoader } from "three/examples/jsm/loaders/STLLoader.js";
 import URDFLoader, { type URDFRobot } from "urdf-loader";
@@ -37,7 +37,7 @@ type RobotWithFrames = URDFRobot & {
 
 /**
  * Motoman URDF (MA2010 / AR2010) with the production TOOL 0 torch on the flange.
- * IK targets the TOOL tip (not joint_6), and the visual tip matches TOOL.CND.
+ * Torch is portaled onto the flange so it always follows the wrist; IK targets TOOL tip.
  */
 export default function WeldUrdfRobot({
   url,
@@ -86,10 +86,9 @@ export default function WeldUrdfRobot({
     },
   ) as unknown as RobotWithFrames;
 
+  const [flange, setFlange] = useState<THREE.Object3D | null>(null);
   const tcpRef = useRef<THREE.Object3D | null>(null);
-  const flangeRef = useRef<THREE.Object3D | null>(null);
   const chainRef = useRef<URDFJointLike[]>([]);
-  const torchRef = useRef<THREE.Group>(null);
   const simRef = useRef(simT);
   const progRef = useRef(program);
   const jointsRef = useRef(joints);
@@ -103,41 +102,46 @@ export default function WeldUrdfRobot({
   pivotRef.current = partPivot;
   rotZRef.current = partRotZ;
 
-  // Production TOOL 0 relative to flange (Motoman Rx,Ry,Rz → ZYX euler).
-  const toolLocal = useRef(new THREE.Matrix4()).current;
-  const toolQuat = useRef(new THREE.Quaternion()).current;
-  const toolEuler = useRef(
-    new THREE.Euler(TOOL0_RPY_RAD[0], TOOL0_RPY_RAD[1], TOOL0_RPY_RAD[2], "ZYX"),
-  ).current;
-  toolQuat.setFromEuler(toolEuler);
-  toolLocal.compose(
-    new THREE.Vector3(TOOL0_TCP_M[0], TOOL0_TCP_M[1], TOOL0_TCP_M[2]),
-    toolQuat,
-    new THREE.Vector3(1, 1, 1),
-  );
+  // Motoman TOOL Rx,Ry,Rz about flange axes → Three.js intrinsic 'XYZ'
+  // (same as ROS/URDF RPY = Rz*Ry*Rx).
+  const toolQuat = useMemo(() => {
+    const e = new THREE.Euler(TOOL0_RPY_RAD[0], TOOL0_RPY_RAD[1], TOOL0_RPY_RAD[2], "XYZ");
+    return new THREE.Quaternion().setFromEuler(e);
+  }, []);
+
+  const toolLocal = useMemo(() => {
+    const m = new THREE.Matrix4();
+    m.compose(new THREE.Vector3(...TOOL0_TCP_M), toolQuat, new THREE.Vector3(1, 1, 1));
+    return m;
+  }, [toolQuat]);
 
   useEffect(() => {
     chainRef.current = CHAIN.map((n) => robot.joints[n]).filter(Boolean);
     // Prefer ROS-Industrial flange, then tool0, then wrist link.
-    const flange =
+    const f =
       robot.frames?.flange ??
       robot.links?.flange ??
       robot.frames?.tool0 ??
       robot.links?.tool0 ??
       robot.joints?.joint_6_t ??
       null;
-    flangeRef.current = flange;
-    if (!flange) return;
+    setFlange(f);
+    if (!f) {
+      tcpRef.current = null;
+      return;
+    }
 
     const tcp = new THREE.Object3D();
-    tcp.position.set(TOOL0_TCP_M[0], TOOL0_TCP_M[1], TOOL0_TCP_M[2]);
+    tcp.name = "tool0_tcp";
+    tcp.position.set(...TOOL0_TCP_M);
     tcp.quaternion.copy(toolQuat);
-    flange.add(tcp);
+    f.add(tcp);
     tcpRef.current = tcp;
 
     return () => {
-      if (flangeRef.current && tcpRef.current) flangeRef.current.remove(tcpRef.current);
+      f.remove(tcp);
       tcpRef.current = null;
+      setFlange(null);
     };
   }, [robot, toolQuat]);
 
@@ -151,7 +155,6 @@ export default function WeldUrdfRobot({
   const vt = useRef(new THREE.Vector3()).current;
   const cr = useRef(new THREE.Vector3()).current;
   const desired = useRef(new THREE.Matrix4()).current;
-  const parentInv = useRef(new THREE.Matrix4()).current;
   const zAxis = useRef(new THREE.Vector3(0, 0, 1)).current;
 
   function applyJoint(j: URDFJointLike, delta: number) {
@@ -164,30 +167,14 @@ export default function WeldUrdfRobot({
     robot.updateMatrixWorld(true);
   }
 
-  /** World matrix of the TOOL frame (flange × TOOL0). Torch tip = origin. */
-  function placeTorch() {
-    const flange = flangeRef.current;
-    if (!flange || !torchRef.current) return;
-    flange.updateWorldMatrix(true, false);
-    desired.multiplyMatrices(flange.matrixWorld, toolLocal);
-    const parent = torchRef.current.parent;
-    if (parent) {
-      parent.updateWorldMatrix(true, false);
-      parentInv.copy(parent.matrixWorld).invert();
-      desired.premultiply(parentInv);
-    }
-    torchRef.current.matrixAutoUpdate = false;
-    torchRef.current.matrix.copy(desired);
-  }
-
   function toolApproachWorld(out: THREE.Vector3) {
-    const flange = flangeRef.current;
-    if (!flange) {
+    const f = flange;
+    if (!f) {
       out.set(0, -1, 0);
       return out;
     }
-    flange.updateWorldMatrix(true, false);
-    desired.multiplyMatrices(flange.matrixWorld, toolLocal);
+    f.updateWorldMatrix(true, false);
+    desired.multiplyMatrices(f.matrixWorld, toolLocal);
     out.copy(zAxis).transformDirection(desired).normalize();
     return out;
   }
@@ -195,7 +182,6 @@ export default function WeldUrdfRobot({
   useFrame(() => {
     const chain = chainRef.current;
     const tcp = tcpRef.current;
-    const flange = flangeRef.current;
     if (!chain.length || !tcp || !flange) return;
 
     const prog = progRef.current;
@@ -211,7 +197,6 @@ export default function WeldUrdfRobot({
         else if (chain[k]) chain[k].setJointValue(rad);
       }
       robot.updateMatrixWorld(true);
-      placeTorch();
       return;
     }
 
@@ -283,8 +268,6 @@ export default function WeldUrdfRobot({
       toolApproachWorld(toolDir);
       if (E.distanceTo(target) < 0.004 && toolDir.dot(desiredDir) > 0.995) break;
     }
-
-    placeTorch();
   });
 
   const arcOn = program ? sampleProgram(program, simT).arcOn : false;
@@ -294,9 +277,19 @@ export default function WeldUrdfRobot({
       <group rotation={[-Math.PI / 2, 0, 0]}>
         <primitive object={robot} />
       </group>
-      <group ref={torchRef}>
-        <WeldingTorch arcOn={arcOn} />
-      </group>
+      {flange &&
+        createPortal(
+          <group position={TOOL0_TCP_M} quaternion={toolQuat}>
+            <WeldingTorch arcOn={arcOn} />
+            {/* TCP marker: tip of TOOL0 */}
+            <mesh>
+              <sphereGeometry args={[0.012, 12, 12]} />
+              <meshStandardMaterial color="#e11d48" emissive="#be123c" emissiveIntensity={0.4} />
+            </mesh>
+            <axesHelper args={[0.12]} />
+          </group>,
+          flange,
+        )}
     </group>
   );
 }
