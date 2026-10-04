@@ -281,12 +281,6 @@ export default function WeldUrdfRobot({
         createPortal(
           <group position={TOOL0_TCP_M} quaternion={toolQuat}>
             <WeldingTorch arcOn={arcOn} />
-            {/* TCP marker: tip of TOOL0 */}
-            <mesh>
-              <sphereGeometry args={[0.012, 12, 12]} />
-              <meshStandardMaterial color="#e11d48" emissive="#be123c" emissiveIntensity={0.4} />
-            </mesh>
-            <axesHelper args={[0.12]} />
           </group>,
           flange,
         )}
