@@ -3,6 +3,7 @@
 import { Suspense } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, Html } from "@react-three/drei";
+import { TOUCH } from "three";
 import YaskawaManipulator from "./YaskawaManipulator";
 import UrdfModel from "./UrdfModel";
 import H1000dPositioner from "./H1000dPositioner";
@@ -90,7 +91,13 @@ function StationLabel({
   position: [number, number, number];
 }) {
   return (
-    <Html position={position} center distanceFactor={8}>
+    <Html
+      position={position}
+      center
+      distanceFactor={8}
+      zIndexRange={[4, 0]}
+      style={{ pointerEvents: "none" }}
+    >
       <div className="whitespace-nowrap rounded border border-slate-200 bg-white/90 px-2 py-0.5 text-xs font-medium text-slate-700">
         {text}
       </div>
@@ -187,6 +194,7 @@ export default function RobotWorkspace({
   program = null,
   simT = 0,
   manualJog = false,
+  showLabels = true,
 }: {
   modelId: string;
   joints: Joints;
@@ -197,6 +205,7 @@ export default function RobotWorkspace({
   program?: WeldProgram | null;
   simT?: number;
   manualJog?: boolean;
+  showLabels?: boolean;
 }) {
   const positioner = positionerId
     ? POSITIONER_MODELS.find((p) => p.id === positionerId)
@@ -219,12 +228,13 @@ export default function RobotWorkspace({
   // Skip <Environment> (HDR fetch) — it flakes on restricted networks and
   // leaves a blank viewer; local lights are enough for the cell.
   return (
-    <div className="absolute inset-0 h-full w-full">
+    <div className="absolute inset-0 h-full min-h-0 w-full touch-none">
     <Canvas
-      camera={{ position: [4.5, 3, 4.5], fov: 45 }}
-      gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
-      dpr={[1, 1.75]}
-      style={{ width: "100%", height: "100%", display: "block" }}
+      camera={{ position: [4.5, 3, 4.5], fov: 45, near: 0.02, far: 80 }}
+      gl={{ antialias: true, alpha: false, powerPreference: "default" }}
+      dpr={[1, 1.5]}
+      resize={{ offsetSize: true }}
+      style={{ width: "100%", height: "100%", display: "block", touchAction: "none" }}
       onCreated={({ gl }) => {
         gl.setClearColor("#ffffff", 1);
       }}
@@ -267,10 +277,12 @@ export default function RobotWorkspace({
                 rotate={stations[i]?.rotate ?? 0}
               />
             </Suspense>
-            <StationLabel
-              text={`Stół ${i + 1}`}
-              position={[pos[0], 1.7, pos[2]]}
-            />
+            {showLabels && (
+              <StationLabel
+                text={`Stół ${i + 1}`}
+                position={[pos[0], 1.7, pos[2]]}
+              />
+            )}
           </group>
         ))}
 
@@ -290,7 +302,17 @@ export default function RobotWorkspace({
         <Seam key={i} seg={s} />
       ))}
 
-      <OrbitControls makeDefault enableDamping target={[1, 0.7, 0]} />
+      <OrbitControls
+        makeDefault
+        enablePan
+        enableDamping
+        dampingFactor={0.12}
+        minDistance={0.6}
+        maxDistance={28}
+        maxPolarAngle={Math.PI * 0.49}
+        target={[1, 0.7, 0]}
+        touches={{ ONE: TOUCH.ROTATE, TWO: TOUCH.DOLLY_PAN }}
+      />
     </Canvas>
     </div>
   );
