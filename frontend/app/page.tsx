@@ -515,7 +515,7 @@ export default function Home() {
         {mobileSheet && (
           <button
             type="button"
-            className="absolute inset-0 z-30 bg-black/30 lg:hidden"
+            className="fixed inset-0 z-[80] bg-black/30 lg:hidden"
             aria-label={t("common.close")}
             onClick={() => setMobileSheet(null)}
           />
@@ -525,7 +525,7 @@ export default function Home() {
         <aside
           className={`z-40 min-h-0 flex-col overflow-hidden border-slate-200 bg-white ${
             mobileSheet === "cell"
-              ? "absolute inset-x-0 bottom-14 top-[18%] z-40 flex max-h-[calc(82%-0.5rem)] rounded-t-2xl border-t shadow-[0_-12px_40px_rgba(0,0,0,0.18)] lg:static lg:inset-auto lg:bottom-auto lg:top-auto lg:z-auto lg:max-h-none lg:w-72 lg:shrink-0 lg:rounded-none lg:border-r lg:border-t-0 lg:shadow-none"
+              ? "fixed inset-x-0 bottom-14 top-[18%] z-[90] flex rounded-t-2xl border-t shadow-[0_-12px_40px_rgba(0,0,0,0.18)] lg:static lg:inset-auto lg:bottom-auto lg:top-auto lg:z-auto lg:w-72 lg:shrink-0 lg:rounded-none lg:border-r lg:border-t-0 lg:shadow-none"
               : "hidden lg:flex lg:w-72 lg:shrink-0 lg:border-r"
           }`}
         >
@@ -845,7 +845,7 @@ export default function Home() {
         <aside
           className={`z-40 min-h-0 flex-col overflow-hidden border-slate-200 bg-white ${
             mobileSheet === "robot"
-              ? "absolute inset-x-0 bottom-14 top-[18%] z-40 flex max-h-[calc(82%-0.5rem)] rounded-t-2xl border-t shadow-[0_-12px_40px_rgba(0,0,0,0.18)] lg:static lg:inset-auto lg:bottom-auto lg:top-auto lg:z-auto lg:max-h-none lg:w-80 lg:shrink-0 lg:rounded-none lg:border-l lg:border-t-0 lg:shadow-none"
+              ? "fixed inset-x-0 bottom-14 top-[18%] z-[90] flex rounded-t-2xl border-t shadow-[0_-12px_40px_rgba(0,0,0,0.18)] lg:static lg:inset-auto lg:bottom-auto lg:top-auto lg:z-auto lg:w-80 lg:shrink-0 lg:rounded-none lg:border-l lg:border-t-0 lg:shadow-none"
               : "hidden lg:flex lg:w-80 lg:shrink-0 lg:border-l"
           }`}
         >
