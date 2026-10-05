@@ -100,15 +100,14 @@ input[type="range"] {
     min-height: var(--touch);
   }
 
-  /* Keep the 3D stage full-bleed; sheets overlay, never compress columns */
-  main {
-    max-width: 100vw;
+  /* Keep mobile chrome above drei Html portals (default z-index is huge) */
+  .mobile-bottom-nav {
+    position: relative;
+    z-index: 50;
   }
 
-  /* Sim bar controls: finger-sized */
-  .sim-bar button,
-  .sim-bar select {
-    min-height: var(--touch);
-    min-width: var(--touch);
+  header {
+    position: relative;
+    z-index: 50;
   }
 }
