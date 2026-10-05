@@ -554,6 +554,40 @@ export default function Home() {
             {leftTab === "workspace" && (
               <div className="space-y-1">
                 <div className="px-1 text-[10px] font-semibold uppercase text-slate-500">{t("workspace.cell")}</div>
+
+                <label className="mt-1 block px-1 text-[10px] font-semibold uppercase text-slate-500">
+                  {t("settings.robot")}
+                </label>
+                <select
+                  value={modelId}
+                  onChange={(e) => setModelId(e.target.value)}
+                  className="mobile-touch mb-1 w-full rounded border border-slate-200 bg-slate-50 px-2 py-2 text-sm text-slate-800"
+                  aria-label={t("settings.robot")}
+                >
+                  {ROBOT_MODELS.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.label}
+                    </option>
+                  ))}
+                </select>
+
+                <label className="mt-1 block px-1 text-[10px] font-semibold uppercase text-slate-500">
+                  {t("settings.positioner")}
+                </label>
+                <select
+                  value={positionerId ?? ""}
+                  onChange={(e) => setPositionerId(e.target.value || null)}
+                  className="mobile-touch mb-2 w-full rounded border border-slate-200 bg-slate-50 px-2 py-2 text-sm text-slate-800"
+                  aria-label={t("settings.positioner")}
+                >
+                  <option value="">{t("settings.none")}</option>
+                  {POSITIONER_MODELS.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.label}
+                    </option>
+                  ))}
+                </select>
+
                 <button
                   onClick={() => setSelectedStation(null)}
                   className="flex w-full items-center gap-2 rounded px-2 py-1 text-left hover:bg-slate-100"
@@ -971,9 +1005,15 @@ export default function Home() {
               key={id}
               type="button"
               data-testid={`mobile-tab-${id}`}
+              onClick={() =>
+                setMobileSheet((cur) => (sheet === null ? null : cur === sheet ? null : sheet))
+              }
               onPointerUp={(e) => {
-                e.preventDefault();
-                setMobileSheet((cur) => (sheet === null ? null : cur === sheet ? null : sheet));
+                // Ensure touch agents that miss click still toggle the sheet.
+                if (e.pointerType === "touch") {
+                  e.preventDefault();
+                  setMobileSheet((cur) => (sheet === null ? null : cur === sheet ? null : sheet));
+                }
               }}
               className={`pointer-events-auto flex min-h-12 flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[12px] font-semibold ${
                 active ? "bg-orange-50 text-[#e87722]" : "text-slate-500"
