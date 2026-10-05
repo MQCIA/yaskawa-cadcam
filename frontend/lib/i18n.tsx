@@ -27,6 +27,11 @@ const pl: Dict = {
   "header.newProject": "Nowy projekt / Demo",
   "header.generateCode": "Generuj kod",
   "header.lang": "Język",
+  "common.close": "Zamknij",
+  "mobile.preview": "Podgląd",
+  "mobile.cell": "Komórka",
+  "mobile.robot": "Robot",
+  "view.helpMobile": "1 palec — obrót · 2 palce — zoom i przesuw",
 
   // Ribbon tabs
   "ribbon.plan": "Plan",
@@ -46,6 +51,7 @@ const pl: Dict = {
   "settings.weldCondition": "Warunek spoiny (ARCON)",
   "settings.robot": "Robot",
   "settings.positioner": "Pozycjoner",
+  "settings.rail": "Szyna",
   "settings.none": "Brak",
 
   // View help
@@ -186,6 +192,11 @@ const en: Dict = {
   "header.newProject": "New Project / Demo",
   "header.generateCode": "Generate Code",
   "header.lang": "Language",
+  "common.close": "Close",
+  "mobile.preview": "Preview",
+  "mobile.cell": "Cell",
+  "mobile.robot": "Robot",
+  "view.helpMobile": "1 finger rotate · 2 fingers pinch-zoom / pan",
 
   "ribbon.plan": "Plan",
   "ribbon.settings": "Settings",
@@ -202,6 +213,7 @@ const en: Dict = {
   "settings.weldCondition": "Weld condition (ARCON)",
   "settings.robot": "Robot",
   "settings.positioner": "Positioner",
+  "settings.rail": "Rail",
   "settings.none": "None",
 
   "view.help":

@@ -62,6 +62,10 @@ No `ARCON ASF#(...)` on this cell — conditions come from `ARCSRT.CND` / macros
 
 Large binaries (`CMOS.BIN`, `ALL.PRM`, …) stay under `reference/` (gitignored).
 
+## Open-source motion stacks
+
+Ready Motoman / MoveIt / MotoROS2 downloads: [OPEN_SOURCE_YASKAWA.md](OPEN_SOURCE_YASKAWA.md).
+
 ## Agent index
 
 - **Per-file dump catalog:** [CELL_DUMP_CATALOG.md](CELL_DUMP_CATALOG.md)

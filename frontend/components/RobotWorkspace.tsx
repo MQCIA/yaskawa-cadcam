@@ -3,6 +3,7 @@
 import { Suspense } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, Html } from "@react-three/drei";
+import { TOUCH } from "three";
 import YaskawaManipulator from "./YaskawaManipulator";
 import UrdfModel from "./UrdfModel";
 import H1000dPositioner from "./H1000dPositioner";
@@ -15,6 +16,7 @@ import {
   ROBOT_MODELS,
   POSITIONER_MODELS,
   type PositionerModel,
+  RAIL_MODELS,
 } from "@/lib/models";
 import type { WeldProgram } from "@/lib/weldProgram";
 
@@ -90,7 +92,13 @@ function StationLabel({
   position: [number, number, number];
 }) {
   return (
-    <Html position={position} center distanceFactor={8}>
+    <Html
+      position={position}
+      center
+      distanceFactor={8}
+      zIndexRange={[4, 0]}
+      style={{ pointerEvents: "none" }}
+    >
       <div className="whitespace-nowrap rounded border border-slate-200 bg-white/90 px-2 py-0.5 text-xs font-medium text-slate-700">
         {text}
       </div>
@@ -187,6 +195,8 @@ export default function RobotWorkspace({
   program = null,
   simT = 0,
   manualJog = false,
+  showLabels = true,
+  railId = "tsl600",
 }: {
   modelId: string;
   joints: Joints;
@@ -197,10 +207,16 @@ export default function RobotWorkspace({
   program?: WeldProgram | null;
   simT?: number;
   manualJog?: boolean;
+  showLabels?: boolean;
+  railId?: string;
 }) {
   const positioner = positionerId
     ? POSITIONER_MODELS.find((p) => p.id === positionerId)
     : undefined;
+  const rail =
+    RAIL_MODELS.find((r) => r.id === railId) ??
+    RAIL_MODELS.find((r) => r.id === "tsl600") ??
+    RAIL_MODELS[0];
 
   // The workpiece is clamped to the positioner table, so it rotates with it.
   // Compute the pivot (axle) and rotation for the mounting station.
@@ -219,12 +235,13 @@ export default function RobotWorkspace({
   // Skip <Environment> (HDR fetch) — it flakes on restricted networks and
   // leaves a blank viewer; local lights are enough for the cell.
   return (
-    <div className="absolute inset-0 h-full w-full">
+    <div className="absolute inset-0 h-full min-h-0 w-full touch-none">
     <Canvas
-      camera={{ position: [4.5, 3, 4.5], fov: 45 }}
-      gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
-      dpr={[1, 1.75]}
-      style={{ width: "100%", height: "100%", display: "block" }}
+      camera={{ position: [4.5, 3, 4.5], fov: 45, near: 0.02, far: 80 }}
+      gl={{ antialias: true, alpha: false, powerPreference: "default" }}
+      dpr={[1, 1.5]}
+      resize={{ offsetSize: true }}
+      style={{ width: "100%", height: "100%", display: "block", touchAction: "none" }}
       onCreated={({ gl }) => {
         gl.setClearColor("#ffffff", 1);
       }}
@@ -234,9 +251,13 @@ export default function RobotWorkspace({
       <directionalLight position={[5, 8, 5]} intensity={1.05} />
       <hemisphereLight intensity={0.4} groundColor="#d8dee6" />
 
-      {/* Dedicated Yaskawa travel rail with the robot mounted on the carriage */}
+      {/* Primary travel rail — default original TSL-600 vendor STL */}
       <Suspense fallback={null}>
-        <RobotTrack length={4.6} carriage={railTravel} />
+        <RobotTrack
+          length={rail.length}
+          carriage={railTravel}
+          useVendorMesh={rail.kind === "vendor"}
+        />
       </Suspense>
       <group position={[0, CARRIAGE_TOP_Y, railTravel]}>
         <Suspense key={`robot-${modelId}`} fallback={<Loading />}>
@@ -267,10 +288,12 @@ export default function RobotWorkspace({
                 rotate={stations[i]?.rotate ?? 0}
               />
             </Suspense>
-            <StationLabel
-              text={`Stół ${i + 1}`}
-              position={[pos[0], 1.7, pos[2]]}
-            />
+            {showLabels && (
+              <StationLabel
+                text={`Stół ${i + 1}`}
+                position={[pos[0], 1.7, pos[2]]}
+              />
+            )}
           </group>
         ))}
 
@@ -290,7 +313,17 @@ export default function RobotWorkspace({
         <Seam key={i} seg={s} />
       ))}
 
-      <OrbitControls makeDefault enableDamping target={[1, 0.7, 0]} />
+      <OrbitControls
+        makeDefault
+        enablePan
+        enableDamping
+        dampingFactor={0.12}
+        minDistance={0.6}
+        maxDistance={28}
+        maxPolarAngle={Math.PI * 0.49}
+        target={[1, 0.7, 0]}
+        touches={{ ONE: TOUCH.ROTATE, TWO: TOUCH.DOLLY_PAN }}
+      />
     </Canvas>
     </div>
   );
