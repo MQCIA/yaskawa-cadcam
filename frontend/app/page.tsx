@@ -525,7 +525,7 @@ export default function Home() {
         <aside
           className={`z-40 min-h-0 flex-col overflow-hidden border-slate-200 bg-white ${
             mobileSheet === "cell"
-              ? "absolute inset-x-0 bottom-0 top-[18%] flex max-h-[82%] rounded-t-2xl border-t shadow-[0_-12px_40px_rgba(0,0,0,0.18)] lg:static lg:inset-auto lg:top-auto lg:z-auto lg:max-h-none lg:w-72 lg:shrink-0 lg:rounded-none lg:border-r lg:border-t-0 lg:shadow-none"
+              ? "absolute inset-x-0 bottom-14 top-[18%] z-40 flex max-h-[calc(82%-0.5rem)] rounded-t-2xl border-t shadow-[0_-12px_40px_rgba(0,0,0,0.18)] lg:static lg:inset-auto lg:bottom-auto lg:top-auto lg:z-auto lg:max-h-none lg:w-72 lg:shrink-0 lg:rounded-none lg:border-r lg:border-t-0 lg:shadow-none"
               : "hidden lg:flex lg:w-72 lg:shrink-0 lg:border-r"
           }`}
         >
@@ -845,7 +845,7 @@ export default function Home() {
         <aside
           className={`z-40 min-h-0 flex-col overflow-hidden border-slate-200 bg-white ${
             mobileSheet === "robot"
-              ? "absolute inset-x-0 bottom-0 top-[18%] flex max-h-[82%] rounded-t-2xl border-t shadow-[0_-12px_40px_rgba(0,0,0,0.18)] lg:static lg:inset-auto lg:top-auto lg:z-auto lg:max-h-none lg:w-80 lg:shrink-0 lg:rounded-none lg:border-l lg:border-t-0 lg:shadow-none"
+              ? "absolute inset-x-0 bottom-14 top-[18%] z-40 flex max-h-[calc(82%-0.5rem)] rounded-t-2xl border-t shadow-[0_-12px_40px_rgba(0,0,0,0.18)] lg:static lg:inset-auto lg:bottom-auto lg:top-auto lg:z-auto lg:max-h-none lg:w-80 lg:shrink-0 lg:rounded-none lg:border-l lg:border-t-0 lg:shadow-none"
               : "hidden lg:flex lg:w-80 lg:shrink-0 lg:border-l"
           }`}
         >
@@ -951,8 +951,11 @@ export default function Home() {
         </aside>
       </div>
 
+      {/* Spacer so fixed bottom nav does not cover the sim bar on phones */}
+      <div className="h-14 shrink-0 lg:hidden" aria-hidden />
+
       <nav
-        className="mobile-bottom-nav relative z-50 flex shrink-0 items-stretch border-t border-slate-200 bg-white pb-[env(safe-area-inset-bottom)] lg:hidden"
+        className="mobile-bottom-nav fixed inset-x-0 bottom-0 z-[100] flex items-stretch border-t border-slate-200 bg-white pb-[env(safe-area-inset-bottom)] pt-0.5 lg:hidden"
         aria-label="Mobile"
       >
         {(
@@ -967,10 +970,12 @@ export default function Home() {
             <button
               key={id}
               type="button"
-              onClick={() =>
-                setMobileSheet((cur) => (sheet === null ? null : cur === sheet ? null : sheet))
-              }
-              className={`flex min-h-11 flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[11px] font-semibold ${
+              data-testid={`mobile-tab-${id}`}
+              onPointerUp={(e) => {
+                e.preventDefault();
+                setMobileSheet((cur) => (sheet === null ? null : cur === sheet ? null : sheet));
+              }}
+              className={`pointer-events-auto flex min-h-12 flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[12px] font-semibold ${
                 active ? "bg-orange-50 text-[#e87722]" : "text-slate-500"
               }`}
             >
