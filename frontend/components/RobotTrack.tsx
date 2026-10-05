@@ -149,14 +149,14 @@ function TslVendorTrack({
             </group>
           </group>
         </group>
-        {/* Mount pads under robot / power-source dolly */}
-        <mesh position={[0, 0.24, 0]} castShadow receiveShadow>
-          <boxGeometry args={[0.7, 0.05, 0.6]} />
-          <meshStandardMaterial color={color} metalness={0.3} roughness={0.6} />
+        {/* Mount pads under robot / power-source dolly (thin — STL is the rail) */}
+        <mesh position={[0, 0.26, 0]} castShadow receiveShadow>
+          <boxGeometry args={[0.55, 0.04, 0.5]} />
+          <meshStandardMaterial color={color} metalness={0.35} roughness={0.55} />
         </mesh>
-        <mesh position={[-0.62, 0.24, 0]} castShadow receiveShadow>
-          <boxGeometry args={[0.5, 0.05, 0.55]} />
-          <meshStandardMaterial color={color} metalness={0.3} roughness={0.6} />
+        <mesh position={[-0.62, 0.26, 0]} castShadow receiveShadow>
+          <boxGeometry args={[0.45, 0.04, 0.45]} />
+          <meshStandardMaterial color={color} metalness={0.35} roughness={0.55} />
         </mesh>
       </group>
     </group>

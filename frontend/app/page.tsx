@@ -19,7 +19,7 @@ import ViewerErrorBoundary from "@/components/ViewerErrorBoundary";
 import { useI18n, LanguageToggle } from "@/lib/i18n";
 import type { SeamSegment } from "@/components/RobotWorkspace";
 import { analyzeCad, calculateIk } from "@/lib/api";
-import { ROBOT_MODELS, POSITIONER_MODELS } from "@/lib/models";
+import { ROBOT_MODELS, POSITIONER_MODELS, RAIL_MODELS, DEFAULT_RAIL_ID } from "@/lib/models";
 import {
   buildDemoProgram,
   sampleProgram,
@@ -57,6 +57,7 @@ export default function Home() {
   const [status, setStatus] = useState("");
 
   const [positionerId, setPositionerId] = useState<string | null>("turn_st1");
+  const [railId, setRailId] = useState(DEFAULT_RAIL_ID);
   const [railTravel, setRailTravel] = useState(0);
   const [stations, setStations] = useState([
     { tilt: 0, rotate: 0 },
@@ -469,6 +470,20 @@ export default function Home() {
                   ))}
                 </select>
               </div>
+              <div className="flex items-center gap-2 px-2 text-xs text-slate-700">
+                <span>{t("settings.rail")}</span>
+                <select
+                  value={railId}
+                  onChange={(e) => setRailId(e.target.value)}
+                  className="rounded bg-slate-100 px-2 py-1"
+                >
+                  {RAIL_MODELS.map((r) => (
+                    <option key={r.id} value={r.id}>
+                      {r.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </>
           )}
           {ribbon === "view" && (
@@ -584,6 +599,22 @@ export default function Home() {
                   {POSITIONER_MODELS.map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.label}
+                    </option>
+                  ))}
+                </select>
+
+                <label className="mt-1 block px-1 text-[10px] font-semibold uppercase text-slate-500">
+                  {t("settings.rail")}
+                </label>
+                <select
+                  value={railId}
+                  onChange={(e) => setRailId(e.target.value)}
+                  className="mobile-touch mb-2 w-full rounded border border-slate-200 bg-slate-50 px-2 py-2 text-sm text-slate-800"
+                  aria-label={t("settings.rail")}
+                >
+                  {RAIL_MODELS.map((r) => (
+                    <option key={r.id} value={r.id}>
+                      {r.label}
                     </option>
                   ))}
                 </select>
@@ -780,6 +811,7 @@ export default function Home() {
                 seams={seams}
                 positionerId={positionerId}
                 railTravel={railTravel}
+                railId={railId}
                 stations={stations}
                 program={program}
                 simT={simT}

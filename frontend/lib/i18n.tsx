@@ -51,6 +51,7 @@ const pl: Dict = {
   "settings.weldCondition": "Warunek spoiny (ARCON)",
   "settings.robot": "Robot",
   "settings.positioner": "Pozycjoner",
+  "settings.rail": "Szyna",
   "settings.none": "Brak",
 
   // View help
@@ -212,6 +213,7 @@ const en: Dict = {
   "settings.weldCondition": "Weld condition (ARCON)",
   "settings.robot": "Robot",
   "settings.positioner": "Positioner",
+  "settings.rail": "Rail",
   "settings.none": "None",
 
   "view.help":

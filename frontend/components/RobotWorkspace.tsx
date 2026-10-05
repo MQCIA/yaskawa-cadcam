@@ -16,6 +16,7 @@ import {
   ROBOT_MODELS,
   POSITIONER_MODELS,
   type PositionerModel,
+  RAIL_MODELS,
 } from "@/lib/models";
 import type { WeldProgram } from "@/lib/weldProgram";
 
@@ -195,6 +196,7 @@ export default function RobotWorkspace({
   simT = 0,
   manualJog = false,
   showLabels = true,
+  railId = "tsl600",
 }: {
   modelId: string;
   joints: Joints;
@@ -206,10 +208,15 @@ export default function RobotWorkspace({
   simT?: number;
   manualJog?: boolean;
   showLabels?: boolean;
+  railId?: string;
 }) {
   const positioner = positionerId
     ? POSITIONER_MODELS.find((p) => p.id === positionerId)
     : undefined;
+  const rail =
+    RAIL_MODELS.find((r) => r.id === railId) ??
+    RAIL_MODELS.find((r) => r.id === "tsl600") ??
+    RAIL_MODELS[0];
 
   // The workpiece is clamped to the positioner table, so it rotates with it.
   // Compute the pivot (axle) and rotation for the mounting station.
@@ -244,9 +251,13 @@ export default function RobotWorkspace({
       <directionalLight position={[5, 8, 5]} intensity={1.05} />
       <hemisphereLight intensity={0.4} groundColor="#d8dee6" />
 
-      {/* Primary travel rail: original TSL-600 STL (procedural only as fallback) */}
+      {/* Primary travel rail — default original TSL-600 vendor STL */}
       <Suspense fallback={null}>
-        <RobotTrack length={4.0} carriage={railTravel} useVendorMesh />
+        <RobotTrack
+          length={rail.length}
+          carriage={railTravel}
+          useVendorMesh={rail.kind === "vendor"}
+        />
       </Suspense>
       <group position={[0, CARRIAGE_TOP_Y, railTravel]}>
         <Suspense key={`robot-${modelId}`} fallback={<Loading />}>

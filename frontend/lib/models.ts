@@ -105,3 +105,31 @@ export const POSITIONER_MODELS: PositionerModel[] = [
     source: "ros-industrial/motoman · motoman_motopos_d500_support",
   },
 ];
+
+export type RailModel = {
+  id: string;
+  label: string;
+  kind: "vendor" | "procedural";
+  length: number;
+  source?: string;
+};
+
+/** Travel axis (szyna). Default = original TSL-600 vendor mesh. */
+export const RAIL_MODELS: RailModel[] = [
+  {
+    id: "tsl600",
+    label: "TSL-600 (oryginał / vendor STL)",
+    kind: "vendor",
+    length: 4.0,
+    source: "Verbotics example cell — frontend/public/models/tsl600/",
+  },
+  {
+    id: "procedural",
+    label: "Procedural placeholder",
+    kind: "procedural",
+    length: 4.6,
+    source: "RobotTrack.tsx primitives",
+  },
+];
+
+export const DEFAULT_RAIL_ID = "tsl600";
