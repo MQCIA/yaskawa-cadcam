@@ -952,7 +952,7 @@ export default function Home() {
       </div>
 
       <nav
-        className="mobile-bottom-nav flex shrink-0 items-stretch border-t border-slate-200 bg-white pb-[env(safe-area-inset-bottom)] lg:hidden"
+        className="mobile-bottom-nav relative z-50 flex shrink-0 items-stretch border-t border-slate-200 bg-white pb-[env(safe-area-inset-bottom)] lg:hidden"
         aria-label="Mobile"
       >
         {(
