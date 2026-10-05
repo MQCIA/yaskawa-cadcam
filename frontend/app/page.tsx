@@ -15,6 +15,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import dynamic from "next/dynamic";
 import AxisSliders, { defaultJoints, type Joints } from "@/components/AxisSliders";
+import ViewerErrorBoundary from "@/components/ViewerErrorBoundary";
 import { useI18n, LanguageToggle } from "@/lib/i18n";
 import type { SeamSegment } from "@/components/RobotWorkspace";
 import { analyzeCad, calculateIk } from "@/lib/api";
@@ -738,18 +739,20 @@ export default function Home() {
         {/* CENTER — Viewer + sim bar */}
         <div className="relative z-0 flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
           <div className="relative min-h-0 min-w-0 flex-1">
-            <RobotWorkspace
-              modelId={modelId}
-              joints={joints}
-              seams={seams}
-              positionerId={positionerId}
-              railTravel={railTravel}
-              stations={stations}
-              program={program}
-              simT={simT}
-              manualJog={manualJog}
-              showLabels={mobileSheet === null}
-            />
+            <ViewerErrorBoundary>
+              <RobotWorkspace
+                modelId={modelId}
+                joints={joints}
+                seams={seams}
+                positionerId={positionerId}
+                railTravel={railTravel}
+                stations={stations}
+                program={program}
+                simT={simT}
+                manualJog={manualJog}
+                showLabels={mobileSheet === null}
+              />
+            </ViewerErrorBoundary>
 
             {program && sample && (
               <div className="pointer-events-none absolute left-2 top-2 max-w-[calc(100%-1rem)] rounded border border-slate-200 bg-white/90 px-2.5 py-1.5 font-mono text-[11px] text-slate-700 sm:left-3 sm:top-3">
