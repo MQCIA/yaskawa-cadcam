@@ -116,6 +116,8 @@ export default function WeldPowerSource({
         center
         distanceFactor={7}
         occlude={false}
+        zIndexRange={[4, 0]}
+        style={{ pointerEvents: "none" }}
       >
         <div className="whitespace-nowrap rounded bg-[#0072ce] px-1.5 py-0.5 text-[11px] font-bold tracking-wide text-white">
           {label}
