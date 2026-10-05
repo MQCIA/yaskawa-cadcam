@@ -244,9 +244,9 @@ export default function RobotWorkspace({
       <directionalLight position={[5, 8, 5]} intensity={1.05} />
       <hemisphereLight intensity={0.4} groundColor="#d8dee6" />
 
-      {/* Dedicated Yaskawa travel rail with the robot mounted on the carriage */}
+      {/* Primary travel rail: original TSL-600 STL (procedural only as fallback) */}
       <Suspense fallback={null}>
-        <RobotTrack length={4.6} carriage={railTravel} />
+        <RobotTrack length={4.0} carriage={railTravel} useVendorMesh />
       </Suspense>
       <group position={[0, CARRIAGE_TOP_Y, railTravel]}>
         <Suspense key={`robot-${modelId}`} fallback={<Loading />}>

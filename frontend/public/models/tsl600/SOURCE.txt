@@ -1,7 +1,11 @@
-"""
-Yaskawa TSL-600 style travel-axis meshes (STL), sourced from a Verbotics Weld
-example cell dump for visual reference. Geometry units are millimetres — the
-React component scales them by 0.001 into the metre-based scene.
+Yaskawa TSL-600 style travel-axis meshes (STL) — PRIMARY rail in the viewer.
+
+Source: Verbotics Weld example cell dump (visual reference).
+Units: millimetres (scaled ×0.001 in `RobotTrack.tsx`).
+
+Files:
+  visual/base_link_3150.stl   — fixed rail bed (~4.0 m travel span)
+  visual/carriage_link.stl    — moving carriage
 
 Not an official Yaskawa CAD release; replace with OEM meshes when available.
-"""
+Procedural boxes in RobotTrack are fallback only when these fail to load.
