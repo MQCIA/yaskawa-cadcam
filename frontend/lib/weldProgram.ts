@@ -45,13 +45,20 @@ export type WeldProgram = {
   cycleSec: number;
   weldLenMm: number;
   schedule: WeldScheduleRow;
-  /** ArcNC-style planner metadata (demo / placeholder). */
+  /** Planner flags. `planned` is set only after motion planning, not on import. */
   meta?: {
     collisionFree: boolean;
     touchSense: boolean;
     sequenceOptimized: boolean;
     singularitySafe: boolean;
+    planned: boolean;
+    /** null until IK has been asked. */
+    reachable: boolean | null;
   };
+  /** Why the weld preset was chosen: geometry, or the operator overrode it. */
+  wpsReason?: "flat" | "vertical" | "long" | "manual";
+  /** Accepted seams left out of the motion plan to keep IK bounded. */
+  omittedSeams?: number;
 };
 
 // Mirror of backend welding schedules — Motoweld-E cell (travel V≈5–8).
@@ -174,6 +181,8 @@ function withMeta(
     touchSense: hasTouchSense(prog),
     sequenceOptimized: false,
     singularitySafe: checkSingularitySafe(prog),
+    planned: false,
+    reachable: null,
   };
   return { ...prog, meta: { ...base, ...patch } };
 }
@@ -388,14 +397,206 @@ export function optimizeSequence(prog: WeldProgram): WeldProgram {
   });
 }
 
-/** Re-run coarse motion checks and refresh planner flags. */
+/** Re-run coarse motion checks and mark the program as planned. */
 export function planMotions(prog: WeldProgram): WeldProgram {
   const withSense = ensureTouchSense(prog);
   return refreshMeta(
     withMeta(withSense, {
       sequenceOptimized: withSense.meta?.sequenceOptimized ?? true,
+      planned: true,
     }),
   );
+}
+
+export type CadSeam = {
+  id: string;
+  start: Vec3;
+  end: Vec3;
+  lengthM: number;
+  dihedralDeg: number | null;
+  accepted: boolean;
+};
+
+const MAX_PLANNED_SEAMS = 8;
+
+/** Move CAD seams onto station 1 and convert millimetre files to metres. */
+export function normalizeCadSeams(
+  raw: { start: number[]; end: number[]; length?: number; dihedral_deg?: number }[],
+  mount: Vec3 = DEMO_MOUNT,
+): CadSeam[] {
+  if (!raw.length) return [];
+  const pts = raw.flatMap((s) => [s.start, s.end]);
+  const maxAbs = Math.max(...pts.flatMap((p) => p.map((v) => Math.abs(v))));
+  const scale = maxAbs > 20 ? 0.001 : 1;
+  const scaled = raw.map((s) => ({
+    start: s.start.map((v) => v * scale) as Vec3,
+    end: s.end.map((v) => v * scale) as Vec3,
+    dihedral: s.dihedral_deg ?? null,
+  }));
+  let cx = 0;
+  let cy = 0;
+  let cz = 0;
+  let n = 0;
+  for (const s of scaled) {
+    for (const p of [s.start, s.end]) {
+      cx += p[0];
+      cy += p[1];
+      cz += p[2];
+      n += 1;
+    }
+  }
+  const shift: Vec3 = [mount[0] - cx / n, mount[1] - cy / n, mount[2] - cz / n];
+  return scaled
+    .map((s, i) => {
+      const start = add(s.start, shift);
+      const end = add(s.end, shift);
+      return {
+        id: `S${String(i + 1).padStart(2, "0")}`,
+        start,
+        end,
+        lengthM: dist(start, end),
+        dihedralDeg: s.dihedral,
+        accepted: dist(start, end) >= 0.008,
+      };
+    })
+    .filter((s) => s.lengthM >= 0.004);
+}
+
+/** Match a Motoweld preset from seam direction and length (fillet assumed). */
+export function assignWeldPreset(seams: CadSeam[]): {
+  schedule: WeldScheduleRow;
+  reason: "flat" | "vertical" | "long";
+} {
+  const accepted = seams.filter((s) => s.accepted);
+  const use = accepted.length ? accepted : seams;
+  const lenMm = use.reduce((a, s) => a + s.lengthM * 1000, 0);
+  const vertical = use.some((s) => {
+    const d = dist(s.start, s.end) || 1;
+    return Math.abs(s.end[1] - s.start[1]) / d > 0.7;
+  });
+  if (vertical) return { schedule: LORCH_S8_SCHEDULES[2], reason: "vertical" };
+  if (lenMm > 400) return { schedule: LORCH_S8_SCHEDULES[1], reason: "long" };
+  return { schedule: LORCH_S8_SCHEDULES[0], reason: "flat" };
+}
+
+function platesFromPoints(pts: Vec3[]): { size: Vec3; center: Vec3 }[] {
+  if (!pts.length) return [];
+  const min: Vec3 = [Infinity, Infinity, Infinity];
+  const max: Vec3 = [-Infinity, -Infinity, -Infinity];
+  for (const p of pts) {
+    for (let k = 0; k < 3; k++) {
+      min[k] = Math.min(min[k], p[k]);
+      max[k] = Math.max(max[k], p[k]);
+    }
+  }
+  const size: Vec3 = [
+    Math.max(0.04, max[0] - min[0] + 0.04),
+    0.012,
+    Math.max(0.04, max[2] - min[2] + 0.04),
+  ];
+  const center: Vec3 = [(min[0] + max[0]) / 2, min[1] - size[1] / 2, (min[2] + max[2]) / 2];
+  return [{ size, center }];
+}
+
+/**
+ * Build approach / weld / retract waypoints from the seams the operator kept.
+ * Touch sensing and the "planned" flag are applied later by `planMotions`.
+ */
+export function buildProgramFromSeams(
+  seams: CadSeam[],
+  mount: Vec3 = DEMO_MOUNT,
+  name = "PART",
+  condition?: number,
+): WeldProgram | null {
+  const accepted = seams
+    .filter((s) => s.accepted)
+    .sort((a, b) => b.lengthM - a.lengthM);
+  if (!accepted.length) return null;
+  const used = accepted.slice(0, MAX_PLANNED_SEAMS);
+  const preset = assignWeldPreset(used.map((s) => ({ ...s, accepted: true })));
+  const sch =
+    condition != null
+      ? LORCH_S8_SCHEDULES.find((s) => s.condition === condition) ?? preset.schedule
+      : preset.schedule;
+  const reason = sch.condition === preset.schedule.condition ? preset.reason : "manual";
+
+  const samples = 6;
+  const torchDir = norm([0, -1, -1]);
+  const waypoints: Waypoint[] = [];
+  const seamPts: Vec3[] = [];
+  const torchFrames: { pos: Vec3; dir: Vec3 }[] = [];
+  const air = "VJ=50%";
+  const weldLabel = `V=${sch.travelCmMin} cm/min`;
+  let n = 1;
+
+  used.forEach((seam, si) => {
+    const lift: Vec3 = [0, 0.08, 0.05];
+    waypoints.push({
+      id: pad(n++),
+      pos: add(seam.start, lift),
+      move: si === 0 ? "MOVJ" : "MOVL",
+      speedLabel: air,
+      arc: false,
+      kind: si === 0 ? "approach" : "travel",
+    });
+    for (let i = 0; i <= samples; i++) {
+      const t = i / samples;
+      const pos: Vec3 = [
+        seam.start[0] + (seam.end[0] - seam.start[0]) * t,
+        seam.start[1] + (seam.end[1] - seam.start[1]) * t,
+        seam.start[2] + (seam.end[2] - seam.start[2]) * t,
+      ];
+      seamPts.push(pos);
+      torchFrames.push({ pos, dir: torchDir });
+      const last = i === samples;
+      waypoints.push({
+        id: pad(n++),
+        pos,
+        move: "MOVL",
+        speedLabel: i === 0 ? "V=15 cm/min" : weldLabel,
+        arc: true,
+        kind: "weld",
+        tag: i === 0 ? "ARCON" : last ? "ARCOF" : undefined,
+      });
+    }
+    if (si === used.length - 1) {
+      waypoints.push({
+        id: pad(n++),
+        pos: add(seam.end, lift),
+        move: "MOVL",
+        speedLabel: air,
+        arc: false,
+        kind: "retract",
+      });
+    }
+  });
+
+  const safeName = name.replace(/\.[^.]+$/, "").replace(/[^\w.-]+/g, "_").slice(0, 24) || "PART";
+  const draft: WeldProgram = {
+    name: safeName,
+    mount,
+    plates: platesFromPoints(seamPts),
+    seam: seamPts,
+    torchFrames,
+    waypoints,
+    segDurations: [],
+    cycleSec: 0,
+    weldLenMm: used.reduce((a, s) => a + s.lengthM * 1000, 0),
+    schedule: sch,
+    wpsReason: reason,
+    omittedSeams: accepted.length - used.length,
+  };
+  return refreshMeta(rebuildDurations(draft));
+}
+
+/** Record an IK reachability result on an already planned program. */
+export function applyReachability(prog: WeldProgram, reachable: boolean | null): WeldProgram {
+  const heuristic = checkSingularitySafe(prog);
+  return withMeta(prog, {
+    planned: true,
+    reachable,
+    singularitySafe: reachable == null ? heuristic : reachable && heuristic,
+  });
 }
 
 const DEFAULT_TORCH_DIR: Vec3 = [0, -Math.SQRT1_2, -Math.SQRT1_2];

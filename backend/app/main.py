@@ -19,6 +19,7 @@ from .dx200_postprocessor import PostprocessorConfig, WeldSegment, generate_jbi
 from .path_planning import plan_from_seams
 from .robot_config import ACTIVE_MODEL, ACTIVE_POSITIONER, AXIS_NAMES, MODELS
 from .welding_config import ACTIVE_POWER_SOURCE, LORCH_S8_SCHEDULES
+from .robot_link import describe_robot_link
 
 app = FastAPI(
     title="Yaskawa CAD/CAM prototype API",
@@ -115,6 +116,16 @@ def robot_info():
             "DX200 CF dump (RC1G). Validate in MotoSim before controller load."
         ),
     }
+
+
+@app.get("/api/robot-link")
+def robot_link():
+    """Execution path for this cell: INFORM .JBI, plus optional MotoROS2 status.
+
+    ArcNC does not expose an API. ROS is reported only when a micro-ROS Agent
+    address is configured; this endpoint never commands motion.
+    """
+    return describe_robot_link()
 
 
 @app.get("/api/config")
