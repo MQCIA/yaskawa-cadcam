@@ -28,10 +28,12 @@ from datetime import datetime
 from pathlib import Path
 
 from .pulse_config import (
+    BASE_PULSES_PER_MM,
+    BC_HOME_PULSE,
     CELL_PULSE,
     STATION_PULSES_PER_DEGREE,
-    base_mm_to_bc,
     deg_to_joint_pulses,
+    resolve_base_pulses,
     station_deg_to_ec,
 )
 from .welding_config import LORCH_S8_SCHEDULES, WeldSchedule
@@ -69,6 +71,8 @@ class PostprocessorConfig:
     # Emit full PULSE C# when True and joint_angles_deg is provided.
     prefer_pulse: bool = True
     base_park_pulse: int = CELL_PULSE.base_park_pulse
+    base_home_pulse: int = CELL_PULSE.base_home_pulse
+    base_pulses_per_mm: float = CELL_PULSE.base_pulses_per_mm
     robot_pulses_per_degree: list[float] = field(
         default_factory=lambda: list(CELL_PULSE.robot_pulses_per_degree)
     )
@@ -111,11 +115,19 @@ def generate_jbi(
     config: PostprocessorConfig | None = None,
     station_deg: list[float] | None = None,
     joint_angles_deg: list[list[float]] | None = None,
+    *,
+    base_pulse: list[int] | int | None = None,
+    base_mm: list[float] | float | None = None,
+    station: str | None = None,
 ) -> str:
     """Generate a DX200 ``.JBI`` job from Cartesian TCP points.
 
     Pass ``joint_angles_deg`` (one [S,L,U,R,B,T] per point) to emit production
     ``///POSTYPE PULSE`` C# values using ``pulse_config`` scaling.
+
+    RECT-X ``BC#`` per point: explicit ``base_pulse`` / ``base_mm``, or
+    ``station`` midpoint (ST1..ST4), else auto from each point's world Z
+    (rail along Z; ``mm=0`` at ``BC_HOME_PULSE``).
     """
     cfg = config or PostprocessorConfig()
     weld_segments = weld_segments or []
@@ -127,7 +139,14 @@ def generate_jbi(
 
     if cfg.profile == "ma2010_cell":
         return _generate_ma2010_cell(
-            cartesian_points, weld_segments, cfg, station_deg, joint_angles_deg
+            cartesian_points,
+            weld_segments,
+            cfg,
+            station_deg,
+            joint_angles_deg,
+            base_pulse=base_pulse,
+            base_mm=base_mm,
+            station=station,
         )
     return _generate_cartesian_review(cartesian_points, weld_segments, cfg, station_deg)
 
@@ -138,10 +157,22 @@ def _generate_ma2010_cell(
     cfg: PostprocessorConfig,
     station_deg: list[float] | None,
     joint_angles_deg: list[list[float]] | None,
+    *,
+    base_pulse: list[int] | int | None = None,
+    base_mm: list[float] | float | None = None,
+    station: str | None = None,
 ) -> str:
     """INST layout matching ``000.JBI`` from the production MA2010 cell."""
     npos = len(cartesian_points)
     station_deg = station_deg or [0.0] * npos
+    bc_list = resolve_base_pulses(
+        npos,
+        base_pulse=base_pulse,
+        base_mm=base_mm,
+        points=cartesian_points,
+        station=station,
+        default_park=False,
+    )
     use_pulse = (
         bool(cfg.prefer_pulse)
         and joint_angles_deg is not None
@@ -163,7 +194,8 @@ def _generate_ma2010_cell(
     )
     lines.append(
         f"' Station pulses/deg~{cfg.station_pulses_per_deg:.4f}; "
-        f"BC park={cfg.base_park_pulse}"
+        f"RECT-X ~{cfg.base_pulses_per_mm:.4f} p/mm "
+        f"(home BC={cfg.base_home_pulse}, park={cfg.base_park_pulse})"
     )
     lines.append("//POS")
     lines.append(f"///NPOS {npos},{npos},{npos},0,0,0")
@@ -187,9 +219,12 @@ def _generate_ma2010_cell(
                 f"{_fmt(rx)},{_fmt(ry)},{_fmt(rz)}"
             )
 
-    lines.append(f"' BC# RECT-X park pulse ({cfg.base_park_pulse})")
-    for i in range(npos):
-        lines.append(f"BC{i:05d}={base_mm_to_bc(park_pulse=cfg.base_park_pulse)}")
+    lines.append(
+        f"' BC# RECT-X BS1 (~{BASE_PULSES_PER_MM:.4f} p/mm; "
+        f"0 mm @ BC={BC_HOME_PULSE})"
+    )
+    for i, bc in enumerate(bc_list):
+        lines.append(f"BC{i:05d}={bc}")
 
     if not use_pulse:
         lines.append("///POSTYPE PULSE")

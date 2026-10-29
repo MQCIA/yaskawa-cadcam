@@ -2,7 +2,7 @@
 
 Cel produktu: **offline CAD/CAM**, które z modelu 3D prowadzi do `.JBI` zgodnego z produkcyjną komórką (MA2010 + RECT-X + TURN + Motoweld), z walidacją w MotoSim **zanim** plik trafi na DX200.
 
-Stan dziś: prototyp UI + IK + eksport `ma2010_cell` (RECTAN albo PULSE po IK), dump CF skatalogowany, skalowanie impulsów wyciągnięte z RC1G/RBCALIB. DH i layout komórki nadal przybliżone — **nie gotowe na produkcję**.
+Stan dziś: prototyp UI + IK + eksport `ma2010_cell` (RECTAN albo PULSE po IK), dump CF skatalogowany, skalowanie impulsów z RC1G/RBCALIB, **MA2010 FK/IK na URDF ROS-Industrial + TOOL 0**. Layout komórki / RECT-X mm i XYZ z pendantu nadal otwarte — **nie gotowe na produkcję**.
 
 ---
 
@@ -74,10 +74,10 @@ flowchart LR
 
 | # | Zadanie | Done when |
 |---|---------|-----------|
-| 1.1 | Skrypt `tools/compare_pulses.py`: C# z `jobs/*.JBI` → deg → (opcjonalnie FK) | Raport różnic vs softlimits / oczekiwane limity |
-| 1.2 | 5–10 **golden poses** z pendanta (deg + pulse + XYZ) | Tabela w `docs/CELL_POSES.md` |
-| 1.3 | RECT-X **pulses/mm** (lead / teach) | `base_mm_to_bc` bez samego park-pulse |
-| 1.4 | DH z MotoSim / datasheet MA2010 (zastąpić placeholdery) | FK vs pendant &lt; kilku mm na golden set |
+| 1.1 | Skrypt `tools/compare_pulses.py`: C# z `jobs/*.JBI` → deg → FK/IK | Jest. Raportuje ΔPULSE, ΔDEG, błąd TCP i softlimity RC1G |
+| 1.2 | 5–10 **golden poses** (deg + pulse; XYZ z pendantu gdy będzie) | `docs/CELL_POSES.md` — home + `000.JBI` z FK URDF×TOOL0; XYZ pendantu brak |
+| 1.3 | RECT-X **pulses/mm** (lead / teach) | **≈257.708 p/mm** + `track_mm_to_pulses` / per-point `BC#` (brak leadu w RC1G → kalibracja z jobów) |
+| 1.4 | Geometria MA2010 = URDF / MotoSim; FK vs pendant | **URDF + TOOL 0 w kodzie.** Sign-off vs pendant XYZ nadal otwarty |
 | 1.5 | Eksport UI: zawsze ścieżka IK → PULSE; jasny status gdy IK fail | Status PL/EN już częściowo; dokończyć UX |
 
 **Wyjście M1:** „draft PULSE” nadający się do dry-run w MotoSim na prostej spoiny.

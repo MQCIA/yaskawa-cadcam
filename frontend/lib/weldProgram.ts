@@ -449,7 +449,21 @@ const f1 = (v: number) => v.toFixed(1);
 /**
  * Pulse scaling mined from the production DX200 dump
  * (`reference/robot-cell-dx200`: RC1G softlimits + RBCALIB station step).
+ *
+ * RECT-X / BS1: no rack-lead register in the kept RC1G text. `pulsesPerMm` is
+ * calibrated from taught BC envelopes (ST2 mid ↔ ST1/ST3 mid) over the 2400 mm
+ * station span. Encoder SV1G = 4096 alone is not enough without lead/gear.
  */
+const _BC_ST2_MID = (124171 + 375361) / 2;
+const _BC_ST13_MID = (808680 + 927851) / 2;
+const _RECT_X_PULSES_PER_MM = (_BC_ST13_MID - _BC_ST2_MID) / 2400;
+
+export const BC_HOME_PULSE = 570125;
+export const BC_PARK_PULSE = 878036;
+/** Alias kept for older call sites. */
+export const BASE_PARK_PULSE = BC_PARK_PULSE;
+export const PULSES_PER_MM = _RECT_X_PULSES_PER_MM;
+
 export const CELL_PULSE = {
   /** S,L,U,R,B,T pulses per degree (RC1G ↔ MA2010 URDF limits). */
   robotPulsesPerDeg: [
@@ -462,13 +476,94 @@ export const CELL_PULSE = {
   ] as const,
   /** TURN ST1: RBCALIB ΔE≈91771 over ~90°. */
   stationPulsesPerDeg: 91771 / 90,
+  /** RECT-X home / rail centre (production C00000 jobs). */
+  baseHomePulse: BC_HOME_PULSE,
   /** RECT-X park from jobs/000.JBI. */
-  baseParkPulse: 878036,
+  baseParkPulse: BC_PARK_PULSE,
+  /** Calibrated pulses per millimetre along BS1. */
+  pulsesPerMm: PULSES_PER_MM,
+  /** Taught station midpoints (BC#). */
+  stationBcMid: {
+    ST1: Math.round(_BC_ST13_MID),
+    ST2: Math.round(_BC_ST2_MID),
+    ST3: Math.round(_BC_ST13_MID),
+    ST4: Math.round(_BC_ST2_MID),
+  } as const,
 } as const;
 
 export function degToJointPulses(qDeg: number[]): number[] {
   if (qDeg.length !== 6) throw new Error("Expected 6 joint angles");
   return qDeg.map((q, i) => Math.round(q * CELL_PULSE.robotPulsesPerDeg[i]));
+}
+
+/** RECT-X travel in mm → INFORM BC#. ``mm = 0`` at ``BC_HOME_PULSE``. */
+export function trackMmToPulses(
+  mm: number,
+  originPulse: number = BC_HOME_PULSE,
+  pulsesPerMm: number = PULSES_PER_MM,
+): number {
+  return Math.round(originPulse + mm * pulsesPerMm);
+}
+
+/** INFORM BC# → millimetres from rail home. */
+export function trackPulsesToMm(
+  pulses: number,
+  originPulse: number = BC_HOME_PULSE,
+  pulsesPerMm: number = PULSES_PER_MM,
+): number {
+  return (pulses - originPulse) / pulsesPerMm;
+}
+
+/**
+ * World Z (metres if |z|<10, else mm) → track mm from home.
+ * Rail along Z; ST1 at Z≈−1.2 m (high BC), ST2 at Z≈+1.2 m (low BC).
+ */
+export function trackMmFromWorldZ(z: number): number {
+  const zMm = Math.abs(z) < 10 ? z * 1000 : z;
+  return -zMm;
+}
+
+/** Build per-point BC# for a job of length `npos`. */
+export function resolveBasePulses(
+  npos: number,
+  opts?: {
+    basePulse?: number | number[];
+    baseMm?: number | number[];
+    station?: string;
+    /** World points with `.z` — used when nothing else is set. */
+    points?: { z: number }[];
+    defaultPark?: boolean;
+  },
+): number[] {
+  const bp = opts?.basePulse;
+  if (typeof bp === "number") return Array(npos).fill(bp);
+  if (Array.isArray(bp) && bp.length) {
+    if (bp.length === 1) return Array(npos).fill(bp[0]);
+    if (bp.length !== npos) throw new Error(`basePulse length ${bp.length} != npos ${npos}`);
+    return bp.map((p) => Math.round(p));
+  }
+
+  const bm = opts?.baseMm;
+  if (typeof bm === "number") return Array(npos).fill(trackMmToPulses(bm));
+  if (Array.isArray(bm) && bm.length) {
+    if (bm.length === 1) return Array(npos).fill(trackMmToPulses(bm[0]));
+    if (bm.length !== npos) throw new Error(`baseMm length ${bm.length} != npos ${npos}`);
+    return bm.map((m) => trackMmToPulses(m));
+  }
+
+  if (opts?.station) {
+    const key = opts.station.toUpperCase().replace(/\s+/g, "") as keyof typeof CELL_PULSE.stationBcMid;
+    const mid = CELL_PULSE.stationBcMid[key];
+    if (mid == null) throw new Error(`Unknown station '${opts.station}'. Use ST1..ST4.`);
+    return Array(npos).fill(mid);
+  }
+
+  if (opts?.points && opts.points.length === npos) {
+    return opts.points.map((p) => trackMmToPulses(trackMmFromWorldZ(p.z)));
+  }
+
+  const fill = opts?.defaultPark ? BC_PARK_PULSE : BC_HOME_PULSE;
+  return Array(npos).fill(fill);
 }
 
 /** Approximate Motoman RECTAN Rx,Ry,Rz [deg] from torch direction (tool −Z). */
@@ -518,19 +613,28 @@ export function generateJbi(
     stationDeg?: number | number[];
     weaveNo?: number;
     jointAnglesDeg?: number[][];
+    /** Legacy: force every BC# to this park/home pulse. */
     baseParkPulse?: number;
+    basePulse?: number | number[];
+    baseMm?: number | number[];
+    station?: string;
   },
 ): string {
   const pts = prog.waypoints;
   const npos = pts.length;
   const pulsesPerDeg = opts?.stationPulsesPerDeg ?? CELL_PULSE.stationPulsesPerDeg;
-  const basePark = opts?.baseParkPulse ?? CELL_PULSE.baseParkPulse;
   const weaveNo = opts?.weaveNo ?? 21;
   const usePulse =
     Array.isArray(opts?.jointAnglesDeg) && opts!.jointAnglesDeg!.length === npos;
   const stationDeg = pts.map((_, i) => {
     if (Array.isArray(opts?.stationDeg)) return opts!.stationDeg![i] ?? opts!.stationDeg![0] ?? 0;
     return opts?.stationDeg ?? 0;
+  });
+  const bcList = resolveBasePulses(npos, {
+    basePulse: opts?.basePulse ?? opts?.baseParkPulse,
+    baseMm: opts?.baseMm,
+    station: opts?.station,
+    points: pts.map((p) => ({ z: p.pos[2] })),
   });
   const lines: string[] = [];
   const sch = prog.schedule;
@@ -543,7 +647,10 @@ export function generateJbi(
     lines.push("' Offline RECTAN review — supply IK joints for PULSE C#");
   }
   lines.push("' Cell: MA2010 + RECT-X (BS1) + TURN (ST1); TOOL0 TCP Z≈415.7 mm");
-  lines.push(`' Station pulses/deg~${pulsesPerDeg.toFixed(4)}; BC park=${basePark}`);
+  lines.push(
+    `' Station pulses/deg~${pulsesPerDeg.toFixed(4)}; RECT-X ~${PULSES_PER_MM.toFixed(4)} p/mm ` +
+      `(home BC=${BC_HOME_PULSE}, park=${BC_PARK_PULSE})`,
+  );
   lines.push("//POS");
   lines.push(`///NPOS ${npos},${npos},${npos},0,0,0`);
   lines.push("///TOOL 0");
@@ -570,8 +677,10 @@ export function generateJbi(
     });
   }
 
-  lines.push(`' BC# RECT-X park pulse (${basePark})`);
-  pts.forEach((_, i) => lines.push(`BC${String(i).padStart(5, "0")}=${basePark}`));
+  lines.push(
+    `' BC# RECT-X BS1 (~${PULSES_PER_MM.toFixed(4)} p/mm; 0 mm @ BC=${BC_HOME_PULSE})`,
+  );
+  bcList.forEach((bc, i) => lines.push(`BC${String(i).padStart(5, "0")}=${bc}`));
 
   if (!usePulse) {
     lines.push("///POSTYPE PULSE");

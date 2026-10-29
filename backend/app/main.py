@@ -17,7 +17,21 @@ from pydantic import BaseModel, Field
 from .kinematics_engine import forward_kinematics, get_robot, solve_ik_path
 from .dx200_postprocessor import PostprocessorConfig, WeldSegment, generate_jbi
 from .path_planning import plan_from_seams
-from .robot_config import ACTIVE_MODEL, ACTIVE_POSITIONER, AXIS_NAMES, MODELS
+from .pulse_config import (
+    BASE_PULSES_PER_MM,
+    BC_HOME_PULSE,
+    BC_PARK_PULSE,
+    PULSES_PER_MM,
+    resolve_base_pulses,
+)
+from .robot_config import (
+    ACTIVE_MODEL,
+    ACTIVE_POSITIONER,
+    AXIS_NAMES,
+    MODELS,
+    TOOL0_RPY_DEG,
+    TOOL0_XYZ_MM,
+)
 from .welding_config import ACTIVE_POWER_SOURCE, LORCH_S8_SCHEDULES
 
 app = FastAPI(
@@ -54,6 +68,18 @@ class IkRequest(BaseModel):
     q_seed_deg: list[float] | None = Field(
         default=None, description="Optional 6-value seed pose in degrees."
     )
+    station: str | None = Field(
+        default=None,
+        description="Optional ST1..ST4 — suggests a fixed BC midpoint for all points.",
+    )
+    base_mm: list[float] | float | None = Field(
+        default=None,
+        description="Optional RECT-X travel mm from home (scalar or per-point).",
+    )
+    base_pulse: list[int] | int | None = Field(
+        default=None,
+        description="Optional explicit BC# pulses (scalar or per-point).",
+    )
 
 
 class WeldSegmentIn(BaseModel):
@@ -89,6 +115,18 @@ class JbiRequest(BaseModel):
         default=None,
         description="Optional per-point [S,L,U,R,B,T] deg — enables PULSE C# export.",
     )
+    station: str | None = Field(
+        default=None,
+        description="Optional ST1..ST4 — use taught BC midpoint for all BC#.",
+    )
+    base_mm: list[float] | float | None = Field(
+        default=None,
+        description="RECT-X mm from home (scalar or per-point). Overrides auto Z.",
+    )
+    base_pulse: list[int] | int | None = Field(
+        default=None,
+        description="Explicit BC# pulses (scalar or per-point). Highest priority.",
+    )
 
 
 # --------------------------------------------------------------------------- #
@@ -110,10 +148,24 @@ def robot_info():
             for j in ACTIVE_MODEL.joints
         ],
         "pulses_per_degree": ACTIVE_MODEL.pulses_per_degree,
+        "rect_x": {
+            "pulses_per_mm": PULSES_PER_MM,
+            "bc_home": BC_HOME_PULSE,
+            "bc_park": BC_PARK_PULSE,
+            "note": (
+                "No rack lead/gear in RC1G text dump; calibrated from taught BC "
+                "station ranges vs 2400 mm cell span. Encoder SV1G=4096."
+            ),
+        },
         "warning": (
-            "DH link lengths are approximate; pulse scaling for MA2010 is from the "
-            "DX200 CF dump (RC1G). Validate in MotoSim before controller load."
+            "MA2010 uses ROS-Industrial URDF lengths/axes + TOOL 0 from the cell dump; "
+            "pulse scaling is RC1G. Other catalogue models still use placeholder DH. "
+            "Validate in MotoSim before controller load."
         ),
+        "tool0_xyz_mm": list(TOOL0_XYZ_MM),
+        "tool0_rpy_deg": list(TOOL0_RPY_DEG),
+        "home_deg": ACTIVE_MODEL.home_deg,
+        "urdf_chain": ACTIVE_MODEL.urdf_chain,
     }
 
 
@@ -159,7 +211,22 @@ def calculate_ik(req: IkRequest):
     if not req.points:
         raise HTTPException(400, "No points supplied")
     points = [p.model_dump() for p in req.points]
-    return solve_ik_path(points, q_seed_deg=req.q_seed_deg)
+    result = solve_ik_path(points, q_seed_deg=req.q_seed_deg)
+    try:
+        base_pulses = resolve_base_pulses(
+            len(points),
+            base_pulse=req.base_pulse,
+            base_mm=req.base_mm,
+            points=points,
+            station=req.station,
+        )
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    result["base_pulses"] = base_pulses
+    result["base_pulses_per_mm"] = BASE_PULSES_PER_MM
+    result["bc_home"] = BC_HOME_PULSE
+    result["bc_park"] = BC_PARK_PULSE
+    return result
 
 
 @app.post("/api/plan-path")
@@ -207,13 +274,19 @@ def generate_job(req: JbiRequest):
         )
         for s in req.weld_segments
     ]
-    return generate_jbi(
-        [p.model_dump() for p in req.points],
-        segments,
-        cfg,
-        station_deg=req.station_deg,
-        joint_angles_deg=req.joint_angles_deg,
-    )
+    try:
+        return generate_jbi(
+            [p.model_dump() for p in req.points],
+            segments,
+            cfg,
+            station_deg=req.station_deg,
+            joint_angles_deg=req.joint_angles_deg,
+            base_pulse=req.base_pulse,
+            base_mm=req.base_mm,
+            station=req.station,
+        )
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
 
 
 @app.post("/api/analyze-cad")

@@ -19,6 +19,10 @@ def test_config():
           f"schedules={sorted(LORCH_S8_SCHEDULES)}")
     print(f"Pulse/deg S..T: {[round(p, 2) for p in CELL_PULSE.robot_pulses_per_degree]}")
     print(f"Station pulse/deg: {CELL_PULSE.station_pulses_per_degree:.4f}")
+    print(
+        f"RECT-X p/mm: {CELL_PULSE.base_pulses_per_mm:.4f} "
+        f"(home={CELL_PULSE.base_home_pulse}, park={CELL_PULSE.base_park_pulse})"
+    )
     assert ACTIVE_MODEL.name == "MA2010"
     assert ACTIVE_POSITIONER.name == "TURN-ST1"
     assert "MOTOWELD" in ACTIVE_POWER_SOURCE.name.upper()
@@ -73,7 +77,11 @@ def test_jbi():
     assert "RB1,BS1" in jbi and "ST1" in jbi
     assert "+MOVJ EC" in jbi
     assert "Motoweld" in jbi
-    assert "BC00000=878036" in jbi
+    from app.pulse_config import track_mm_from_world_z, track_mm_to_pulses
+
+    expect_bc = track_mm_to_pulses(track_mm_from_world_z(0.5))
+    assert f"BC00000={expect_bc}" in jbi
+    assert f"BC00002={expect_bc}" in jbi
     assert "///POSTYPE PULSE" in jbi
     assert "///RECTAN" not in jbi
     pulses = deg_to_joint_pulses(joints[0])

@@ -28,7 +28,7 @@ Implemented in `backend/app/pulse_config.py` and `frontend/lib/weldProgram.ts` (
 | B | +88222 / −132333 | +90 / −135 | **980.24** |
 | T | ±95499 | ±210 | **454.76** |
 | ST1 (TURN) | RBCALIB ΔE≈91771 / 90° | | **1019.69** |
-| BS1 (RECT-X) | park BC | | **878036** (park; mm lead TBD) |
+| BS1 (RECT-X) | home / park BC | | **570125** home, **878036** park; **≈257.708 p/mm** (calibrated from taught ST ranges vs 2400 mm span; no rack lead in RC1G text) |
 
 Encoder resolution (`SV1G`): **4096**.
 
@@ -54,6 +54,8 @@ No `ARCON ASF#(...)` on this cell — conditions come from `ARCSRT.CND` / macros
 ## App integration
 
 - Default robot model: **MA2010** (`ROBOT_MODEL=MA2010`)
+- Kinematics: URDF chain (`d1=505, a1=150, a2=760, a3=200, d4=1082, d6=100` mm;
+  axes S+Z L+Y U−Y R−X B−Y T−X) + TOOL 0; IK seed = cell home pulses
 - Default positioner: **TURN-ST1** (`POSITIONER=TURN-ST1`)
 - Default JBI profile: **`ma2010_cell`**
 - Pass IK `joint_angles_deg` into `generate_jbi` / `/api/generate-jbi` → full **PULSE** C#
@@ -67,3 +69,4 @@ Large binaries (`CMOS.BIN`, `ALL.PRM`, …) stay under `reference/` (gitignored)
 - **Per-file dump catalog:** [CELL_DUMP_CATALOG.md](CELL_DUMP_CATALOG.md)
 - **Machine scan JSON:** [_dump_scan.json](_dump_scan.json)
 - **Cursor skill:** `.cursor/skills/dx200-cell-dump/` (lookup + concept gaps)
+- **Golden poses + pulse diagnostic:** [CELL_POSES.md](CELL_POSES.md), `tools/compare_pulses.py`
