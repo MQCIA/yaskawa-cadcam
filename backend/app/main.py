@@ -32,7 +32,7 @@ from .robot_config import (
     TOOL0_RPY_DEG,
     TOOL0_XYZ_MM,
 )
-from .welding_config import ACTIVE_POWER_SOURCE, LORCH_S8_SCHEDULES
+from .welding_config import ACTIVE_POWER_SOURCE, MOTOWELD_SCHEDULES
 
 app = FastAPI(
     title="Yaskawa CAD/CAM prototype API",
@@ -127,6 +127,23 @@ class JbiRequest(BaseModel):
         default=None,
         description="Explicit BC# pulses (scalar or per-point). Highest priority.",
     )
+    macro_arg: int | None = Field(
+        default=None,
+        description="MACRO1 MJ#(0) ARGFn override (production: 1, 4, 5, …).",
+    )
+    weave_no: int | None = Field(
+        default=None,
+        description="WVON WEV#(n); omit to use schedule/default. Set disable_weave.",
+    )
+    disable_weave: bool = False
+    bookend_home: bool | None = Field(
+        default=None,
+        description="Wrap path with safe home C/BC (default on when PULSE joints).",
+    )
+    group2_station: str | None = Field(
+        default=None,
+        description="///GROUP2 STn (ST1..ST4). Defaults to station or ST1.",
+    )
 
 
 # --------------------------------------------------------------------------- #
@@ -195,11 +212,21 @@ def cell_config():
         "power_source": {
             "name": ACTIVE_POWER_SOURCE.name,
             "interface": ACTIVE_POWER_SOURCE.interface,
+            "cell_label": ACTIVE_POWER_SOURCE.cell_label,
             "schedules": [
-                {"condition_no": s.condition_no, "lorch_job": s.lorch_job,
-                 "current_a": s.current_a, "voltage_v": s.voltage_v,
-                 "wire_speed": s.wire_speed, "process": s.process, "gas": s.gas}
-                for s in LORCH_S8_SCHEDULES.values()
+                {
+                    "condition_no": s.condition_no,
+                    "argf": s.argf,
+                    "current_a": s.current_a,
+                    "voltage_v": s.voltage_v,
+                    "wire_speed": s.wire_speed,
+                    "travel_speed": s.travel_speed,
+                    "process": s.process,
+                    "gas": s.gas,
+                    "argf_source": s.argf_source,
+                    "params_source": s.params_source,
+                }
+                for s in MOTOWELD_SCHEDULES.values()
             ],
         },
         "warning": "Validate pulse jobs in MotoSim before loading the DX200.",
@@ -262,8 +289,12 @@ def fk(q_deg: list[float]):
 def generate_job(req: JbiRequest):
     if not req.points:
         raise HTTPException(400, "No points supplied")
+    group2 = req.group2_station or req.station
     cfg = PostprocessorConfig(
-        job_name=req.job_name, tool_no=req.tool_no, move_speed=req.move_speed
+        job_name=req.job_name,
+        tool_no=req.tool_no,
+        move_speed=req.move_speed,
+        group2_station=(group2 or "ST1").upper().replace(" ", ""),
     )
     segments = [
         WeldSegment(
@@ -284,6 +315,10 @@ def generate_job(req: JbiRequest):
             base_pulse=req.base_pulse,
             base_mm=req.base_mm,
             station=req.station,
+            macro_arg=req.macro_arg,
+            weave_no=req.weave_no,
+            bookend_home=req.bookend_home,
+            disable_weave=req.disable_weave,
         )
     except ValueError as exc:
         raise HTTPException(400, str(exc)) from exc

@@ -26,12 +26,16 @@ export type Waypoint = {
 
 export type WeldScheduleRow = {
   condition: number;
-  job: number;
+  /** MACRO1 MJ#(0) ARGFn — from production .JBI (pendant condition). */
+  argf: number;
+  /** UI estimate only — verify on pendant / ARCSRT.CND. */
   currentA: number;
   voltageV: number;
   wireMmin: number;
   travelCmMin: number;
   process: string;
+  argfSource: string;
+  paramsSource: string;
 };
 
 export type WeldProgram = {
@@ -54,12 +58,55 @@ export type WeldProgram = {
   };
 };
 
-// Mirror of backend welding schedules — Motoweld-E cell (travel V≈5–8).
-export const LORCH_S8_SCHEDULES: WeldScheduleRow[] = [
-  { condition: 1, job: 8, currentA: 180, voltageV: 22.0, wireMmin: 6.5, travelCmMin: 5.0, process: "Motoweld" },
-  { condition: 2, job: 8, currentA: 220, voltageV: 24.0, wireMmin: 8.0, travelCmMin: 6.7, process: "Motoweld" },
-  { condition: 3, job: 4, currentA: 140, voltageV: 19.0, wireMmin: 5.0, travelCmMin: 7.5, process: "Motoweld" },
+/** Cell identity shown in UI headers. */
+export const CELL_LABEL = "DX200 · MA2010 · RECT-X · TURN-ST1 · MOTOWELD-E 350A";
+
+/**
+ * Mirror of backend MOTOWELD_SCHEDULES.
+ * `argf` comes from production MACRO1 lines; amps/volts are UI placeholders.
+ */
+export const MOTOWELD_SCHEDULES: WeldScheduleRow[] = [
+  {
+    condition: 1,
+    argf: 1,
+    currentA: 180,
+    voltageV: 22.0,
+    wireMmin: 6.5,
+    travelCmMin: 5.0,
+    process: "MOTOWELD-E",
+    argfSource: "production .JBI MACRO1 ARGF",
+    paramsSource: "UI placeholder — verify on pendant / ARCSRT.CND",
+  },
+  {
+    condition: 2,
+    argf: 4,
+    currentA: 220,
+    voltageV: 24.0,
+    wireMmin: 8.0,
+    travelCmMin: 6.7,
+    process: "MOTOWELD-E",
+    argfSource: "production .JBI MACRO1 ARGF",
+    paramsSource: "UI placeholder — verify on pendant / ARCSRT.CND",
+  },
+  {
+    condition: 3,
+    argf: 5,
+    currentA: 140,
+    voltageV: 19.0,
+    wireMmin: 5.0,
+    travelCmMin: 7.5,
+    process: "MOTOWELD-E",
+    argfSource: "production .JBI MACRO1 ARGF",
+    paramsSource: "UI placeholder — verify on pendant / ARCSRT.CND",
+  },
 ];
+
+/** Weave files seen in production jobs (optional; omit to skip WVON). */
+export const PRODUCTION_WEAVE_NOS = [1, 15, 16, 21, 22, 24, 25] as const;
+
+/** Safe home over the rail (HOME_TRACK / CELL_POSES). */
+export const SAFE_HOME_PULSES = [-283, -101162, -84213, 3710, -80188, -1936] as const;
+export const SAFE_HOME_EC: [number, number] = [192, 0];
 
 // Mount point on work-station 1's positioner faceplate (world coords, metres).
 export const DEMO_MOUNT: Vec3 = [1.6, 0.98, -1.2];
@@ -189,7 +236,7 @@ function refreshMeta(prog: WeldProgram): WeldProgram {
 /** Build a T-fillet demo weld program mounted on the given positioner. */
 export function buildDemoProgram(mount: Vec3 = DEMO_MOUNT, condition = 1): WeldProgram {
   const sch =
-    LORCH_S8_SCHEDULES.find((s) => s.condition === condition) ?? LORCH_S8_SCHEDULES[0];
+    MOTOWELD_SCHEDULES.find((s) => s.condition === condition) ?? MOTOWELD_SCHEDULES[0];
 
   const platesLocal: { size: Vec3; center: Vec3 }[] = [
     { size: [0.5, 0.02, 0.34], center: [0, 0.01, 0] },
@@ -599,11 +646,9 @@ export function waypointsToIkPoints(
 }
 
 /**
- * Client-side DX200 .JBI generator aligned with the production MA2010 cell
- * (`reference/robot-cell-dx200/jobs/000.JBI`): GROUP1 RB1,BS1 + GROUP2 ST1,
- * ARCON/WVON, coordinated +MOVJ EC#.
- * Pass `jointAnglesDeg` ([S,L,U,R,B,T] per waypoint) for full PULSE C# export;
- * otherwise C# stays RECTAN for offline review.
+ * Client-side DX200 .JBI generator aligned with production MA2010 cell jobs:
+ * NPOS n,n,n / TOOL 0 / PULSE / GROUP1 RB1,BS1 + GROUP2 STn / home bookends /
+ * MACRO1+ARCON / optional WVON / DEC=20 / CRLF.
  */
 export function generateJbi(
   prog: WeldProgram,
@@ -611,46 +656,93 @@ export function generateJbi(
     userFrame?: number;
     stationPulsesPerDeg?: number;
     stationDeg?: number | number[];
-    weaveNo?: number;
+    /** WEV#(n); omit/undefined → 21. Pass null to disable weave. */
+    weaveNo?: number | null;
     jointAnglesDeg?: number[][];
     /** Legacy: force every BC# to this park/home pulse. */
     baseParkPulse?: number;
     basePulse?: number | number[];
     baseMm?: number | number[];
     station?: string;
+    macroArg?: number;
+    bookendHome?: boolean;
   },
 ): string {
-  const pts = prog.waypoints;
-  const npos = pts.length;
+  const pathPts = prog.waypoints;
+  const pathN = pathPts.length;
   const pulsesPerDeg = opts?.stationPulsesPerDeg ?? CELL_PULSE.stationPulsesPerDeg;
-  const weaveNo = opts?.weaveNo ?? 21;
+  const weaveNo = opts?.weaveNo === undefined ? 21 : opts.weaveNo;
   const usePulse =
-    Array.isArray(opts?.jointAnglesDeg) && opts!.jointAnglesDeg!.length === npos;
-  const stationDeg = pts.map((_, i) => {
+    Array.isArray(opts?.jointAnglesDeg) && opts!.jointAnglesDeg!.length === pathN;
+  const doBookend = (opts?.bookendHome ?? true) && usePulse;
+  const group2 = (opts?.station ?? "ST1").toUpperCase().replace(/\s+/g, "");
+  const sch = prog.schedule;
+  const macroArg = opts?.macroArg ?? sch.argf;
+
+  const pathStationDeg = pathPts.map((_, i) => {
     if (Array.isArray(opts?.stationDeg)) return opts!.stationDeg![i] ?? opts!.stationDeg![0] ?? 0;
     return opts?.stationDeg ?? 0;
   });
-  const bcList = resolveBasePulses(npos, {
+  const pathBc = resolveBasePulses(pathN, {
     basePulse: opts?.basePulse ?? opts?.baseParkPulse,
     baseMm: opts?.baseMm,
     station: opts?.station,
-    points: pts.map((p) => ({ z: p.pos[2] })),
+    points: pathPts.map((p) => ({ z: p.pos[2] })),
   });
-  const lines: string[] = [];
-  const sch = prog.schedule;
 
+  type Row = {
+    kind: "home" | "path";
+    pathIndex: number;
+    bc: number;
+    ec: [number, number];
+    qDeg?: number[];
+  };
+  const rows: Row[] = [];
+  if (doBookend) {
+    rows.push({
+      kind: "home",
+      pathIndex: -1,
+      bc: BC_HOME_PULSE,
+      ec: [...SAFE_HOME_EC],
+    });
+  }
+  pathPts.forEach((_, i) => {
+    rows.push({
+      kind: "path",
+      pathIndex: i,
+      bc: pathBc[i],
+      ec: [Math.round(pathStationDeg[i] * pulsesPerDeg), 0],
+      qDeg: usePulse ? opts!.jointAnglesDeg![i] : undefined,
+    });
+  });
+  if (doBookend) {
+    rows.push({
+      kind: "home",
+      pathIndex: -1,
+      bc: BC_HOME_PULSE,
+      ec: [...SAFE_HOME_EC],
+    });
+  }
+  const npos = rows.length;
+
+  const lines: string[] = [];
   lines.push("/JOB");
   lines.push(`//NAME ${prog.name}`);
   if (usePulse) {
-    lines.push("' PULSE export — MA2010 cell (RC1G / RBCALIB scaling)");
+    lines.push("' PULSE export — DX200 MA2010 + RECT-X + TURN + MOTOWELD-E");
   } else {
     lines.push("' Offline RECTAN review — supply IK joints for PULSE C#");
   }
-  lines.push("' Cell: MA2010 + RECT-X (BS1) + TURN (ST1); TOOL0 TCP Z≈415.7 mm");
+  lines.push(`' Cell: ${CELL_LABEL}; TOOL0 TCP Z≈415.7 mm`);
   lines.push(
     `' Station pulses/deg~${pulsesPerDeg.toFixed(4)}; RECT-X ~${PULSES_PER_MM.toFixed(4)} p/mm ` +
       `(home BC=${BC_HOME_PULSE}, park=${BC_PARK_PULSE})`,
   );
+  if (doBookend) {
+    lines.push(
+      `' Home bookends C00000/C${String(npos - 1).padStart(5, "0")} = ${SAFE_HOME_PULSES.join(",")} BC=${BC_HOME_PULSE}`,
+    );
+  }
   lines.push("//POS");
   lines.push(`///NPOS ${npos},${npos},${npos},0,0,0`);
   lines.push("///TOOL 0");
@@ -658,19 +750,21 @@ export function generateJbi(
   if (usePulse) {
     lines.push("///POSTYPE PULSE");
     lines.push("///PULSE");
-    opts!.jointAnglesDeg!.forEach((q, i) => {
-      const pulses = degToJointPulses(q);
+    rows.forEach((row, i) => {
+      const pulses =
+        row.kind === "home" ? [...SAFE_HOME_PULSES] : degToJointPulses(row.qDeg!);
       lines.push(`C${String(i).padStart(5, "0")}=${pulses.join(",")}`);
     });
   } else {
     lines.push("///POSTYPE USER");
     lines.push("///RECTAN");
     lines.push(`///RCONF ${Array(24).fill(0).join(",")}`);
-    pts.forEach((p, i) => {
+    rows.forEach((row, i) => {
+      const p = pathPts[Math.max(0, row.pathIndex)] ?? pathPts[0];
       const x = p.pos[0] * 1000;
       const y = p.pos[1] * 1000;
       const z = p.pos[2] * 1000;
-      const [rx, ry, rz] = torchDirToRpy(torchDirAt(prog, i));
+      const [rx, ry, rz] = torchDirToRpy(torchDirAt(prog, Math.max(0, row.pathIndex)));
       lines.push(
         `C${String(i).padStart(5, "0")}=${f3(x)},${f3(y)},${f3(z)},${f4(rx)},${f4(ry)},${f4(rz)}`,
       );
@@ -680,14 +774,14 @@ export function generateJbi(
   lines.push(
     `' BC# RECT-X BS1 (~${PULSES_PER_MM.toFixed(4)} p/mm; 0 mm @ BC=${BC_HOME_PULSE})`,
   );
-  bcList.forEach((bc, i) => lines.push(`BC${String(i).padStart(5, "0")}=${bc}`));
+  rows.forEach((row, i) => lines.push(`BC${String(i).padStart(5, "0")}=${row.bc}`));
 
   if (!usePulse) {
     lines.push("///POSTYPE PULSE");
     lines.push("///PULSE");
   }
-  stationDeg.forEach((ang, i) => {
-    lines.push(`EC${String(i).padStart(5, "0")}=${Math.round(ang * pulsesPerDeg)},0`);
+  rows.forEach((row, i) => {
+    lines.push(`EC${String(i).padStart(5, "0")}=${row.ec[0]},${row.ec[1]}`);
   });
 
   lines.push("//INST");
@@ -700,33 +794,50 @@ export function generateJbi(
   lines.push(`///DATE ${stamp}`);
   lines.push("///ATTR SC,RW");
   lines.push("///GROUP1 RB1,BS1");
-  lines.push("///GROUP2 ST1");
+  lines.push(`///GROUP2 ${group2}`);
   lines.push("NOP");
 
-  pts.forEach((p, i) => {
+  let weaveOn = false;
+  rows.forEach((row, i) => {
     const c = `C${String(i).padStart(5, "0")}`;
     const bc = `BC${String(i).padStart(5, "0")}`;
     const ec = `EC${String(i).padStart(5, "0")}`;
+
+    if (row.kind === "home") {
+      lines.push(`MOVJ ${c} ${bc} VJ=80.00 DEC=20  +MOVJ ${ec} VJ=80.00`);
+      return;
+    }
+
+    const p = pathPts[row.pathIndex];
     const parsed = parseSpeed(p.speedLabel, p.kind === "weld" ? sch.travelCmMin : 80);
-    const useJoint = p.move === "MOVJ" || p.kind === "approach" || p.kind === "retract" || p.kind === "travel";
+    const useJoint =
+      p.move === "MOVJ" || p.kind === "approach" || p.kind === "retract" || p.kind === "travel";
 
     if (p.tag === "ARCON") {
       lines.push("TIMER T=0.50");
-      lines.push(`MACRO1 MJ#(0) ARGF${sch.job}`);
+      lines.push(`MACRO1 MJ#(0) ARGF${macroArg}`);
       lines.push(
-        `' Motoweld cond ${sch.condition}: ${sch.currentA}A / ${sch.voltageV.toFixed(1)}V / wire ${sch.wireMmin.toFixed(
+        `' MOTOWELD-E cond ${sch.condition} / MACRO1 ARGF${macroArg}: ${sch.currentA}A / ${sch.voltageV.toFixed(1)}V / wire ${sch.wireMmin.toFixed(
           1,
-        )} m/min / ${sch.process}`,
+        )} m/min — UI estimate; verify ARCSRT.CND`,
       );
       lines.push("ARCON");
-      lines.push(`WVON WEV#(${weaveNo})`);
+      if (weaveNo != null) {
+        lines.push(`WVON WEV#(${weaveNo})`);
+        weaveOn = true;
+      }
     }
 
     if (useJoint && p.kind !== "weld" && p.kind !== "sense") {
       const vj = parsed.kind === "VJ" ? parsed.value : 80;
       lines.push(`MOVJ ${c} ${bc} VJ=${f1(vj)} DEC=20  +MOVJ ${ec} VJ=${f1(vj)}`);
     } else {
-      const v = p.kind === "weld" || p.kind === "sense" ? (parsed.kind === "V" ? parsed.value : sch.travelCmMin) : 5.0;
+      const v =
+        p.kind === "weld" || p.kind === "sense"
+          ? parsed.kind === "V"
+            ? parsed.value
+            : sch.travelCmMin
+          : 5.0;
       lines.push(`MOVL ${c} ${bc} V=${f1(v)} DEC=20  +MOVJ ${ec} VJ=80.00`);
     }
 
@@ -734,11 +845,14 @@ export function generateJbi(
       lines.push("' TouchSense search (CAD↔reality offset)");
     }
     if (p.tag === "ARCOF") {
+      if (weaveOn) {
+        lines.push("WVOF");
+        weaveOn = false;
+      }
       lines.push("ARCOF");
-      lines.push("WVOF");
     }
   });
   lines.push("END");
 
-  return `${lines.join("\n")}\n`;
+  return `${lines.join("\r\n")}\r\n`;
 }

@@ -7,7 +7,7 @@ from app.dx200_postprocessor import generate_jbi, WeldSegment, PostprocessorConf
 from app.cad_analysis import detect_seams
 from app.pulse_config import CELL_PULSE, deg_to_joint_pulses
 from app.robot_config import ACTIVE_MODEL, ACTIVE_POSITIONER, MODELS
-from app.welding_config import ACTIVE_POWER_SOURCE, LORCH_S8_SCHEDULES
+from app.welding_config import ACTIVE_POWER_SOURCE, MOTOWELD_SCHEDULES
 
 
 def test_config():
@@ -16,7 +16,7 @@ def test_config():
     print(f"Available models: {', '.join(MODELS)}")
     print(f"Positioner: {ACTIVE_POSITIONER.name}, axes={len(ACTIVE_POSITIONER.axes)}")
     print(f"Power source: {ACTIVE_POWER_SOURCE.name}, "
-          f"schedules={sorted(LORCH_S8_SCHEDULES)}")
+          f"schedules={sorted(MOTOWELD_SCHEDULES)}")
     print(f"Pulse/deg S..T: {[round(p, 2) for p in CELL_PULSE.robot_pulses_per_degree]}")
     print(f"Station pulse/deg: {CELL_PULSE.station_pulses_per_degree:.4f}")
     print(
@@ -69,24 +69,29 @@ def test_jbi():
         station_deg=[0.0, 45.0, 90.0],
         joint_angles_deg=joints,
     )
-    print("\n--- Generated JBI (MA2010 + TURN ST1 + Motoweld) ---")
+    print("\n--- Generated JBI (MA2010 + TURN ST1 + MOTOWELD-E) ---")
     print(jbi)
     assert jbi.startswith("/JOB")
     assert "//NAME WELD_AUTO" in jbi
     assert "ARCON" in jbi and "ARCOF" in jbi
     assert "RB1,BS1" in jbi and "ST1" in jbi
     assert "+MOVJ EC" in jbi
-    assert "Motoweld" in jbi
+    assert "MOTOWELD-E" in jbi
+    assert "\r\n" in jbi
+    from app.dx200_postprocessor import SAFE_HOME_BC, SAFE_HOME_PULSES
     from app.pulse_config import track_mm_from_world_z, track_mm_to_pulses
 
+    # Home bookends + path BC from world Z.
+    home = ",".join(str(p) for p in SAFE_HOME_PULSES)
+    assert f"C00000={home}" in jbi
+    assert f"BC00000={SAFE_HOME_BC}" in jbi
     expect_bc = track_mm_to_pulses(track_mm_from_world_z(0.5))
-    assert f"BC00000={expect_bc}" in jbi
-    assert f"BC00002={expect_bc}" in jbi
+    assert f"BC00001={expect_bc}" in jbi
     assert "///POSTYPE PULSE" in jbi
     assert "///RECTAN" not in jbi
     pulses = deg_to_joint_pulses(joints[0])
-    assert f"C00000={','.join(str(p) for p in pulses)}" in jbi
-    assert "EC00001=45886,0" in jbi
+    assert f"C00001={','.join(str(p) for p in pulses)}" in jbi
+    assert "EC00002=45886,0" in jbi  # path index 1 after home bookend
     assert jbi.strip().endswith("END")
 
 
