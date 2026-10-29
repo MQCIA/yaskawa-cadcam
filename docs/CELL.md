@@ -29,6 +29,7 @@ Implemented in `backend/app/pulse_config.py` and `frontend/lib/weldProgram.ts` (
 | T | ±95499 | ±210 | **454.76** |
 | ST1 (TURN) | RBCALIB ΔE≈91771 / 90° | | **1019.69** |
 | BS1 (RECT-X) | home / park BC | | **570125** home, **878036** park; **≈257.708 p/mm** (calibrated from taught ST ranges vs 2400 mm span; no rack lead in RC1G text) |
+| MOTOWELD-E | MACRO1 ARGF | | Production: **ARGF1 / 4 / 5** (+2, 8, 11…); never `ARCON ASF#` |
 
 Encoder resolution (`SV1G`): **4096**.
 

@@ -107,7 +107,7 @@ flowchart LR
 
 | # | Zadanie | Done when |
 |---|---------|-----------|
-| 3.1 | Mapa ARGF / cond → `ARCSRT` EN + `WELDUDEF` USER-n | `docs/CELL_WELD_MAP.md` |
+| 3.1 | Mapa ARGF / cond → `ARCSRT` EN + `WELDUDEF` USER-n | Presety UI → `ARGF1/4/5` (amps = placeholder); pełna mapa `ARCSRT` nadal otwarta |
 | 3.2 | WPS przykładowe (A/V/wire/travel) + ostrzeżenie „nie kwalifikowane” | UI + komentarze JBI |
 | 3.3 | `WEV#` używane w live jobs (grep) → lista w UI | Dropdown rzeczywistych weaves |
 | 3.4 | Gas / stickout / wire defaults z komórki | Dokument + default schedule |
