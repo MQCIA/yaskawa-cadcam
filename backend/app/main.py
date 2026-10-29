@@ -17,7 +17,14 @@ from pydantic import BaseModel, Field
 from .kinematics_engine import forward_kinematics, get_robot, solve_ik_path
 from .dx200_postprocessor import PostprocessorConfig, WeldSegment, generate_jbi
 from .path_planning import plan_from_seams
-from .robot_config import ACTIVE_MODEL, ACTIVE_POSITIONER, AXIS_NAMES, MODELS
+from .robot_config import (
+    ACTIVE_MODEL,
+    ACTIVE_POSITIONER,
+    AXIS_NAMES,
+    MODELS,
+    TOOL0_RPY_DEG,
+    TOOL0_XYZ_MM,
+)
 from .welding_config import ACTIVE_POWER_SOURCE, LORCH_S8_SCHEDULES
 
 app = FastAPI(
@@ -111,9 +118,14 @@ def robot_info():
         ],
         "pulses_per_degree": ACTIVE_MODEL.pulses_per_degree,
         "warning": (
-            "DH link lengths are approximate; pulse scaling for MA2010 is from the "
-            "DX200 CF dump (RC1G). Validate in MotoSim before controller load."
+            "MA2010 uses ROS-Industrial URDF lengths/axes + TOOL 0 from the cell dump; "
+            "pulse scaling is RC1G. Other catalogue models still use placeholder DH. "
+            "Validate in MotoSim before controller load."
         ),
+        "tool0_xyz_mm": list(TOOL0_XYZ_MM),
+        "tool0_rpy_deg": list(TOOL0_RPY_DEG),
+        "home_deg": ACTIVE_MODEL.home_deg,
+        "urdf_chain": ACTIVE_MODEL.urdf_chain,
     }
 
 
