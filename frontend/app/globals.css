@@ -14,19 +14,89 @@
   --ok: #1f8a4c;
   --warn: #b45309;
   --danger: #c0392b;
+  --touch: 2.5rem; /* Expodrew audit: ≥40px touch targets */
 }
 
 html,
 body {
   height: 100%;
+  height: 100dvh;
   margin: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
   background: var(--app-bg);
   color: var(--text);
   font-family: "Segoe UI", "IBM Plex Sans", system-ui, sans-serif;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 /* Light industrial scrollbars */
 * {
   scrollbar-width: thin;
   scrollbar-color: #c5ced8 transparent;
+}
+
+/* =====================================================================
+   RESPONSIVE LAYER (Expodrew local-site-audit) — keep LAST in this file.
+   Breakpoints: lg 1024 · sm 640. Later utility classes must not reintroduce
+   multi-column docks that crush the 3D stage on phones.
+   ===================================================================== */
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* 16px controls stop iOS focus-zoom (all widths) */
+input:not([type="range"]):not([type="checkbox"]):not([type="radio"]),
+select,
+textarea {
+  font-size: 16px;
+}
+
+input[type="range"] {
+  min-height: 1.5rem;
+  touch-action: pan-y;
+}
+
+@media (max-width: 1023px) {
+  /* Primary chrome / sheet chrome only — not every ribbon glyph */
+  .mobile-bottom-nav button,
+  .mobile-sheet-close,
+  .mobile-touch {
+    min-height: var(--touch);
+    min-width: var(--touch);
+  }
+
+  .mobile-bottom-nav button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .mobile-sheet-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 0.75rem;
+  }
+
+  /* Soften range / select hit areas in sheets */
+  aside input[type="range"],
+  aside select,
+  aside button {
+    min-height: var(--touch);
+  }
 }
