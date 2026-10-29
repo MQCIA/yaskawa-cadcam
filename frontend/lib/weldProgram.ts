@@ -473,6 +473,7 @@ export function sampleProgram(prog: WeldProgram, p: number) {
         pos,
         dir: torchDirAt(prog, i),
         wpIndex: i,
+        segLocal: local,
         arcOn: prog.waypoints[i].arc && prog.waypoints[i + 1].arc,
         elapsedSec: target,
       };
@@ -484,8 +485,103 @@ export function sampleProgram(prog: WeldProgram, p: number) {
     pos: last.pos,
     dir: torchDirAt(prog, prog.waypoints.length - 1),
     wpIndex: prog.waypoints.length - 1,
+    segLocal: 0,
     arcOn: false,
     elapsedSec: prog.cycleSec,
+  };
+}
+
+const AXIS_ORDER = ["S", "L", "U", "R", "B", "T"] as const;
+
+/** Convert [S,L,U,R,B,T] degrees → jog slider map. */
+export function jointArrayToMap(q: number[]): Record<(typeof AXIS_ORDER)[number], number> {
+  const out = { S: 0, L: 0, U: 0, R: 0, B: 0, T: 0 };
+  AXIS_ORDER.forEach((axis, i) => {
+    out[axis] = Number(q[i] ?? 0);
+  });
+  return out;
+}
+
+/**
+ * Linear joint-space interpolation along the same time base as `sampleProgram`.
+ * `jointAnglesDeg[i]` is [S,L,U,R,B,T] for waypoint i (from `/api/calculate-ik`).
+ */
+export function sampleJointPath(
+  jointAnglesDeg: number[][],
+  prog: WeldProgram,
+  p: number,
+): { q: number[]; wpIndex: number; segLocal: number } {
+  const n = prog.waypoints.length;
+  if (!jointAnglesDeg.length || n === 0) {
+    return { q: [0, 0, 0, 0, 0, 0], wpIndex: 0, segLocal: 0 };
+  }
+  if (jointAnglesDeg.length !== n) {
+    const i = Math.min(jointAnglesDeg.length - 1, Math.max(0, sampleProgram(prog, p).wpIndex));
+    return { q: [...jointAnglesDeg[i]], wpIndex: i, segLocal: 0 };
+  }
+  const sample = sampleProgram(prog, p);
+  const i = sample.wpIndex;
+  const local = sample.segLocal;
+  const a = jointAnglesDeg[i];
+  const b = jointAnglesDeg[Math.min(i + 1, n - 1)];
+  const q = a.map((va, k) => va + (b[k] - va) * local);
+  return { q, wpIndex: i, segLocal: local };
+}
+
+export type JbiPreviewSummary = {
+  npos: string | null;
+  pulse: boolean;
+  rectan: boolean;
+  group2: string | null;
+  macroArgs: number[];
+  weaveNos: number[];
+  bcMin: number | null;
+  bcMax: number | null;
+  ecSamples: string[];
+  seamCount: number;
+  lineCount: number;
+  homeBookend: boolean;
+};
+
+/** Parse generated INFORM text for the preview header strip. */
+export function summarizeJbi(text: string): JbiPreviewSummary {
+  const lines = text.replace(/\r\n/g, "\n").split("\n");
+  const npos = lines.find((l) => l.startsWith("///NPOS "))?.replace("///NPOS ", "") ?? null;
+  const pulse = lines.some((l) => l.includes("///POSTYPE PULSE"));
+  const rectan = lines.some((l) => l.includes("///RECTAN"));
+  const group2 =
+    lines.find((l) => l.startsWith("///GROUP2 "))?.replace("///GROUP2 ", "") ?? null;
+  const macroArgs = Array.from(
+    new Set(
+      Array.from(text.matchAll(/MACRO1\s+MJ#\(0\)\s+ARGF(\d+)/g)).map((m) =>
+        Number(m[1]),
+      ),
+    ),
+  ).sort((a, b) => a - b);
+  const weaveNos = Array.from(
+    new Set(
+      Array.from(text.matchAll(/WVON\s+WEV#\((\d+)\)/g)).map((m) => Number(m[1])),
+    ),
+  ).sort((a, b) => a - b);
+  const bcs = Array.from(text.matchAll(/^BC\d+=(-?\d+)/gm)).map((m) => Number(m[1]));
+  const ecs = Array.from(text.matchAll(/^EC\d+=(-?\d+,-?\d+)/gm)).map((m) => m[1]);
+  const seamCount = (text.match(/\bARCON\b/g) ?? []).length;
+  const homeBookend =
+    text.includes(`BC00000=${BC_HOME_PULSE}`) &&
+    /C00000=-?\d+,-?\d+,-?\d+,-?\d+,-?\d+,-?\d+/.test(text);
+  return {
+    npos,
+    pulse,
+    rectan,
+    group2,
+    macroArgs,
+    weaveNos,
+    bcMin: bcs.length ? Math.min(...bcs) : null,
+    bcMax: bcs.length ? Math.max(...bcs) : null,
+    ecSamples: ecs.slice(0, 3),
+    seamCount,
+    lineCount: lines.filter((l) => l.length > 0).length,
+    homeBookend,
   };
 }
 
