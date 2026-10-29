@@ -74,8 +74,8 @@ flowchart LR
 
 | # | Zadanie | Done when |
 |---|---------|-----------|
-| 1.1 | Skrypt `tools/compare_pulses.py`: C# z `jobs/*.JBI` → deg → (opcjonalnie FK) | Raport różnic vs softlimits / oczekiwane limity |
-| 1.2 | 5–10 **golden poses** z pendanta (deg + pulse + XYZ) | Tabela w `docs/CELL_POSES.md` |
+| 1.1 | Skrypt `tools/compare_pulses.py`: C# z `jobs/*.JBI` → deg → FK/IK | Jest. Raportuje ΔPULSE, ΔDEG, błąd TCP i osie poza softlimitem RC1G. XYZ to model DH, nie pendant |
+| 1.2 | 5–10 **golden poses** (deg + pulse; XYZ z pendantu gdy będzie) | Tabela w `docs/CELL_POSES.md`. Home i `000.JBI` są; XYZ pendantu nadal brak |
 | 1.3 | RECT-X **pulses/mm** (lead / teach) | `base_mm_to_bc` bez samego park-pulse |
 | 1.4 | DH z MotoSim / datasheet MA2010 (zastąpić placeholdery) | FK vs pendant &lt; kilku mm na golden set |
 | 1.5 | Eksport UI: zawsze ścieżka IK → PULSE; jasny status gdy IK fail | Status PL/EN już częściowo; dokończyć UX |

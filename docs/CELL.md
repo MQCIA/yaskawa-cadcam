@@ -67,3 +67,4 @@ Large binaries (`CMOS.BIN`, `ALL.PRM`, …) stay under `reference/` (gitignored)
 - **Per-file dump catalog:** [CELL_DUMP_CATALOG.md](CELL_DUMP_CATALOG.md)
 - **Machine scan JSON:** [_dump_scan.json](_dump_scan.json)
 - **Cursor skill:** `.cursor/skills/dx200-cell-dump/` (lookup + concept gaps)
+- **Golden poses + pulse diagnostic:** [CELL_POSES.md](CELL_POSES.md), `tools/compare_pulses.py`
