@@ -1,0 +1,428 @@
+/SYSTEM 7
+//DATE      : 2026/09/15 09:47:21
+//SYSTEM NO : DN2.27.00A(US/PL)-00
+//PARAM  NO : 2.06
+//APPLI     : ARC WELDING     
+//LANGUAGE  :  2.27-00-00, 2.27-00-00
+//REVISION
+YCP21    2.27.00,-----,     
+YPP      2.21-00, 1.03-00, 2.03
+YSF21-1  2.50-00, 2.00,
+YSF21-2  2.50-00, 2.00,
+EAXA*#0  2.11-00, 2.00,
+EAXA*#1  2.11-00, 2.00,
+//ROBOT NAME
+R1 : MA02010-A0*                                  0011_1111,  B1 : RECT-X                                       0000_0001
+S1 : TURN-1                                       0000_0001
+S2 : TURN-1                                       0000_0001
+S3 : TURN-2                                       0000_0011
+S4 : TURN-2                                       0000_0011
+//CONTROL POWER
+TOTAL : 2017/09/21 11:37,19097:30'11
+//SERVO POWER
+TOTAL : 2017/09/21 11:37,10420:56'13
+R1    : 2017/09/21 11:37,10419:06'03
+S1    : 2017/09/21 11:37,10418:23'00
+S2    : 2017/09/21 11:37,10418:25'51
+S3    : 2017/09/21 11:37,09949:04'02
+S4    : 2017/09/21 11:37,09949:04'02
+//PLAYBACK TIME
+TOTAL : 2017/09/21 11:37,04466:43'56
+R1    : 2017/09/21 11:37,04335:30'04
+S1    : 2017/09/21 11:37,01228:12'54
+S2    : 2017/09/21 11:37,01677:34'00
+S3    : 2017/09/21 11:37,00607:10'52
+S4    : 2017/09/21 11:37,00783:53'19
+//MOVING TIME
+TOTAL : 2017/09/21 11:37,03336:56'21
+R1    : 2017/09/21 11:37,03336:55'05
+S1    : 2017/09/21 11:37,00930:10'44
+S2    : 2017/09/21 11:37,01218:14'58
+S3    : 2017/09/21 11:37,00505:12'49
+S4    : 2017/09/21 11:37,00653:54'24
+//OPERATING TIME
+TOOL1 : 2017/09/21 11:37,03240:03'54
+//ENERGY TIME
+TOTAL : 2017/09/21 11:37,00740:50'17
+//CONTROLLER SETTING
+============================================================
+JEZYK
+
+------------------------------------------------------------
+JEZYK1              ANGIELSKI          
+JEZYK2              POLSKI             
+============================================================
+GRUPA STEROW.                                       
+                                                    
+------------------------------------------------------------
+POLACZ  :                             SZCZEGÓL.     
+R1      : MA02010-A0*                               
+B1      : PROST-X                     SZCZEGÓL.     
+R2      : ZADEN                                     
+S1      : KIER-1                      SZCZEGÓL.     
+S2      : KIER-1                      SZCZEGÓL.     
+S3      : KIER-2                      SZCZEGÓL.     
+S4      : KIER-2                      SZCZEGÓL.     
+S5      : ZADEN                       SZCZEGÓL.     
+============================================================
+POLACZ(STO)                                         
+        -- OS --    -- BRK --   -- CV  --           
+    SV <123456789> <123456789> <123456789> ON_EN  OT
+------------------------------------------------------------
+R1 :#1 [123456---] [123456---] [111111---] ON_EN1 OT1   
+B1 :#1 [------1--] [------1--] [------1--] ON_EN1 OT2   
+S1 :#1 [-------1-] [-------1-] [-------1-] ON_EN2 OT2   
+S2 :#1 [--------1] [--------1] [--------1] ON_EN3 OT2   
+S3 :#2 [12-------] [12-------] [11-------] ON_EN2 OT2   
+S4 :#2 [--12-----] [--12-----] [--11-----] ON_EN2 OT2   
+============================================================
+KONFIG OSI
+B1  : PROST-X         
+OS    TYP OSI       
+------------------------------------------------------------
+1   : ZEBATKA I KÓLKO               
+============================================================
+KONFIG OSI
+S1  : KIER-1          
+OS    TYP OSI       
+------------------------------------------------------------
+1   : OBRÓT                        
+============================================================
+KONFIG OSI
+S2  : KIER-1          
+OS    TYP OSI       
+------------------------------------------------------------
+1   : OBRÓT                        
+============================================================
+KONFIG OSI
+S3  : KIER-2          
+OS    TYP OSI       
+------------------------------------------------------------
+1   : OBRÓT                        
+2   : OBRÓT                        
+============================================================
+KONFIG OSI
+S4  : KIER-2          
+OS    TYP OSI       
+------------------------------------------------------------
+1   : OBRÓT                        
+2   : OBRÓT                        
+============================================================
+SPEC MECHANICZNA
+B1       : PROST-X                OS  : 1
+TYP OSI  : ZEBATKA I KÓLKO
+------------------------------------------------------------
+ZAKRES RUCHU(+)                  7150.000 mm    
+ZAKRES RUCHU(-)                     0.000 mm    
+STOSUNEK REDUKCJI (LICZ.)            1.000       
+STOSUNEK REDUKCJI (MIAN.)            7.000       
+SREDNICA KOLA                      57.300 mm    
+============================================================
+SPEC MECHANICZNA
+S1       : KIER-1                 OS  : 1
+TYP OSI  : OBRÓT         
+------------------------------------------------------------
+ZAKRES RUCHU(+)                   450.000 st.   
+ZAKRES RUCHU(-)                  -450.000 st.   
+STOSUNEK REDUKCJI (LICZ.)            1.000       
+STOSUNEK REDUKCJI (MIAN.)          170.000       
+============================================================
+SPEC MECHANICZNA
+S2       : KIER-1                 OS  : 1
+TYP OSI  : OBRÓT         
+------------------------------------------------------------
+ZAKRES RUCHU(+)                   450.000 st.   
+ZAKRES RUCHU(-)                  -450.000 st.   
+STOSUNEK REDUKCJI (LICZ.)            1.000       
+STOSUNEK REDUKCJI (MIAN.)          170.000       
+============================================================
+SPEC MECHANICZNA
+S3       : KIER-2                 OS  : 1
+TYP OSI  : OBRÓT         
+------------------------------------------------------------
+ZAKRES RUCHU(+)                    90.000 st.   
+ZAKRES RUCHU(-)                   -90.000 st.   
+STOSUNEK REDUKCJI (LICZ.)            1.000       
+STOSUNEK REDUKCJI (MIAN.)          119.000       
+PRZES.(OS#1-2)                      0.001 mm    
+============================================================
+SPEC MECHANICZNA
+S3       : KIER-2                 OS  : 2
+TYP OSI  : OBRÓT         
+------------------------------------------------------------
+ZAKRES RUCHU(+)                   450.000 st.   
+ZAKRES RUCHU(-)                  -450.000 st.   
+STOSUNEK REDUKCJI (LICZ.)            1.000       
+STOSUNEK REDUKCJI (MIAN.)          153.000       
+============================================================
+SPEC MECHANICZNA
+S4       : KIER-2                 OS  : 1
+TYP OSI  : OBRÓT         
+------------------------------------------------------------
+ZAKRES RUCHU(+)                    90.000 st.   
+ZAKRES RUCHU(-)                   -90.000 st.   
+STOSUNEK REDUKCJI (LICZ.)            1.000       
+STOSUNEK REDUKCJI (MIAN.)          119.000       
+PRZES.(OS#1-2)                      0.001 mm    
+============================================================
+SPEC MECHANICZNA
+S4       : KIER-2                 OS  : 2
+TYP OSI  : OBRÓT         
+------------------------------------------------------------
+ZAKRES RUCHU(+)                   450.000 st.   
+ZAKRES RUCHU(-)                  -450.000 st.   
+STOSUNEK REDUKCJI (LICZ.)            1.000       
+STOSUNEK REDUKCJI (MIAN.)          153.000       
+============================================================
+SPEC SILNIKA
+B1       : PROST-X                OS  : 1
+TYP OSI  : ZEBATKA I KÓLKO
+------------------------------------------------------------
+SILNIK             SGMRV-13ANA-YR11     
+SERWO AMP                SRDA-SDA71     
+PRZEMIENNIK        SRDA-COA12A21B-E     
+KIER.OBROTU                 DO TYLU     
+MAKS OBR/MIN                   4200 r/min
+CZAS PRZYSPIESZ               0.600 sek.
+SROS BEZWLAD                    150 %   
+============================================================
+SPEC SILNIKA
+S1       : KIER-1                 OS  : 1
+TYP OSI  : OBRÓT         
+------------------------------------------------------------
+SILNIK             SGMRV-30ANA-YR11     
+SERWO AMP                SRDA-SDA71     
+PRZEMIENNIK        SRDA-COA12A21B-E     
+KIER.OBROTU                NORMALNY     
+MAKS OBR/MIN                   4000 r/min
+CZAS PRZYSPIESZ               0.500 sek.
+SROS BEZWLAD                    100 %   
+============================================================
+SPEC SILNIKA
+S2       : KIER-1                 OS  : 1
+TYP OSI  : OBRÓT         
+------------------------------------------------------------
+SILNIK             SGMRV-30ANA-YR11     
+SERWO AMP                SRDA-SDA71     
+PRZEMIENNIK        SRDA-COA12A21B-E     
+KIER.OBROTU                NORMALNY     
+MAKS OBR/MIN                   4000 r/min
+CZAS PRZYSPIESZ               0.500 sek.
+SROS BEZWLAD                    100 %   
+============================================================
+SPEC SILNIKA
+S3       : KIER-2                 OS  : 1
+TYP OSI  : OBRÓT         
+------------------------------------------------------------
+SILNIK             SGMRV-20ANA-YR11     
+SERWO AMP                SRDA-SDA71     
+PRZEMIENNIK        SRDA-COA30A21B-E     
+KIER.OBROTU                NORMALNY     
+MAKS OBR/MIN                   2000 r/min
+CZAS PRZYSPIESZ               0.300 sek.
+SROS BEZWLAD                    100 %   
+============================================================
+SPEC SILNIKA
+S3       : KIER-2                 OS  : 2
+TYP OSI  : OBRÓT         
+------------------------------------------------------------
+SILNIK             SGMRV-13ANA-YR11     
+SERWO AMP                SRDA-SDA71     
+PRZEMIENNIK        SRDA-COA30A21B-E     
+KIER.OBROTU                NORMALNY     
+MAKS OBR/MIN                   2000 r/min
+CZAS PRZYSPIESZ               0.300 sek.
+SROS BEZWLAD                    100 %   
+============================================================
+SPEC SILNIKA
+S4       : KIER-2                 OS  : 1
+TYP OSI  : OBRÓT         
+------------------------------------------------------------
+SILNIK             SGMRV-20ANA-YR11     
+SERWO AMP                SRDA-SDA71     
+PRZEMIENNIK        SRDA-COA30A21B-E     
+KIER.OBROTU                NORMALNY     
+MAKS OBR/MIN                   2000 r/min
+CZAS PRZYSPIESZ               0.300 sek.
+SROS BEZWLAD                    100 %   
+============================================================
+SPEC SILNIKA
+S4       : KIER-2                 OS  : 2
+TYP OSI  : OBRÓT         
+------------------------------------------------------------
+SILNIK             SGMRV-13ANA-YR11     
+SERWO AMP                SRDA-SDA71     
+PRZEMIENNIK        SRDA-COA30A21B-E     
+KIER.OBROTU                NORMALNY     
+MAKS OBR/MIN                   2000 r/min
+CZAS PRZYSPIESZ               0.300 sek.
+SROS BEZWLAD                    100 %   
+============================================================
+APLIKACJA
+
+------------------------------------------------------------
+APLIKACJA                               
+  LUK                                   
+OPCJA APLIK ROBOTA       R1                                                             
+  1 : LUK                *                 
+LANCUCH CIO (EUROPA) 
+  LUK                                   
+
+============================================================
+TABL.OPCJI                                          
+STANDARD                                            
+------------------------------------------------------------
+#0        ZADEN                                     
+#1        ZADEN                                     
+#2        ZADEN                                     
+============================================================
+MODUL IO
+ST#   DI   DO  AI  AO PLYTA               
+------------------------------------------------------------
+ 00 0040 0040   -   - YSF21(YIO22 PNP)
+ 01 0040 0040   -   - XOI02
+ 02    -    -   -   - ZADEN
+ 03    -    -   -   - ZADEN
+ 04    -    -   -   - ZADEN
+ 05    -    -   -   - ZADEN
+ 06    -    -   -   - ZADEN
+ 07    -    -   -   - ZADEN
+ 08    -    -   -   - ZADEN
+ 09    -    -   -   - ZADEN
+ 10    -    -   -   - ZADEN
+ 11    -    -   -   - ZADEN
+ 12    -    -   -   - ZADEN
+ 13    -    -   -   - ZADEN
+ 14    -    -   -   - ZADEN
+ 15    -    -   -   - ZADEN
+ 16    -    -   -   - ZADEN
+ 17    -    -   -   - ZADEN
+ 18    -    -   -   - ZADEN
+ 19    -    -   -   - ZADEN
+============================================================
+KONF. ZEWN. WE/WY                                   
+                                                    
+------------------------------------------------------------
+TRYB ALOKACJI                    AUTO               
+ALOKACJA ZEWN. WE/WY             SZCZEGÓL.          
+============================================================
+ALOKACJA ZEWN. WE/WY (WE)                           
+        ST#  KAN ID MAC  ADRES BAJT  NAZWA          
+------------------------------------------------------------
+#20010    0   0       0     0     5  YSF21          
+#20060    1   0       0     0     5  XOI02          
+============================================================
+ALOKACJA ZEWN. WE/WY (WY)                           
+        ST#  KAN ID MAC  ADRES BAJT  NAZWA          
+------------------------------------------------------------
+#30010    0   0       0     0     5  YSF21          
+#30060    1   0       0     0     5  XOI02          
+============================================================
+OPCJA FUNKC
+
+------------------------------------------------------------
+* SPAWANIE LUKIEM                 WZMOCNIONE
+* MONITOR LUKU                    NIE UZYWANY
+* TRANS. WAR. IMP. ZGRZEW.        NIE UZYWANY
+* FUN. ZGRZ. WIELOWARSTW.         NIE UZYWANY
+* FUNKCJA OBRAZU                  NIE UZYWANY
+* ODLACZENIE ROBOTA               SZCZEGÓL. 
+* ODLACZANIE OSI                  SZCZEGÓL. 
+* SIEC                            SZCZEGÓL. 
+* ZADANIE WZGL.                   UZYWANY   
+* PRZERWANIE ZADANIA              NIE UZYWANY
+* TCP                             NIE UZYWANY
+* INST.MAKRO                      UZYWANY   
+* AUTOMAT KOPIA ZAP.              UZYWANY   
+* PANEL I/F                       UZYWANY   
+* EDYTOR LANCUCHA                 UZYWANY   
+* TRYB ODTW. DOZW.                NIE UZYWANY
+* RECZNE ZWOLN.HAMULCA            NIE UZYWANY
+* ZEWN. PUNKT REFEREN.            NIE UZYWANY
+* RÓWNOCZ. INSTR. URUCHOM.          7
+* INTR. SKOORDYNOWANA             UZYWANY   
+* WYSW. KATA STACJI               NIE UZYWANY
+* DOSTOSOWANIE LIMITÓW            SZCZEGÓL. 
+* PRZEL. NARZEDZIA NR             NIE UZYWANY
+* WSKAZANIA W JEDN. SI            NIE UZYWANY
+* WYSW. NAZWE WE/WY W ZADANIU     UZYWANY   
+* KONF. ZEWN. WE/WY               SZCZEGÓL. 
+* ZMIENNA ALOKACJA                SZCZEGÓL. 
+* FUNKCJA WELDCOM (CYFR. I/F LUKU)SZCZEGÓL. 
+* FUNKCJE MotoPlus                NIE UZYWANY
+* ARCHIW. AUTOM. (YCP21)          NIE UZYWANY
+* Funkcja bezpieczeñstwa          SZCZEGÓL. 
+* EtherNet/IP(karta CPU)          SZCZEGÓL. 
+* Funkcja bezp. maszyny           SZCZEGÓL. 
+* KONTRO. IND.ZASIL.SERVO         SZCZEGÓL. 
+* MotoFit                         NIE UZYWANY
+* MotoLogix                       SZCZEGÓL. 
+* ZDEJMOWALNY PILOT PODWIESZ.PROGR.NIE UZYWANY
+* ROZSZ.LOG.OBW.BEZPIECZEÑSTWA    SZCZEGÓL. 
+* DAYLIGHT SAVING TIME            SZCZEGÓL. 
+* Kokpit MOTOMAN                  SZCZEGÓL. 
+* STEROWNIK MOTOMAN               NIE UZYWANY
+============================================================
+PAMIEC CMOS
+
+------------------------------------------------------------
+  WYK. ROZMIAR        2 MB               
+  ZAMONTOWANY ROZMIAR 2 MB               
+============================================================
+------------------------------------------------------------
+FILE CREATE DATE             2012/01/01 00:01:57 TEACHING
+CMOS.BIN LOADED              ----/--/-- --:--:--
+============================================================
+CHANGE TRACKING LIST         DATE
+  INITIALIZE                 2017/09/21 11:38:57 MAKER
+  LANGUAGE                   ----/--/-- --:--:--
+  CONTROL GROUP              2018/12/12 10:18:58 MAKER
+  APPLICATION                ----/--/-- --:--:--
+  OPTION BOARD               ----/--/-- --:--:--
+  IO MODULE                  ----/--/-- --:--:--
+  CMOS MEMORY                ----/--/-- --:--:--
+  DATE/TIME                  2015/09/01 10:44:02 MANAGEMENT
+  OPTION FUNCTION            2018/12/12 10:19:18 MAKER
+============================================================
+INITIALIZED FILES
+  JOB                        2018/12/10 15:11:38 MAKER
+  FILE/GENERAL DATA          2017/09/21 11:39:10 MAKER
+  PARAMETER                  ----/--/-- --:--:--
+  I/O DATA                   ----/--/-- --:--:--
+  SYSTEM DATA                2018/12/12 10:19:01 MAKER
+  USER DEFINE                ----/--/-- --:--:--
+============================================================
+INSPECTION AND TEST RECORD   DATE
+                             ----/--/-- --:--:--
+                             ----/--/-- --:--:--
+                             ----/--/-- --:--:--
+                             ----/--/-- --:--:--
+                             ----/--/-- --:--:--
+============================================================
+CHANGE TRACKING PARAMETER    DATE
+  AMCxG                      ----/--/-- --:--:--
+  AxP                        ----/--/-- --:--:--
+  CIO                        ----/--/-- --:--:--
+  FD                         ----/--/-- --:--:--
+  FMSxB                      ----/--/-- --:--:--
+  MFxG                       ----/--/-- --:--:--
+  RCD                        ----/--/-- --:--:--
+  RCxG                       ----/--/-- --:--:--
+  RExG                       ----/--/-- --:--:--
+  ROxG                       ----/--/-- --:--:--
+  RS                         ----/--/-- --:--:--
+  SxE                        ----/--/-- --:--:--
+  S1CxG                      ----/--/-- --:--:--
+  S2C                        ----/--/-- --:--:--
+  S3C                        ----/--/-- --:--:--
+  S4C                        ----/--/-- --:--:--
+  S1D                        ----/--/-- --:--:--
+  S2D                        ----/--/-- --:--:--
+  S3D                        ----/--/-- --:--:--
+  S4D                        ----/--/-- --:--:--
+  SVxG                       ----/--/-- --:--:--
+  SVCxB                      ----/--/-- --:--:--
+  SVD                        ----/--/-- --:--:--
+  SVMxG                      ----/--/-- --:--:--
+  SVPxG                      ----/--/-- --:--:--
+  SVSxB                      ----/--/-- --:--:--
