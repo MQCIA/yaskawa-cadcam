@@ -54,6 +54,8 @@ No `ARCON ASF#(...)` on this cell — conditions come from `ARCSRT.CND` / macros
 ## App integration
 
 - Default robot model: **MA2010** (`ROBOT_MODEL=MA2010`)
+- Kinematics: URDF chain (`d1=505, a1=150, a2=760, a3=200, d4=1082, d6=100` mm;
+  axes S+Z L+Y U−Y R−X B−Y T−X) + TOOL 0; IK seed = cell home pulses
 - Default positioner: **TURN-ST1** (`POSITIONER=TURN-ST1`)
 - Default JBI profile: **`ma2010_cell`**
 - Pass IK `joint_angles_deg` into `generate_jbi` / `/api/generate-jbi` → full **PULSE** C#

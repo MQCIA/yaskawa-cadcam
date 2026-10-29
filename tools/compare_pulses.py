@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Round-trip production INFORM PULSE jobs through the cell scale and DH model.
+"""Round-trip production INFORM PULSE jobs through the cell scale and MA2010 URDF.
 
 Usage
 -----
@@ -10,17 +10,15 @@ Usage
 For every ``C#`` the script:
 
 1. Converts pulses to degrees with ``app.pulse_config.joint_pulses_to_deg``.
-2. Runs forward kinematics and applies TOOL 0
-   (xyz ``-54.280, 1.052, 415.702`` mm, RPY ``1.3119, -42.6215, -6.8387`` deg)
-   so the reported pose is the torch TCP, not the flange.
-3. Solves IK for that TCP (tool removed again, so the chain is consistent)
-   seeded with the previous solution, or with ``C00000`` when there is no
-   previous point.
+2. Runs MA2010 FK (ROS-Industrial URDF chain) and applies TOOL 0 so the
+   reported pose is the torch TCP, not the flange.
+3. Solves IK for that TCP seeded with the previous taught point, or with
+   ``C00000`` / cell home when there is no previous point.
 4. Converts the IK joints back to pulses with ``deg_to_joint_pulses``.
 
-``ΔPULSE`` / ``ΔDEG`` measure numeric IK consistency on the *placeholder* DH
-model. They are not the error against the pendant. TCP millimetres will not
-match taught XYZ until M1.4 replaces the DH lengths.
+``ΔPULSE`` / ``ΔDEG`` measure numeric IK consistency on the URDF model.
+They are not the error against the pendant XYZ (still needs MotoSim /
+pendant golden Cartesian for M1.4 sign-off).
 
 ``BC#`` stays in pulses (RECT-X mm/pulse is not certified). ``EC#`` is two
 components: axis 1 uses the RBCALIB TURN scale (91771 pulse / 90°); axis 2
@@ -35,12 +33,10 @@ import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from spatialmath import SE3
-
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "backend"))
 
-from app.kinematics_engine import _pose_to_se3, forward_kinematics, solve_ik_path  # noqa: E402
+from app.kinematics_engine import forward_kinematics, solve_ik_path  # noqa: E402
 from app.pulse_config import (  # noqa: E402
     CELL_PULSE,
     RC1G_SOFTLIMIT_NEG,
@@ -51,10 +47,6 @@ from app.pulse_config import (  # noqa: E402
 
 AXIS = ("S", "L", "U", "R", "B", "T")
 OPCODES = ("MOVJ", "MOVL", "MOVC", "MOVS", "ARCON", "ARCOF", "WVON", "MACRO1")
-
-# TOOL.CND / docs/CELL.md — tool frame relative to the flange.
-TOOL0_XYZ_MM = (-54.280, 1.052, 415.702)
-TOOL0_RPY_DEG = (1.3119, -42.6215, -6.8387)
 
 
 def pulses_to_degrees(pulses: list[int]) -> list[float]:
@@ -67,35 +59,14 @@ def degrees_to_pulses(q_deg: list[float]) -> list[int]:
     return deg_to_joint_pulses(q_deg)
 
 
-def tool0_se3() -> SE3:
-    xyz_m = [v / 1000.0 for v in TOOL0_XYZ_MM]
-    return SE3(xyz_m[0], xyz_m[1], xyz_m[2]) * SE3.RPY(list(TOOL0_RPY_DEG), unit="deg", order="xyz")
-
-
-def _se3_to_pose(T: SE3) -> dict:
-    rpy = T.rpy(unit="deg", order="xyz")
-    t = T.t
-    return {
-        "x": float(t[0]),
-        "y": float(t[1]),
-        "z": float(t[2]),
-        "rx": float(rpy[0]),
-        "ry": float(rpy[1]),
-        "rz": float(rpy[2]),
-    }
-
-
 def tcp_from_joints(q_deg: list[float]) -> dict:
-    """Flange FK composed with TOOL 0. Translation in metres, RPY in degrees."""
-    flange = forward_kinematics(q_deg)
-    T_tcp = _pose_to_se3(flange) * tool0_se3()
-    return _se3_to_pose(T_tcp)
+    """Torch TCP = URDF flange * TOOL 0."""
+    return forward_kinematics(q_deg, frame="tcp")
 
 
-def flange_pose_for_tcp(tcp: dict) -> dict:
-    """Invert TOOL 0 so IK targets the flange that produces this TCP."""
-    T_flange = _pose_to_se3(tcp) * tool0_se3().inv()
-    return _se3_to_pose(T_flange)
+def flange_from_joints(q_deg: list[float]) -> dict:
+    """URDF tool0 (mechanical flange)."""
+    return forward_kinematics(q_deg, frame="flange")
 
 
 @dataclass
@@ -281,8 +252,7 @@ def compare_job(job: JbiJob, *, do_ik: bool = True) -> list[PointReport]:
         tcp_err_mm: float | None = None
         if do_ik:
             used_seed = seed if seed is not None else q
-            flange = flange_pose_for_tcp(tcp)
-            solved = solve_ik_path([flange], q_seed_deg=used_seed)
+            solved = solve_ik_path([tcp], q_seed_deg=used_seed, frame="tcp")
             ik_ok = bool(solved["diagnostics"][0]["success"])
             ik_deg = [float(a) for a in solved["joint_angles_deg"][0]]
             ik_pulses = degrees_to_pulses(ik_deg)
@@ -345,7 +315,7 @@ def format_job(job: JbiJob, rows: list[PointReport]) -> str:
             f"POSTYPE={job.postype or '-'}  GROUP1={job.group1 or '-'}  GROUP2={job.group2 or '-'}"
         ),
         f"   instructions: {inst_txt or '(none)'}",
-        "   TCP = FK(DH placeholder) * TOOL0.  ΔPULSE/ΔDEG = IK round-trip on that model, not pendant error.",
+        "   TCP = FK(MA2010 URDF) * TOOL0.  ΔPULSE/ΔDEG = IK round-trip on that model, not pendant error.",
         "   EC axis1 deg uses RBCALIB 91771/90.  EC axis2 has no certified scale.  BC is pulses (mm unknown).",
         "",
         (

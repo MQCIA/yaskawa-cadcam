@@ -7,8 +7,10 @@ Production cell (``reference/robot-cell-dx200`` / SYSTEM.SYS):
   * Station      : TURN S1–S4 → INFORM **ST1** (jobs use GROUP2 ST1)
   * Power source : MOTOWELD-E Series 350A (see welding_config.py)
 
+MA2010 link lengths and joint axes match ROS-Industrial
+``motoman_ma2010_support`` URDF (vendored at ``frontend/public/models/ma2010``).
 Pulse↔degree for MA2010 + TURN is mined in ``pulse_config.py`` from RC.PRM /
-RBCALIB. DH link lengths remain approximate until verified against MotoSim.
+RBCALIB.
 
 ============================================================================
   !!!  UWAGA / WARNING  -  CRITICAL SAFETY NOTICE  !!!
@@ -25,6 +27,7 @@ from dataclasses import dataclass, field
 import numpy as np
 
 from .pulse_config import (
+    MA2010_LIMITS_DEG,
     MA2010_PULSES_PER_DEGREE,
     STATION_PULSES_PER_DEGREE,
 )
@@ -35,6 +38,9 @@ class JointDH:
     """Revolute joint in standard (distal) DH parameters.
 
     a[m], alpha[rad], d[m], offset[rad] added to theta, qlim=(min,max)[rad].
+    Used by the AR-series catalogue models. MA2010 uses URDF elementary
+    transforms instead (see ``Ma2010Geometry``); its ``joints`` list only
+    carries correct qlim for the API.
     """
 
     a: float
@@ -44,15 +50,64 @@ class JointDH:
     qlim: tuple[float, float] = (-np.pi, np.pi)
 
 
+@dataclass(frozen=True)
+class Ma2010Geometry:
+    """ROS-Industrial MA2010 URDF origins / axes (metres).
+
+    joint_1_s … joint_6_t + fixed ``joint_6_t-tool0`` from
+    ``frontend/public/models/ma2010/ma2010.urdf``.
+    """
+
+    # Shoulder height (base_link → S).
+    d1: float = 0.505
+    # S → L along X.
+    a1: float = 0.150
+    # L → U along Z (upper-arm length).
+    a2: float = 0.760
+    # U → R along Z.
+    a3: float = 0.200
+    # R → B along X (forearm / reach to wrist pitch).
+    d4: float = 1.082
+    # B/T → flange face (URDF tool0).
+    d6: float = 0.100
+
+
+MA2010_URDF = Ma2010Geometry()
+
+# Cell dump TOOL.CND — torch TCP relative to the flange (URDF tool0).
+TOOL0_XYZ_MM: tuple[float, float, float] = (-54.280, 1.052, 415.702)
+TOOL0_RPY_DEG: tuple[float, float, float] = (1.3119, -42.6215, -6.8387)
+
+# Safe home / transport over the rail — repeating C00000 in production jobs.
+# Pulses: (-283, -101162, -84213, 3710, -80188, -1936). See docs/CELL_POSES.md.
+CELL_HOME_PULSES: tuple[int, ...] = (-283, -101162, -84213, 3710, -80188, -1936)
+
+
+def cell_home_deg(
+    pulses: tuple[int, ...] | list[int] = CELL_HOME_PULSES,
+    pulses_per_degree: list[float] | tuple[float, ...] | None = None,
+) -> list[float]:
+    """Home joint angles in degrees from taught pulses."""
+    ppd = list(pulses_per_degree or MA2010_PULSES_PER_DEGREE)
+    return [p / s for p, s in zip(pulses, ppd)]
+
+
 @dataclass
 class RobotModel:
     name: str
     reach_mm: float
     payload_kg: float
     joints: list[JointDH] = field(default_factory=list)  # order: S,L,U,R,B,T
-    # Pulses-per-degree per axis from the DX200 parameter file. PLACEHOLDER.
+    # Pulses-per-degree per axis from the DX200 parameter file.
     pulses_per_degree: list[float] | None = None
     approximate: bool = True  # True => link lengths are placeholders
+    # When True, kinematics_engine builds an ERobot from MA2010_URDF axes.
+    urdf_chain: bool = False
+    home_deg: list[float] | None = None
+
+
+def _limits_rad(limits_deg: list[tuple[float, float]]) -> list[tuple[float, float]]:
+    return [(np.deg2rad(a), np.deg2rad(b)) for a, b in limits_deg]
 
 
 def _ar_model(
@@ -67,8 +122,8 @@ def _ar_model(
     d6: float,
     limits_deg: list[tuple[float, float]],
 ) -> RobotModel:
-    """Build an AR-topology 6R arm from coarse dimensions (all placeholders)."""
-    lim = [(np.deg2rad(a), np.deg2rad(b)) for a, b in limits_deg]
+    """Build an AR-topology 6R arm from coarse dimensions (placeholders)."""
+    lim = _limits_rad(limits_deg)
     return RobotModel(
         name=name,
         reach_mm=reach_mm,
@@ -81,15 +136,40 @@ def _ar_model(
             JointDH(0.0, -np.pi / 2, 0.0, 0.0, lim[4]),        # B
             JointDH(0.0, 0.0, d6, 0.0, lim[5]),                # T
         ],
-        pulses_per_degree=[1000.0] * 6,  # PLACEHOLDER: read from DX200 params
+        pulses_per_degree=[1000.0] * 6,
         approximate=True,
+        urdf_chain=False,
+    )
+
+
+def _ma2010_model() -> RobotModel:
+    """Production MA2010: URDF lengths / axes, RC1G pulses, cell home seed."""
+    lim = _limits_rad(MA2010_LIMITS_DEG)
+    g = MA2010_URDF
+    # JointDH rows are informational for /api/robot limits; FK/IK use ERobot.
+    joints = [
+        JointDH(g.a1, -np.pi / 2, g.d1, 0.0, lim[0]),
+        JointDH(g.a2, 0.0, 0.0, -np.pi / 2, lim[1]),
+        JointDH(g.a3, -np.pi / 2, 0.0, 0.0, lim[2]),
+        JointDH(0.0, np.pi / 2, g.d4, 0.0, lim[3]),
+        JointDH(0.0, -np.pi / 2, 0.0, 0.0, lim[4]),
+        JointDH(0.0, 0.0, g.d6, 0.0, lim[5]),
+    ]
+    return RobotModel(
+        name="MA2010",
+        reach_mm=2010,
+        payload_kg=10,
+        joints=joints,
+        pulses_per_degree=list(MA2010_PULSES_PER_DEGREE),
+        approximate=False,
+        urdf_chain=True,
+        home_deg=cell_home_deg(),
     )
 
 
 # ---------------------------------------------------------------------------
 # AR-series catalogue. Reach & joint ranges follow the public specs; link
 # lengths (d1,a1,a2,a3,d4,d6) are APPROXIMATE and must be confirmed per unit.
-# Joint-range convention below (S,L,U,R,B,T) is the commonly cited AR range.
 # ---------------------------------------------------------------------------
 _AR_LIMITS = [
     (-170, 170),   # S
@@ -105,15 +185,9 @@ MODELS: dict[str, RobotModel] = {
     "AR1440": _ar_model("AR1440", 1440, 6, 0.505, 0.155, 0.614, 0.200, 0.640, 0.100, _AR_LIMITS),
     "AR1730": _ar_model("AR1730", 1730, 8, 0.540, 0.160, 0.760, 0.200, 0.780, 0.100, _AR_LIMITS),
     "AR2010": _ar_model("AR2010", 2010, 12, 0.540, 0.150, 0.760, 0.200, 1.082, 0.100, _AR_LIMITS),
-    # Production cell (SYSTEM.SYS): R1 = MA02010-A0*.
-    # Joint qlim stays AR-catalogue (placeholder DH); pulses from RC1G dump.
-    "MA2010": _ar_model("MA2010", 2010, 10, 0.540, 0.150, 0.760, 0.200, 1.082, 0.100, _AR_LIMITS),
+    "MA2010": _ma2010_model(),
     "AR3120": _ar_model("AR3120", 3124, 20, 0.650, 0.155, 1.150, 0.250, 1.412, 0.100, _AR_LIMITS),
 }
-
-# Override placeholder pulses for the production model (RC1G softlimits).
-MODELS["MA2010"].pulses_per_degree = list(MA2010_PULSES_PER_DEGREE)
-MODELS["MA2010"].approximate = True
 
 AXIS_NAMES = ["S", "L", "U", "R", "B", "T"]
 
