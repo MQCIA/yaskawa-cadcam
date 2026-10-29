@@ -72,14 +72,118 @@ def detect_seams(
             }
         )
 
-    total_len = float(sum(s["length"] for s in segments))
+    merged = merge_collinear_seams(segments)
+    total_len = float(sum(s["length"] for s in merged))
     return {
-        "seam_count": len(segments),
+        "seam_count": len(merged),
+        "raw_edge_count": len(segments),
         "total_length": total_len,
         "units": "model units (as stored in the file)",
-        "segments": segments,
+        "segments": merged,
         "note": (
-            "Heuristic result from tessellated geometry. Confirm visually and "
-            "against the B-Rep before generating a weld path."
+            "Heuristic result from tessellated geometry. Collinear fillet edges "
+            "are merged into weld seams. Confirm visually and against the B-Rep "
+            "before generating a weld path."
         ),
     }
+
+
+def merge_collinear_seams(
+    segments: list[dict],
+    turn_deg: float = 25.0,
+) -> list[dict]:
+    """Chain triangle edges that share a vertex and keep a similar direction.
+
+    A tessellated fillet is many short edges. ArcNC-style extraction wants one
+    weld seam per straight run, and stops at a corner or a 3-way junction.
+    """
+    if len(segments) < 2:
+        return segments
+
+    coords = np.array(
+        [p for s in segments for p in (s["start"], s["end"])], dtype=float
+    )
+    scale = float(np.max(np.abs(coords))) or 1.0
+    tol = max(scale * 1e-6, 1e-9)
+
+    def q(p) -> tuple[int, int, int]:
+        return tuple(int(round(float(c) / tol)) for c in p)
+
+    def unit(v: np.ndarray) -> np.ndarray:
+        n = float(np.linalg.norm(v))
+        return v / n if n else v
+
+    incident: dict[tuple[int, int, int], list[int]] = {}
+    for i, s in enumerate(segments):
+        incident.setdefault(q(s["start"]), []).append(i)
+        incident.setdefault(q(s["end"]), []).append(i)
+
+    used: set[int] = set()
+
+    def extend(from_key, incoming: np.ndarray):
+        cands = [j for j in incident.get(from_key, []) if j not in used]
+        # A weld junction (three fillets meeting) is not one seam.
+        if len(incident.get(from_key, [])) > 2 and len(cands) != 1:
+            return None
+        best = None
+        best_ang = 1e9
+        for j in cands:
+            s = segments[j]
+            if q(s["start"]) == from_key:
+                d = unit(np.asarray(s["end"], dtype=float) - np.asarray(s["start"], dtype=float))
+                nxt_key, nxt_pt = q(s["end"]), s["end"]
+            else:
+                d = unit(np.asarray(s["start"], dtype=float) - np.asarray(s["end"], dtype=float))
+                nxt_key, nxt_pt = q(s["start"]), s["start"]
+            ang = math.degrees(math.acos(float(np.clip(np.dot(incoming, d), -1.0, 1.0))))
+            if ang < best_ang:
+                best_ang = ang
+                best = (j, nxt_key, nxt_pt, d, ang)
+        if best is None or best[4] > turn_deg:
+            return None
+        return best
+
+    merged: list[dict] = []
+    for i, seed in enumerate(segments):
+        if i in used:
+            continue
+        used.add(i)
+        chain = [i]
+        pts = [list(seed["start"]), list(seed["end"])]
+
+        direction = unit(np.asarray(seed["end"], dtype=float) - np.asarray(seed["start"], dtype=float))
+        key_end = q(seed["end"])
+        while True:
+            nxt = extend(key_end, direction)
+            if nxt is None:
+                break
+            j, key_end, nxt_pt, direction, _ang = nxt
+            used.add(j)
+            chain.append(j)
+            pts.append(list(nxt_pt))
+
+        direction = unit(np.asarray(seed["start"], dtype=float) - np.asarray(seed["end"], dtype=float))
+        key_end = q(seed["start"])
+        while True:
+            nxt = extend(key_end, direction)
+            if nxt is None:
+                break
+            j, key_end, nxt_pt, direction, _ang = nxt
+            used.add(j)
+            chain.append(j)
+            pts.insert(0, list(nxt_pt))
+
+        p0 = np.asarray(pts[0], dtype=float)
+        p1 = np.asarray(pts[-1], dtype=float)
+        dihedral = float(np.mean([segments[k]["dihedral_deg"] for k in chain]))
+        merged.append(
+            {
+                "start": [float(p0[0]), float(p0[1]), float(p0[2])],
+                "end": [float(p1[0]), float(p1[1]), float(p1[2])],
+                "length": float(np.linalg.norm(p1 - p0)),
+                "dihedral_deg": dihedral,
+            }
+        )
+
+    merged.sort(key=lambda s: s["length"], reverse=True)
+    return merged

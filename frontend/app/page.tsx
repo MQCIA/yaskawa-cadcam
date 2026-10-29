@@ -16,10 +16,13 @@ import dynamic from "next/dynamic";
 import AxisSliders, { defaultJoints, type Joints } from "@/components/AxisSliders";
 import { useI18n, LanguageToggle } from "@/lib/i18n";
 import type { SeamSegment } from "@/components/RobotWorkspace";
-import { analyzeCad, calculateIk } from "@/lib/api";
+import { analyzeCad, calculateIk, fetchRobotLink, type RobotLinkInfo } from "@/lib/api";
 import { ROBOT_MODELS, POSITIONER_MODELS } from "@/lib/models";
 import {
   buildDemoProgram,
+  buildProgramFromSeams,
+  normalizeCadSeams,
+  applyReachability,
   sampleProgram,
   generateJbi,
   waypointsToIkPoints,
@@ -28,6 +31,7 @@ import {
   ensureTouchSense,
   optimizeSequence,
   planMotions,
+  type CadSeam,
   type WeldProgram,
 } from "@/lib/weldProgram";
 
@@ -52,6 +56,12 @@ export default function Home() {
   const [modelId, setModelId] = useState("ma2010");
   const [joints, setJoints] = useState<Joints>(defaultJoints());
   const [seams, setSeams] = useState<SeamSegment[]>([]);
+  const [cadSeams, setCadSeams] = useState<CadSeam[]>([]);
+  const [partName, setPartName] = useState<string | null>(null);
+  const [exported, setExported] = useState(false);
+  const [simulated, setSimulated] = useState(false);
+  const [robotLink, setRobotLink] = useState<RobotLinkInfo | null>(null);
+  const [linkError, setLinkError] = useState(false);
   const [status, setStatus] = useState("");
 
   const [positionerId, setPositionerId] = useState<string | null>("turn_st1");
@@ -76,6 +86,20 @@ export default function Home() {
 
   const rafRef = useRef<number | undefined>(undefined);
   const lastRef = useRef<number | undefined>(undefined);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchRobotLink()
+      .then((info) => {
+        if (!cancelled) setRobotLink(info);
+      })
+      .catch(() => {
+        if (!cancelled) setLinkError(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const setStation = (i: number, patch: Partial<{ tilt: number; rotate: number }>) =>
     setStations((prev) => prev.map((s, idx) => (idx === i ? { ...s, ...patch } : s)));
@@ -115,6 +139,8 @@ export default function Home() {
     setModelId("ma2010");
     setRailTravel(Math.max(-1.6, Math.min(1.6, DEMO_MOUNT[2])));
     setStation(0, { rotate: 0 });
+    setExported(false);
+    setSimulated(false);
     setLeftTab("welds");
     setStatus(
       t("status.programReady", {
@@ -125,17 +151,76 @@ export default function Home() {
   }
 
   function loadDemo() {
+    setCadSeams([]);
+    setSeams([]);
+    setPartName("DEMO_TFILLET");
+    setExported(false);
+    setSimulated(false);
     makeProgram(weldCondition);
   }
 
+  function applyCadProgram(nextSeams: CadSeam[], cond?: number) {
+    const prog = buildProgramFromSeams(nextSeams, DEMO_MOUNT, partName ?? "PART", cond);
+    setProgram(prog);
+    setSeams(
+      nextSeams
+        .filter((s) => s.accepted)
+        .map((s) => ({ start: s.start, end: s.end })),
+    );
+    setExported(false);
+    setSimulated(false);
+    setSimT(0);
+    setSimPlaying(false);
+    return prog;
+  }
+
   function identifyWelds() {
-    if (!program) {
-      makeProgram(weldCondition);
-      setStatus(t("status.identifyDemo"));
-    } else {
+    if (cadSeams.length) {
       setLeftTab("welds");
-      setStatus(t("status.identifyExisting", { n: program.seam.length }));
+      setStatus(t("status.seamToggle", { n: cadSeams.filter((s) => s.accepted).length }));
+      return;
     }
+    if (!program) {
+      loadDemo();
+      setStatus(t("status.identifyDemo"));
+      return;
+    }
+    setLeftTab("welds");
+    setStatus(t("status.identifyExisting", { n: program.seam.length }));
+  }
+
+  function toggleSeam(id: string) {
+    const next = cadSeams.map((s) => (s.id === id ? { ...s, accepted: !s.accepted } : s));
+    setCadSeams(next);
+    const prog = applyCadProgram(next);
+    if (prog) setWeldCondition(prog.schedule.condition);
+    setStatus(t("status.seamToggle", { n: next.filter((s) => s.accepted).length }));
+  }
+
+  async function generateProgram() {
+    let base = program;
+    if (cadSeams.length) {
+      base = applyCadProgram(cadSeams, weldCondition);
+    }
+    if (!base) {
+      setStatus(t("status.planNeedPart"));
+      return;
+    }
+    let planned = planMotions(optimizeSequence(base));
+    let reachLabel = t("arcnc.no");
+    try {
+      setStatus(t("status.exportIk"));
+      const ik = await calculateIk(waypointsToIkPoints(planned));
+      const reachable = Boolean(ik?.all_reachable);
+      planned = applyReachability(planned, reachable);
+      reachLabel = reachable ? t("arcnc.yes") : t("arcnc.no");
+    } catch {
+      planned = applyReachability(planned, null);
+    }
+    setProgram(planned);
+    setLeftTab("program");
+    setManualJog(false);
+    setStatus(t("status.generated", { reach: reachLabel }));
   }
 
   function planWelds() {
@@ -177,6 +262,10 @@ export default function Home() {
 
   function changeCondition(c: number) {
     setWeldCondition(c);
+    if (cadSeams.length) {
+      applyCadProgram(cadSeams, c);
+      return;
+    }
     if (program) makeProgram(c);
   }
 
@@ -205,6 +294,7 @@ export default function Home() {
     a.download = `${program.name}.JBI`;
     a.click();
     URL.revokeObjectURL(url);
+    setExported(true);
     setStatus(
       jointAnglesDeg
         ? t("status.exportPulse", { n: jointAnglesDeg.length })
@@ -214,6 +304,7 @@ export default function Home() {
 
   function togglePlay() {
     if (!program) return;
+    setSimulated(true);
     setManualJog(false);
     if (simT >= 1) setSimT(0);
     setSimPlaying((p) => !p);
@@ -259,9 +350,33 @@ export default function Home() {
     setStatus(t("status.importing"));
     try {
       const result = await analyzeCad(file);
-      setSeams(result.segments ?? []);
-      setLeftTab("workspace");
-      setStatus(t("status.imported", { name: file.name, n: result.seam_count ?? 0 }));
+      const placed = normalizeCadSeams(result.segments ?? []);
+      setCadSeams(placed);
+      setPartName(file.name);
+      setExported(false);
+      setSimulated(false);
+      const prog = buildProgramFromSeams(placed, DEMO_MOUNT, file.name);
+      setProgram(prog);
+      setSeams(
+        placed.filter((s) => s.accepted).map((s) => ({ start: s.start, end: s.end })),
+      );
+      setModelId("ma2010");
+      setRailTravel(Math.max(-1.6, Math.min(1.6, DEMO_MOUNT[2])));
+      setSimT(0);
+      setSimPlaying(false);
+      setLeftTab(placed.length ? "welds" : "workspace");
+      if (prog) {
+        setWeldCondition(prog.schedule.condition);
+        setStatus(
+          t("status.importedProgram", {
+            name: file.name,
+            n: placed.filter((s) => s.accepted).length,
+            cond: prog.schedule.condition,
+          }),
+        );
+      } else {
+        setStatus(t("status.noSeams"));
+      }
     } catch (err) {
       makeProgram(weldCondition);
       setStatus(
@@ -368,6 +483,10 @@ export default function Home() {
                 className={btnRibbon}
               >
                 <span className="text-base">⚙️</span>{t("plan.weldSettings")}</button>
+              <button onClick={generateProgram} className={btnRibbon} disabled={!program && cadSeams.length === 0}>
+                <span className="text-base">⚡</span>
+                {t("arcnc.generate")}
+              </button>
               <button onClick={planWelds} className={btnRibbon} disabled={!program}>
                 <span className="text-base">🛤</span>
                 {t("arcnc.planMotion")}
@@ -460,12 +579,13 @@ export default function Home() {
           {t("arcnc.workflow")}
         </span>
         {[
-          ["arcnc.cad", !!program],
-          ["arcnc.detect", !!program],
-          ["arcnc.plan", !!program?.meta?.collisionFree],
-          ["arcnc.sense", !!program?.meta?.touchSense],
-          ["arcnc.sim", simT > 0 || simPlaying],
-          ["arcnc.export", !!program],
+          ["arcnc.cad", !!partName || !!program],
+          ["arcnc.detect", cadSeams.some((s) => s.accepted) || (!!program && program.seam.length > 0)],
+          ["arcnc.preset", !!program],
+          ["arcnc.plan", !!program?.meta?.planned],
+          ["arcnc.sense", !!program?.meta?.planned && !!program?.meta?.touchSense],
+          ["arcnc.sim", simulated || simPlaying],
+          ["arcnc.export", exported],
         ].map(([key, done], i) => (
           <span
             key={String(key)}
@@ -549,15 +669,46 @@ export default function Home() {
 
             {leftTab === "welds" && (
               <div className="space-y-2">
+                {cadSeams.length > 0 && (
+                  <ul className="space-y-1">
+                    {cadSeams.map((s) => (
+                      <li key={s.id} className="rounded border border-slate-200 bg-slate-50 px-2 py-1">
+                        <label className="flex items-center gap-2 text-xs">
+                          <input
+                            type="checkbox"
+                            checked={s.accepted}
+                            onChange={() => toggleSeam(s.id)}
+                            className="accent-[#e87722]"
+                          />
+                          <span className="font-medium">{s.id}</span>
+                          <span className="text-slate-500">{(s.lengthM * 1000).toFixed(0)} mm</span>
+                          <span className="ml-auto rounded bg-orange-50 px-1.5 py-0.5 text-[10px] text-orange-700">
+                            {t("welds.fillet")}
+                          </span>
+                        </label>
+                      </li>
+                    ))}
+                  </ul>
+                )}
                 {program ? (
                   <div className="rounded border border-slate-200 bg-slate-50 p-2">
                     <div className="flex items-center justify-between">
-                      <span className="font-medium">{t("welds.seam1")}</span>
+                      <span className="font-medium">{program.name}</span>
                       <span className="rounded bg-orange-50 px-1.5 py-0.5 text-[10px] text-orange-700">{t("welds.fillet")}</span>
                     </div>
                     <div className="mt-1 text-[11px] text-slate-500">
                       {t("welds.length", { mm: program.weldLenMm.toFixed(0), n: program.waypoints.length })}
                     </div>
+                    {program.wpsReason && (
+                      <div className="mt-1 text-[11px] text-slate-600">
+                        WPS #{program.schedule.condition} · {t(`welds.reason.${program.wpsReason}`)}
+                      </div>
+                    )}
+                    {(program.omittedSeams ?? 0) > 0 && (
+                      <div className="mt-1 text-[11px] text-amber-700">
+                        {t("welds.omitted", { n: program.omittedSeams ?? 0 })}
+                      </div>
+                    )}
                     <label className="mt-2 block text-[10px] text-slate-500">{t("welds.process")}</label>
                     <select
                       value={weldCondition}
@@ -796,6 +947,27 @@ export default function Home() {
               {manualJog ? t("robot.modeManual") : t("robot.modePath")}
             </div>
 
+            <div className="mb-3 rounded border border-slate-200 bg-slate-50 p-2">
+              <div className="mb-1.5 text-[10px] font-semibold uppercase text-slate-500">
+                {t("robot.linkTitle")}
+              </div>
+              <p className="text-[11px] leading-snug text-slate-600">{t("arcnc.noApi")}</p>
+              <p className="mt-1 text-[11px] leading-snug text-slate-700">{t("robot.linkJbi")}</p>
+              <p className="mt-1 text-[11px] leading-snug text-slate-600">
+                {linkError
+                  ? t("robot.linkOffline")
+                  : robotLink?.ros.connected
+                    ? t("robot.linkRosOn", { host: robotLink.ros.agent_host ?? "" })
+                    : robotLink?.ros.agent_host
+                      ? t("robot.linkRosDown", {
+                          host: robotLink.ros.agent_host,
+                          detail: robotLink.ros.detail,
+                        })
+                      : t("robot.linkRosOff")}
+              </p>
+              <p className="mt-1 text-[10px] leading-snug text-slate-500">{t("robot.linkLegacy")}</p>
+            </div>
+
             <div className="mb-2 flex gap-2">
               <button onClick={homeJoints} className={`${btnGhost} flex-1 !py-1 text-xs`}>{t("robot.home")}</button>
               <button onClick={zeroJoints} className={`${btnGhost} flex-1 !py-1 text-xs`}>{t("robot.zero")}</button>
@@ -851,12 +1023,17 @@ export default function Home() {
                       ["arcnc.touchSense", program.meta.touchSense],
                       ["arcnc.sequence", program.meta.sequenceOptimized],
                       ["arcnc.singularity", program.meta.singularitySafe],
+                      ["arcnc.reachable", program.meta.reachable === true],
                     ] as const
                   ).map(([k, ok]) => (
                     <li key={k} className="flex items-center justify-between gap-2">
                       <span className="text-slate-600">{t(k)}</span>
                       <span className={ok ? "font-semibold text-emerald-700" : "font-semibold text-amber-700"}>
-                        {ok ? t("arcnc.yes") : t("arcnc.no")}
+                        {k === "arcnc.reachable" && program.meta?.reachable == null
+                          ? "—"
+                          : ok
+                            ? t("arcnc.yes")
+                            : t("arcnc.no")}
                       </span>
                     </li>
                   ))}

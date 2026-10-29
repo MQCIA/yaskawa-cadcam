@@ -17,7 +17,8 @@ from app.dx200_postprocessor import (
     PostprocessorConfig,
     load_reference_jbi,
 )
-from app.cad_analysis import detect_seams
+from app.cad_analysis import detect_seams, merge_collinear_seams
+from app.robot_link import describe_robot_link
 from app.path_planning import plan_from_seams
 from app.robot_config import ACTIVE_MODEL, ACTIVE_POSITIONER, MODELS
 from app.welding_config import ACTIVE_POWER_SOURCE, LORCH_S8_SCHEDULES
@@ -174,6 +175,29 @@ def test_cad_seam_detection(lbracket):
     res = detect_seams(lbracket, angle_tol_deg=25, target_angle_deg=90)
     assert res["seam_count"] >= 1
     assert res["total_length"] > 0
+    assert res["raw_edge_count"] >= res["seam_count"]
+
+
+def test_merge_collinear_seam_edges():
+    segments = [
+        {"start": [0, 0, 0], "end": [1, 0, 0], "length": 1.0, "dihedral_deg": 90.0},
+        {"start": [1, 0, 0], "end": [2, 0, 0], "length": 1.0, "dihedral_deg": 90.0},
+        {"start": [0, 0, 0], "end": [0, 1, 0], "length": 1.0, "dihedral_deg": 90.0},
+    ]
+    merged = merge_collinear_seams(segments)
+    assert len(merged) == 2
+    assert max(s["length"] for s in merged) == pytest.approx(2.0)
+
+
+def test_robot_link_is_native_job_not_arcnc_api(monkeypatch):
+    monkeypatch.delenv("MOTOROS_AGENT_HOST", raising=False)
+    info = describe_robot_link()
+    assert info["execution"] == "inform_jbi"
+    assert info["arcnc"]["public_api"] is False
+    assert info["native_program"]["language"] == "INFORM"
+    assert info["ros"]["recommended"] == "MotoROS2"
+    assert info["ros"]["connected"] is False
+    assert "FollowJointTrajectory" in info["ros"]["motion_action"]
 
 
 def test_full_pipeline(lbracket):

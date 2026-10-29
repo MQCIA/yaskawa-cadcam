@@ -30,6 +30,30 @@ export async function analyzeCad(file: File) {
   return res.json();
 }
 
+export type RobotLinkInfo = {
+  execution: string;
+  controller: string;
+  robot: string;
+  arcnc: { public_api: boolean; model: string; note: string };
+  native_program: { language: string; extension: string; arc: string };
+  ros: {
+    recommended: string;
+    connected: boolean;
+    detail: string;
+    role: string;
+    motion_action: string;
+    legacy_ros1: string;
+    package: string;
+    agent_host: string | null;
+  };
+};
+
+export async function fetchRobotLink(): Promise<RobotLinkInfo> {
+  const res = await fetch(`${BASE}/api/robot-link`);
+  if (!res.ok) throw new Error(`robot-link ${res.status}`);
+  return res.json();
+}
+
 export async function generateJbi(body: unknown) {
   const res = await fetch(`${BASE}/api/generate-jbi`, {
     method: "POST",
