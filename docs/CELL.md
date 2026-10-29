@@ -28,7 +28,7 @@ Implemented in `backend/app/pulse_config.py` and `frontend/lib/weldProgram.ts` (
 | B | +88222 / −132333 | +90 / −135 | **980.24** |
 | T | ±95499 | ±210 | **454.76** |
 | ST1 (TURN) | RBCALIB ΔE≈91771 / 90° | | **1019.69** |
-| BS1 (RECT-X) | park BC | | **878036** (park; mm lead TBD) |
+| BS1 (RECT-X) | home / park BC | | **570125** home, **878036** park; **≈257.708 p/mm** (calibrated from taught ST ranges vs 2400 mm span; no rack lead in RC1G text) |
 
 Encoder resolution (`SV1G`): **4096**.
 

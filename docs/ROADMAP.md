@@ -76,7 +76,7 @@ flowchart LR
 |---|---------|-----------|
 | 1.1 | Skrypt `tools/compare_pulses.py`: C# z `jobs/*.JBI` → deg → FK/IK | Jest. Raportuje ΔPULSE, ΔDEG, błąd TCP i softlimity RC1G |
 | 1.2 | 5–10 **golden poses** (deg + pulse; XYZ z pendantu gdy będzie) | `docs/CELL_POSES.md` — home + `000.JBI` z FK URDF×TOOL0; XYZ pendantu brak |
-| 1.3 | RECT-X **pulses/mm** (lead / teach) | `base_mm_to_bc` bez samego park-pulse |
+| 1.3 | RECT-X **pulses/mm** (lead / teach) | **≈257.708 p/mm** + `track_mm_to_pulses` / per-point `BC#` (brak leadu w RC1G → kalibracja z jobów) |
 | 1.4 | Geometria MA2010 = URDF / MotoSim; FK vs pendant | **URDF + TOOL 0 w kodzie.** Sign-off vs pendant XYZ nadal otwarty |
 | 1.5 | Eksport UI: zawsze ścieżka IK → PULSE; jasny status gdy IK fail | Status PL/EN już częściowo; dokończyć UX |
 

@@ -39,7 +39,7 @@ W gicie: `000.JBI` + fixture home. Nagłówki innych jobów: `docs/_dump_scan.js
 | S L U R B T | 1341.38, 1907.68, 1592.89, 1022.87, 980.24, 454.76 |
 | TURN oś 1 (`EC` pierwsza liczba) | 91771 / 90° ≈ 1019.69 |
 | TURN oś 2 (`EC` druga liczba) | brak certyfikowanej skali |
-| RECT-X `BC` | brak impuls/mm. Znane są dwa punkty szyny, nie lead |
+| RECT-X `BC` | **≈257.708 impuls/mm** (kalibracja ze środków zakresów ST2 vs ST1/ST3 / 2400 mm; brak leadu w RC1G) |
 
 Osie home i wszystkich `C#` z `000.JBI` mieszczą się w softlimitach RC1G.
 
@@ -69,8 +69,8 @@ Domyślne ziarno IK (`q0`) dla pierwszego punktu ścieżki to właśnie ta poza
 |--|--|--|
 | `BC = 570125` | `EC = 192,0` (0.188°) albo dwuosiowe `-2638,-94527` | ΔPULSE 0, ΔTCP 0.00 mm |
 
-Różnica szyny park − home = `878036 − 570125 = 307911` impulsów. Na milimetry
-nie przeliczać, dopóki nie ma leadu RECT-X (M1.3).
+Różnica szyny park − home = `878036 − 570125 = 307911` impulsów ≈ **1194.8 mm**
+przy `PULSES_PER_MM ≈ 257.708` (`pulse_config.track_*`). `mm = 0` w `BC_HOME`.
 
 ## Park szyny i pozy z `000.JBI` (ST1, TURN-1)
 

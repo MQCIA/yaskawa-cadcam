@@ -63,6 +63,8 @@ def test_fk_ik_roundtrip():
 
 
 def test_jbi_ma2010_cell_profile():
+    from app.pulse_config import BC_PARK_PULSE, track_mm_to_pulses, track_mm_from_world_z
+
     pts = [
         {"x": 0.8, "y": 0.0, "z": 0.5, "rx": 180},
         {"x": 0.9, "y": 0.1, "z": 0.5, "rx": 180},
@@ -79,7 +81,15 @@ def test_jbi_ma2010_cell_profile():
     assert "WVON WEV#(21)" in jbi and "WVOF" in jbi
     assert "MACRO1 MJ#(0)" in jbi
     assert "+MOVJ EC" in jbi
-    assert "BC00000=878036" in jbi
+    # Auto BC from world Z=0.5 m → track mm = −500.
+    expect_bc = track_mm_to_pulses(track_mm_from_world_z(0.5))
+    assert f"BC00000={expect_bc}" in jbi
+    assert f"BC00002={expect_bc}" in jbi
+    # Explicit park still available for 000.JBI-style jobs.
+    park_jbi = generate_jbi(
+        pts, segs, PostprocessorConfig(), station_deg=[0, 45, 90], base_pulse=BC_PARK_PULSE
+    )
+    assert f"BC00000={BC_PARK_PULSE}" in park_jbi
     assert "EC00001=45886,0" in jbi  # 45 * 1019.6889…
     assert "Motoweld" in jbi
     assert jbi.strip().endswith("END")
@@ -102,6 +112,73 @@ def test_jbi_pulse_from_joints():
     assert "///RECTAN" not in jbi
     e1, e2 = station_deg_to_ec(0.0)
     assert f"EC00000={e1},{e2}" in jbi
+
+
+def test_rect_x_pulses_per_mm_and_bc_sequence():
+    """M1.3: BC00000…BCxxxxx from track mm / station / per-point pulses."""
+    from app.pulse_config import (
+        BASE_PULSES_PER_MM,
+        BC_HOME_PULSE,
+        BC_PARK_PULSE,
+        BC_ST1_ST3_RANGE,
+        BC_ST2_RANGE,
+        PULSES_PER_MM,
+        STATION_BC_MID,
+        track_mm_to_pulses,
+        track_pulses_to_mm,
+        resolve_base_pulses,
+    )
+
+    assert PULSES_PER_MM == pytest.approx(257.708125)
+    assert BASE_PULSES_PER_MM == PULSES_PER_MM
+    assert track_mm_to_pulses(0.0) == BC_HOME_PULSE
+    assert track_pulses_to_mm(BC_HOME_PULSE) == pytest.approx(0.0)
+    # Park − home ≈ 1195 mm (half of 2400 mm station span).
+    assert track_pulses_to_mm(BC_PARK_PULSE) == pytest.approx(1194.805, abs=0.01)
+    assert track_mm_to_pulses(track_pulses_to_mm(BC_PARK_PULSE)) == BC_PARK_PULSE
+
+    # Station midpoints sit inside taught envelopes.
+    assert BC_ST2_RANGE[0] <= STATION_BC_MID["ST2"] <= BC_ST2_RANGE[1]
+    assert BC_ST1_ST3_RANGE[0] <= STATION_BC_MID["ST1"] <= BC_ST1_ST3_RANGE[1]
+
+    pts = [
+        {"x": 0.8, "y": 0.0, "z": -1.2, "rx": 180},  # ST1 side
+        {"x": 0.9, "y": 0.0, "z": 0.0, "rx": 180},  # home
+        {"x": 1.0, "y": 0.0, "z": 1.2, "rx": 180},  # ST2 side
+    ]
+    # Per-point explicit pulses.
+    explicit = [808680, BC_HOME_PULSE, 375361]
+    jbi = generate_jbi(
+        pts,
+        config=PostprocessorConfig(job_name="BC_SEQ"),
+        station_deg=[0.0, 0.0, 0.0],
+        base_pulse=explicit,
+    )
+    for i, bc in enumerate(explicit):
+        assert f"BC{i:05d}={bc}" in jbi
+
+    # Auto from world Z.
+    auto = resolve_base_pulses(3, points=pts)
+    assert auto[1] == BC_HOME_PULSE
+    assert auto[0] > auto[1] > auto[2]  # −Z → higher BC
+    auto_jbi = generate_jbi(pts, config=PostprocessorConfig(job_name="BC_AUTO"))
+    for i, bc in enumerate(auto):
+        assert f"BC{i:05d}={bc}" in auto_jbi
+
+    # Station override → constant mid for whole job.
+    st_jbi = generate_jbi(
+        pts, config=PostprocessorConfig(job_name="BC_ST2"), station="ST2"
+    )
+    assert f"BC00000={STATION_BC_MID['ST2']}" in st_jbi
+    assert f"BC00002={STATION_BC_MID['ST2']}" in st_jbi
+
+    # Per-point base_mm.
+    mm_list = [0.0, 500.0, -500.0]
+    mm_jbi = generate_jbi(
+        pts, config=PostprocessorConfig(job_name="BC_MM"), base_mm=mm_list
+    )
+    for i, mm in enumerate(mm_list):
+        assert f"BC{i:05d}={track_mm_to_pulses(mm)}" in mm_jbi
 
 
 def test_pulse_softlimit_roundtrip():
@@ -182,6 +259,8 @@ def test_full_pipeline(lbracket):
     assert len(planned.points) > 0
     ik = solve_ik_path(planned.points)
     assert ik["all_reachable"]
+    from app.pulse_config import resolve_base_pulses
+
     jbi = generate_jbi(
         planned.points,
         planned.weld_segments,
@@ -191,7 +270,10 @@ def test_full_pipeline(lbracket):
     )
     assert "///POSTYPE PULSE" in jbi
     assert "///RECTAN" not in jbi
-    assert "C00000=" in jbi and "BC00000=878036" in jbi
+    assert "C00000=" in jbi
+    expect_bc = resolve_base_pulses(len(planned.points), points=planned.points)
+    assert f"BC00000={expect_bc[0]}" in jbi
+    assert f"BC{len(planned.points) - 1:05d}={expect_bc[-1]}" in jbi
     assert "ARCON" in jbi and jbi.strip().endswith("END")
     assert "RB1,BS1" in jbi
 
