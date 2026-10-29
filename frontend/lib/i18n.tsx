@@ -18,7 +18,7 @@ export type Dict = Record<string, string>;
 const pl: Dict = {
   // App chrome
   "app.title": "Yaskawa Nawigator Spawania",
-  "app.subtitle": "DX200 · AR2010 · H1000D · Lorch S8",
+  "app.subtitle": "DX200 · MA2010 · RECT-X · TURN-ST1 · MOTOWELD-E 350A",
   "app.styleHint": "UI w stylu Verbotics Weld",
   "app.warning":
     "⚠ Prototyp — kinematyka / kolizje / parametry spoiny są orientacyjne. Weryfikuj w MotoSim przed realnym stanowiskiem.",
@@ -43,7 +43,7 @@ const pl: Dict = {
   "plan.generateCode": "Generuj kod",
 
   // Settings
-  "settings.weldCondition": "Warunek spoiny (ARCON)",
+  "settings.weldCondition": "Warunek spoiny (MACRO1 ARGF)",
   "settings.robot": "Robot",
   "settings.positioner": "Pozycjoner",
   "settings.none": "Brak",
@@ -117,7 +117,7 @@ const pl: Dict = {
   "robot.statusPath": "OK (ścieżka)",
   "robot.statusIdle": "OK",
   "robot.help":
-    "Przesuwaj S/L/U/R/B/T, żeby ręcznie ruszać AR2010 (jak panel Robot w Verbotics Weld). Odtwórz przełącza na IK ścieżki. Baza / Zero zerują osie.",
+    "Przesuwaj S/L/U/R/B/T, żeby ręcznie ruszać MA2010 (jak panel Robot w Verbotics Weld). Odtwórz przełącza na IK ścieżki. Baza / Zero zerują osie.",
 
   // Axis help
   "axis.S": "Obrót podstawy",
@@ -178,7 +178,7 @@ const pl: Dict = {
 
 const en: Dict = {
   "app.title": "Yaskawa Welding Navigator",
-  "app.subtitle": "DX200 · AR2010 · H1000D · Lorch S8",
+  "app.subtitle": "DX200 · MA2010 · RECT-X · TURN-ST1 · MOTOWELD-E 350A",
   "app.styleHint": "Verbotics Weld–style UI",
   "app.warning":
     "⚠ Prototype — kinematics / collisions / weld params are placeholders. Validate in MotoSim before real hardware.",
@@ -199,7 +199,7 @@ const en: Dict = {
   "plan.simulate": "Simulate",
   "plan.generateCode": "Generate Code",
 
-  "settings.weldCondition": "Weld condition (ARCON)",
+  "settings.weldCondition": "Weld condition (MACRO1 ARGF)",
   "settings.robot": "Robot",
   "settings.positioner": "Positioner",
   "settings.none": "None",
@@ -265,7 +265,7 @@ const en: Dict = {
   "robot.statusPath": "Valid (path)",
   "robot.statusIdle": "Valid",
   "robot.help":
-    "Move S/L/U/R/B/T to jog the AR2010 by hand (like Verbotics Weld’s Robot panel). Play switches to path IK. Home / Zero reset the axes.",
+    "Move S/L/U/R/B/T to jog the MA2010 by hand (like Verbotics Weld’s Robot panel). Play switches to path IK. Home / Zero reset the axes.",
 
   "axis.S": "Base rotation",
   "axis.L": "Lower arm",

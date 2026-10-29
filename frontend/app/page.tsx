@@ -24,7 +24,7 @@ import {
   generateJbi,
   waypointsToIkPoints,
   DEMO_MOUNT,
-  LORCH_S8_SCHEDULES,
+  MOTOWELD_SCHEDULES,
   ensureTouchSense,
   optimizeSequence,
   planMotions,
@@ -184,12 +184,19 @@ export default function Home() {
     if (!program) return;
     const stIdx = selectedStation ?? 0;
     const stationAngle = stations[stIdx]?.rotate ?? 0;
+    const stationLabel = `ST${stIdx + 1}`;
     let jointAnglesDeg: number[][] | undefined;
+    let basePulse: number | number[] | undefined;
     try {
       setStatus(t("status.exportIk"));
-      const ik = await calculateIk(waypointsToIkPoints(program));
+      const ik = await calculateIk(waypointsToIkPoints(program), undefined, {
+        station: stationLabel,
+      });
       if (ik?.all_reachable && Array.isArray(ik.joint_angles_deg)) {
         jointAnglesDeg = ik.joint_angles_deg as number[][];
+      }
+      if (Array.isArray(ik?.base_pulses) && ik.base_pulses.length) {
+        basePulse = ik.base_pulses as number[];
       }
     } catch {
       // Backend offline — fall back to local RECTAN review export.
@@ -197,6 +204,8 @@ export default function Home() {
     const text = generateJbi(program, {
       stationDeg: stationAngle,
       jointAnglesDeg,
+      station: basePulse ? undefined : stationLabel,
+      basePulse,
     });
     const blob = new Blob([text], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
@@ -405,10 +414,10 @@ export default function Home() {
                   onChange={(e) => changeCondition(Number(e.target.value))}
                   className="rounded bg-slate-100 px-2 py-1"
                 >
-                  {LORCH_S8_SCHEDULES.map((s) => (
+                  {MOTOWELD_SCHEDULES.map((s) => (
                     <option key={s.condition} value={s.condition}>
-                      #{s.condition} — {s.currentA}A / {s.voltageV.toFixed(1)}V / {s.travelCmMin}{" "}
-                      cm/min
+                      ARGF{s.argf} — {s.currentA}A / {s.voltageV.toFixed(1)}V / {s.travelCmMin}{" "}
+                      cm/min (UI est.)
                     </option>
                   ))}
                 </select>
@@ -564,9 +573,9 @@ export default function Home() {
                       onChange={(e) => changeCondition(Number(e.target.value))}
                       className="mt-0.5 w-full rounded bg-slate-100 px-2 py-1 text-xs"
                     >
-                      {LORCH_S8_SCHEDULES.map((s) => (
+                      {MOTOWELD_SCHEDULES.map((s) => (
                         <option key={s.condition} value={s.condition}>
-                          #{s.condition} {s.process} · {s.currentA}A
+                          ARGF{s.argf} {s.process} · {s.currentA}A (UI est.)
                         </option>
                       ))}
                     </select>
@@ -781,7 +790,7 @@ export default function Home() {
           <div className="border-b border-slate-200 px-3 py-2">
             <div className="text-xs font-semibold uppercase tracking-wide text-slate-700">{t("robot.title")}</div>
             <div className="text-[10px] text-slate-500">
-              {activeModel?.label ?? "AR2010"} · {t("robot.jointJog")}
+              {activeModel?.label ?? "MA2010"} · {t("robot.jointJog")}
             </div>
           </div>
 

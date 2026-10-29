@@ -251,7 +251,7 @@ export default function RobotWorkspace({
             partRotZ={partRotZ}
           />
         </Suspense>
-        {/* Lorch S8 power source on the trailing dolly — rides with the robot */}
+        {/* MOTOWELD-E power source on the trailing dolly — rides with the robot */}
         <WeldPowerSource position={[DOLLY_X, 0, 0]} />
       </group>
 
