@@ -17,8 +17,22 @@ from pydantic import BaseModel, Field
 from .kinematics_engine import forward_kinematics, get_robot, solve_ik_path
 from .dx200_postprocessor import PostprocessorConfig, WeldSegment, generate_jbi
 from .path_planning import plan_from_seams
-from .robot_config import ACTIVE_MODEL, ACTIVE_POSITIONER, AXIS_NAMES, MODELS
-from .welding_config import ACTIVE_POWER_SOURCE, LORCH_S8_SCHEDULES
+from .pulse_config import (
+    BASE_PULSES_PER_MM,
+    BC_HOME_PULSE,
+    BC_PARK_PULSE,
+    PULSES_PER_MM,
+    resolve_base_pulses,
+)
+from .robot_config import (
+    ACTIVE_MODEL,
+    ACTIVE_POSITIONER,
+    AXIS_NAMES,
+    MODELS,
+    TOOL0_RPY_DEG,
+    TOOL0_XYZ_MM,
+)
+from .welding_config import ACTIVE_POWER_SOURCE, MOTOWELD_SCHEDULES
 
 app = FastAPI(
     title="Yaskawa CAD/CAM prototype API",
@@ -54,6 +68,18 @@ class IkRequest(BaseModel):
     q_seed_deg: list[float] | None = Field(
         default=None, description="Optional 6-value seed pose in degrees."
     )
+    station: str | None = Field(
+        default=None,
+        description="Optional ST1..ST4 — suggests a fixed BC midpoint for all points.",
+    )
+    base_mm: list[float] | float | None = Field(
+        default=None,
+        description="Optional RECT-X travel mm from home (scalar or per-point).",
+    )
+    base_pulse: list[int] | int | None = Field(
+        default=None,
+        description="Optional explicit BC# pulses (scalar or per-point).",
+    )
 
 
 class WeldSegmentIn(BaseModel):
@@ -66,14 +92,27 @@ class WeldSegmentIn(BaseModel):
 class SeamIn(BaseModel):
     start: list[float]
     end: list[float]
+    # Optional fillet geometry from /api/analyze-cad.
+    n1: list[float] | None = None
+    n2: list[float] | None = None
+    bisector: list[float] | None = None
+    dihedral_deg: float | None = None
+    # Optional per-seam Motoweld condition (MACRO1 ARGF via postprocessor).
+    arc_file: int | None = None
+    weld_speed: float | None = None
 
 
 class PlanRequest(BaseModel):
     seams: list[SeamIn]
     samples_per_seam: int = 5
     approach_height: float = 0.05
+    travel_angle_deg: float = 12.0
+    push: bool = True
     weld_speed: float = 10.0
     arc_file: int = 1
+    max_seams: int = 50
+    optimize: bool = True
+    clearance_height: float = 0.08
 
 
 class JbiRequest(BaseModel):
@@ -88,6 +127,35 @@ class JbiRequest(BaseModel):
     joint_angles_deg: list[list[float]] | None = Field(
         default=None,
         description="Optional per-point [S,L,U,R,B,T] deg — enables PULSE C# export.",
+    )
+    station: str | None = Field(
+        default=None,
+        description="Optional ST1..ST4 — use taught BC midpoint for all BC#.",
+    )
+    base_mm: list[float] | float | None = Field(
+        default=None,
+        description="RECT-X mm from home (scalar or per-point). Overrides auto Z.",
+    )
+    base_pulse: list[int] | int | None = Field(
+        default=None,
+        description="Explicit BC# pulses (scalar or per-point). Highest priority.",
+    )
+    macro_arg: int | None = Field(
+        default=None,
+        description="MACRO1 MJ#(0) ARGFn override (production: 1, 4, 5, …).",
+    )
+    weave_no: int | None = Field(
+        default=None,
+        description="WVON WEV#(n); omit to use schedule/default. Set disable_weave.",
+    )
+    disable_weave: bool = False
+    bookend_home: bool | None = Field(
+        default=None,
+        description="Wrap path with safe home C/BC (default on when PULSE joints).",
+    )
+    group2_station: str | None = Field(
+        default=None,
+        description="///GROUP2 STn (ST1..ST4). Defaults to station or ST1.",
     )
 
 
@@ -110,10 +178,24 @@ def robot_info():
             for j in ACTIVE_MODEL.joints
         ],
         "pulses_per_degree": ACTIVE_MODEL.pulses_per_degree,
+        "rect_x": {
+            "pulses_per_mm": PULSES_PER_MM,
+            "bc_home": BC_HOME_PULSE,
+            "bc_park": BC_PARK_PULSE,
+            "note": (
+                "No rack lead/gear in RC1G text dump; calibrated from taught BC "
+                "station ranges vs 2400 mm cell span. Encoder SV1G=4096."
+            ),
+        },
         "warning": (
-            "DH link lengths are approximate; pulse scaling for MA2010 is from the "
-            "DX200 CF dump (RC1G). Validate in MotoSim before controller load."
+            "MA2010 uses ROS-Industrial URDF lengths/axes + TOOL 0 from the cell dump; "
+            "pulse scaling is RC1G. Other catalogue models still use placeholder DH. "
+            "Validate in MotoSim before controller load."
         ),
+        "tool0_xyz_mm": list(TOOL0_XYZ_MM),
+        "tool0_rpy_deg": list(TOOL0_RPY_DEG),
+        "home_deg": ACTIVE_MODEL.home_deg,
+        "urdf_chain": ACTIVE_MODEL.urdf_chain,
     }
 
 
@@ -143,11 +225,21 @@ def cell_config():
         "power_source": {
             "name": ACTIVE_POWER_SOURCE.name,
             "interface": ACTIVE_POWER_SOURCE.interface,
+            "cell_label": ACTIVE_POWER_SOURCE.cell_label,
             "schedules": [
-                {"condition_no": s.condition_no, "lorch_job": s.lorch_job,
-                 "current_a": s.current_a, "voltage_v": s.voltage_v,
-                 "wire_speed": s.wire_speed, "process": s.process, "gas": s.gas}
-                for s in LORCH_S8_SCHEDULES.values()
+                {
+                    "condition_no": s.condition_no,
+                    "argf": s.argf,
+                    "current_a": s.current_a,
+                    "voltage_v": s.voltage_v,
+                    "wire_speed": s.wire_speed,
+                    "travel_speed": s.travel_speed,
+                    "process": s.process,
+                    "gas": s.gas,
+                    "argf_source": s.argf_source,
+                    "params_source": s.params_source,
+                }
+                for s in MOTOWELD_SCHEDULES.values()
             ],
         },
         "warning": "Validate pulse jobs in MotoSim before loading the DX200.",
@@ -159,7 +251,22 @@ def calculate_ik(req: IkRequest):
     if not req.points:
         raise HTTPException(400, "No points supplied")
     points = [p.model_dump() for p in req.points]
-    return solve_ik_path(points, q_seed_deg=req.q_seed_deg)
+    result = solve_ik_path(points, q_seed_deg=req.q_seed_deg)
+    try:
+        base_pulses = resolve_base_pulses(
+            len(points),
+            base_pulse=req.base_pulse,
+            base_mm=req.base_mm,
+            points=points,
+            station=req.station,
+        )
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    result["base_pulses"] = base_pulses
+    result["base_pulses_per_mm"] = BASE_PULSES_PER_MM
+    result["bc_home"] = BC_HOME_PULSE
+    result["bc_park"] = BC_PARK_PULSE
+    return result
 
 
 @app.post("/api/plan-path")
@@ -171,8 +278,13 @@ def plan_path(req: PlanRequest):
         [s.model_dump() for s in req.seams],
         samples_per_seam=req.samples_per_seam,
         approach_height=req.approach_height,
+        travel_angle_deg=req.travel_angle_deg,
+        push=req.push,
         weld_speed=req.weld_speed,
         arc_file=req.arc_file,
+        max_seams=req.max_seams,
+        optimize=req.optimize,
+        clearance_height=req.clearance_height,
     )
     return {
         "points": planned.points,
@@ -181,6 +293,10 @@ def plan_path(req: PlanRequest):
              "weld_speed": w.weld_speed, "arc_file": w.arc_file}
             for w in planned.weld_segments
         ],
+        "seam_order": [
+            {"index": i, "reversed": rev} for i, rev in planned.seam_order
+        ],
+        "air_length_m": planned.air_length_m,
     }
 
 
@@ -195,8 +311,12 @@ def fk(q_deg: list[float]):
 def generate_job(req: JbiRequest):
     if not req.points:
         raise HTTPException(400, "No points supplied")
+    group2 = req.group2_station or req.station
     cfg = PostprocessorConfig(
-        job_name=req.job_name, tool_no=req.tool_no, move_speed=req.move_speed
+        job_name=req.job_name,
+        tool_no=req.tool_no,
+        move_speed=req.move_speed,
+        group2_station=(group2 or "ST1").upper().replace(" ", ""),
     )
     segments = [
         WeldSegment(
@@ -207,13 +327,23 @@ def generate_job(req: JbiRequest):
         )
         for s in req.weld_segments
     ]
-    return generate_jbi(
-        [p.model_dump() for p in req.points],
-        segments,
-        cfg,
-        station_deg=req.station_deg,
-        joint_angles_deg=req.joint_angles_deg,
-    )
+    try:
+        return generate_jbi(
+            [p.model_dump() for p in req.points],
+            segments,
+            cfg,
+            station_deg=req.station_deg,
+            joint_angles_deg=req.joint_angles_deg,
+            base_pulse=req.base_pulse,
+            base_mm=req.base_mm,
+            station=req.station,
+            macro_arg=req.macro_arg,
+            weave_no=req.weave_no,
+            bookend_home=req.bookend_home,
+            disable_weave=req.disable_weave,
+        )
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
 
 
 @app.post("/api/analyze-cad")
