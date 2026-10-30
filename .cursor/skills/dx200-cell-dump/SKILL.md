@@ -15,7 +15,8 @@ description: >-
 1. Read [docs/CELL.md](../../../docs/CELL.md) (identity + mined pulses).
 2. Read [docs/CELL_DUMP_CATALOG.md](../../../docs/CELL_DUMP_CATALOG.md) (per-file map).
 3. For machine flags/headers: [docs/_dump_scan.json](../../../docs/_dump_scan.json).
-4. Code of record: `backend/app/pulse_config.py`, `dx200_postprocessor.py`.
+4. Code of record: `backend/app/pulse_config.py`, `robot_config.py` (MA2010 URDF
+   geometry + TOOL 0 + home), `kinematics_engine.py`, `dx200_postprocessor.py`.
 
 Dump root (local, usually gitignored): `reference/robot-cell-dx200/`.  
 Tiny fixtures for tests: `backend/tests/fixtures/robot-cell/`.
@@ -25,7 +26,7 @@ Tiny fixtures for tests: `backend/tests/fixtures/robot-cell/`.
 | Task | File(s) |
 |------|---------|
 | Who is R1/B1/S*? | `SYSTEM.SYS` |
-| TOOL0 TCP | `TOOL.CND` |
+| TOOL0 TCP / UF / CUBE / SRCH | `TOOL.CND`, `docs/CELL_FRAMES.md`, `cell_frames.py` |
 | Welder | `WELDER.DAT` → Motoweld-E 350A |
 | Example production job | `jobs/000.JBI` |
 | Robot pulses/deg | `params/RC.PRM` RC1G softlimits → already in `pulse_config.py` |
