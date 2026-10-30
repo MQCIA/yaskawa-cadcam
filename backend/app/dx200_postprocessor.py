@@ -429,6 +429,9 @@ def _generate_ma2010_cell(
     lines.append("NOP")
 
     weave_on = False
+    # Motoweld preset: emit MACRO1 at the first ARCON, then again only when
+    # the schedule / ARGF changes between seams (02025_KOSZ_… pattern).
+    last_macro_arg: int | None = None
     for i in range(npos):
         c = f"C{i:05d}"
         bc = f"BC{i:05d}"
@@ -444,8 +447,10 @@ def _generate_ma2010_cell(
             weave = _weave_for_segment(seg, cfg)
 
             lines.append("TIMER T=0.50")
-            lines.append(f"MACRO1 MJ#(0) ARGF{argf}")
-            lines.append(_weld_comment(seg.arc_file, argf))
+            if last_macro_arg is None or argf != last_macro_arg:
+                lines.append(f"MACRO1 MJ#(0) ARGF{argf}")
+                lines.append(_weld_comment(seg.arc_file, argf))
+                last_macro_arg = argf
             lines.append("ARCON")
             if weave is not None:
                 lines.append(f"WVON WEV#({weave})")

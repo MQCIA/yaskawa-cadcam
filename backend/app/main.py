@@ -97,6 +97,9 @@ class SeamIn(BaseModel):
     n2: list[float] | None = None
     bisector: list[float] | None = None
     dihedral_deg: float | None = None
+    # Optional per-seam Motoweld condition (MACRO1 ARGF via postprocessor).
+    arc_file: int | None = None
+    weld_speed: float | None = None
 
 
 class PlanRequest(BaseModel):
@@ -107,6 +110,9 @@ class PlanRequest(BaseModel):
     push: bool = True
     weld_speed: float = 10.0
     arc_file: int = 1
+    max_seams: int = 50
+    optimize: bool = True
+    clearance_height: float = 0.08
 
 
 class JbiRequest(BaseModel):
@@ -276,6 +282,9 @@ def plan_path(req: PlanRequest):
         push=req.push,
         weld_speed=req.weld_speed,
         arc_file=req.arc_file,
+        max_seams=req.max_seams,
+        optimize=req.optimize,
+        clearance_height=req.clearance_height,
     )
     return {
         "points": planned.points,
@@ -284,6 +293,10 @@ def plan_path(req: PlanRequest):
              "weld_speed": w.weld_speed, "arc_file": w.arc_file}
             for w in planned.weld_segments
         ],
+        "seam_order": [
+            {"index": i, "reversed": rev} for i, rev in planned.seam_order
+        ],
+        "air_length_m": planned.air_length_m,
     }
 
 

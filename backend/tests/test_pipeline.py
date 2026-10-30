@@ -471,5 +471,90 @@ def test_full_pipeline(lbracket):
     assert "RB1,BS1" in jbi
 
 
+def test_multi_seam_sequence_optimization():
+    """NN + 2-opt shortens air travel for ≥4 scattered seams (order + direction)."""
+    from app.path_planning import (
+        optimize_seam_sequence,
+        plan_from_seams,
+        total_air_length,
+    )
+
+    # Four disjoint fillets on a square — naive order is a long zigzag.
+    seams = [
+        {
+            "start": [0.0, 0.0, 0.0],
+            "end": [0.2, 0.0, 0.0],
+            "bisector": [0.0, 0.0, 1.0],
+            "arc_file": 1,
+        },
+        {
+            "start": [1.0, 1.0, 0.0],
+            "end": [1.2, 1.0, 0.0],
+            "bisector": [0.0, 0.0, 1.0],
+            "arc_file": 1,
+        },
+        {
+            "start": [0.05, 0.0, 0.0],
+            "end": [0.25, 0.0, 0.0],
+            "bisector": [0.0, 0.0, 1.0],
+            "arc_file": 2,  # schedule change → second MACRO1 ARGF
+        },
+        {
+            "start": [1.05, 1.0, 0.0],
+            "end": [1.25, 1.0, 0.0],
+            "bisector": [0.0, 1.0, 0.0],  # wall change → taller clearance
+            "arc_file": 2,
+        },
+    ]
+    naive = [(i, False) for i in range(len(seams))]
+    naive_air = total_air_length(seams, naive, approach_height=0.05)
+    order = optimize_seam_sequence(seams, approach_height=0.05)
+    assert len(order) == 4
+    assert {i for i, _ in order} == {0, 1, 2, 3}
+    opt_air = total_air_length(seams, order, approach_height=0.05)
+    assert opt_air < naive_air
+
+    planned = plan_from_seams(
+        seams,
+        samples_per_seam=3,
+        approach_height=0.05,
+        clearance_height=0.08,
+        optimize=True,
+        max_seams=50,
+    )
+    assert len(planned.weld_segments) == 4
+    assert planned.air_length_m == pytest.approx(opt_air, rel=1e-6)
+    # One clearance waypoint between each pair of seams.
+    # Per seam: approach + 3 samples + retract = 5; +1 clearance × 3 gaps.
+    assert len(planned.points) == 4 * 5 + 3
+    # Clearance Z above both neighbouring air points.
+    for k in range(3):
+        clr = planned.points[5 + k * 6]  # after each seam block of 5, before next
+        assert clr["z"] > 0.05
+
+    # Opposite-wall seams still plan under the soft cap.
+    many = seams * 12  # 48 seams
+    capped = plan_from_seams(many, samples_per_seam=2, max_seams=50, optimize=True)
+    assert len(capped.weld_segments) == 48
+    over = plan_from_seams(many + seams, samples_per_seam=2, max_seams=50, optimize=False)
+    assert len(over.weld_segments) == 50
+
+    # MACRO1 at first ARCON + again when arc_file changes (1 → 2).
+    from app.dx200_postprocessor import PostprocessorConfig, generate_jbi
+
+    jbi = generate_jbi(
+        planned.points,
+        planned.weld_segments,
+        PostprocessorConfig(crlf=False, bookend_home=False, default_weave=None),
+        station_deg=[0.0] * len(planned.points),
+    )
+    macros = [ln for ln in jbi.splitlines() if ln.startswith("MACRO1 MJ#(0) ARGF")]
+    assert len(macros) >= 2
+    assert any("ARGF1" in m or "ARGF" in m for m in macros)
+    # First segment condition 1 → ARGF1; condition 2 → ARGF4.
+    assert "MACRO1 MJ#(0) ARGF1" in jbi
+    assert "MACRO1 MJ#(0) ARGF4" in jbi
+
+
 def test_robot_dof():
     assert get_robot().n == 6

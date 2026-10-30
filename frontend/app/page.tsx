@@ -21,6 +21,7 @@ import { analyzeCad, calculateIk } from "@/lib/api";
 import { ROBOT_MODELS, POSITIONER_MODELS } from "@/lib/models";
 import {
   buildDemoProgram,
+  buildProgramFromSeams,
   sampleProgram,
   sampleJointPath,
   jointArrayToMap,
@@ -33,6 +34,7 @@ import {
   ensureTouchSense,
   optimizeSequence,
   planMotions,
+  type SeamSpec,
   type StationId,
   type WeldProgram,
 } from "@/lib/weldProgram";
@@ -384,8 +386,48 @@ export default function Home() {
     setStatus(t("status.importing"));
     try {
       const result = await analyzeCad(file);
-      setSeams(result.segments ?? []);
-      setLeftTab("workspace");
+      const segments = (result.segments ?? []) as Array<{
+        start: number[];
+        end: number[];
+        n1?: number[];
+        n2?: number[];
+        bisector?: number[];
+      }>;
+      setSeams(
+        segments.map((s) => ({
+          start: s.start as [number, number, number],
+          end: s.end as [number, number, number],
+        })),
+      );
+      const stIdx = selectedStation ?? 0;
+      const stationId = `ST${stIdx + 1}` as StationId;
+      const mount = stationMount(stationId);
+      if (segments.length > 0) {
+        const specs: SeamSpec[] = segments.map((s) => ({
+          start: s.start as [number, number, number],
+          end: s.end as [number, number, number],
+          n1: s.n1 as [number, number, number] | undefined,
+          n2: s.n2 as [number, number, number] | undefined,
+          bisector: s.bisector as [number, number, number] | undefined,
+          condition: weldCondition,
+        }));
+        const prog = buildProgramFromSeams(specs, {
+          mount,
+          station: stationId,
+          condition: weldCondition,
+          optimize: true,
+          name: file.name.replace(/\.[^.]+$/, "").toUpperCase() || "CAD_WELD",
+        });
+        setProgram(prog);
+        setPathJointsDeg(null);
+        setIkAllReachable(false);
+        setIkBasePulses(null);
+        setJbiText(null);
+        setSimT(0);
+        setRailTravel(Math.max(-1.6, Math.min(1.6, stationRailZ(stationId))));
+        setLeftTab("welds");
+        void solveIkForProgram(prog);
+      }
       setStatus(t("status.imported", { name: file.name, n: result.seam_count ?? 0 }));
     } catch (err) {
       makeProgram(weldCondition);

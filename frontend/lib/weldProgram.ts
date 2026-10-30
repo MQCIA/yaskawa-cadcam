@@ -22,6 +22,9 @@ export type Waypoint = {
   // ArcNC-style stages: sense = TouchSense search, travel = air move between seams
   kind: "approach" | "sense" | "weld" | "travel" | "retract";
   tag?: "ARCON" | "ARCOF" | "TOUCH";
+  /** Motoweld condition / MACRO1 ARGF for this ARCON (multi-seam schedule changes). */
+  condition?: number;
+  argf?: number;
 };
 
 export type WeldScheduleRow = {
@@ -40,6 +43,20 @@ export type WeldScheduleRow = {
 
 export type StationId = "ST1" | "ST2" | "ST3" | "ST4";
 
+/** One fillet / butt seam for multi-seam planning (mirrors backend plan_from_seams). */
+export type SeamSpec = {
+  start: Vec3;
+  end: Vec3;
+  n1?: Vec3;
+  n2?: Vec3;
+  bisector?: Vec3;
+  /** Motoweld UI condition → MACRO1 ARGF via schedule table. */
+  condition?: number;
+  weldSpeed?: number;
+};
+
+export type SeamOrientation = { index: number; reversed: boolean };
+
 export type WeldProgram = {
   name: string;
   mount: Vec3;
@@ -47,6 +64,9 @@ export type WeldProgram = {
   station?: StationId;
   plates: { size: Vec3; center: Vec3 }[];
   seam: Vec3[];
+  /** Source seams after order/direction optimisation (multi-seam jobs). */
+  seams?: SeamSpec[];
+  seamOrder?: SeamOrientation[];
   torchFrames: { pos: Vec3; dir: Vec3 }[];
   waypoints: Waypoint[];
   segDurations: number[];
@@ -67,6 +87,11 @@ export type WeldProgram = {
     singularitySafe: boolean;
   };
 };
+
+/** Soft cap for CAD → path (production ``02025_KOSZ_…`` is large; default 50). */
+export const DEFAULT_MAX_SEAMS = 50;
+export const DEFAULT_CLEARANCE_HEIGHT = 0.08;
+export const DEFAULT_BISECTOR_CLEARANCE_DOT = 0.35;
 
 /** Cell identity shown in UI headers. */
 export const CELL_LABEL = "DX200 · MA2010 · RECT-X · TURN-ST1 · MOTOWELD-E 350A";
@@ -468,6 +493,17 @@ export function buildDemoProgram(
     station,
     plates,
     seam,
+    seams: [
+      {
+        start: seamStart,
+        end: seamEnd,
+        n1: filletNormals.n1,
+        n2: filletNormals.n2,
+        bisector: filletBisector,
+        condition: sch.condition,
+      },
+    ],
+    seamOrder: [{ index: 0, reversed: false }],
     torchFrames,
     waypoints,
     segDurations: [],
@@ -519,8 +555,401 @@ export function ensureTouchSense(prog: WeldProgram): WeldProgram {
   return refreshMeta(rebuildDurations({ ...prog, waypoints }));
 }
 
-/** Mark sequence optimized; optionally reverse seam if that shortens approach. */
+function seamBisectorOf(seam: SeamSpec): Vec3 {
+  if (seam.bisector) return norm(seam.bisector);
+  if (seam.n1 && seam.n2) return filletBisectorFromNormals(seam.n1, seam.n2);
+  return [0, 0, 1];
+}
+
+function seamEndpoints(seam: SeamSpec, reversed: boolean): { start: Vec3; end: Vec3 } {
+  return reversed
+    ? { start: [...seam.end], end: [...seam.start] }
+    : { start: [...seam.start], end: [...seam.end] };
+}
+
+function approachOffset(seam: SeamSpec, height: number): Vec3 {
+  const b = seamBisectorOf(seam);
+  const o: Vec3 = [b[0] * height, b[1] * height, b[2] * height];
+  if (Math.hypot(...o) < 1e-9) return [0, 0, height];
+  return o;
+}
+
+function seamApproach(seam: SeamSpec, reversed: boolean, height: number): Vec3 {
+  const { start } = seamEndpoints(seam, reversed);
+  const o = approachOffset(seam, height);
+  return add(start, o);
+}
+
+function seamRetract(seam: SeamSpec, reversed: boolean, height: number): Vec3 {
+  const { end } = seamEndpoints(seam, reversed);
+  const o = approachOffset(seam, height);
+  return add(end, o);
+}
+
+function airTransition(
+  a: SeamSpec,
+  aRev: boolean,
+  b: SeamSpec,
+  bRev: boolean,
+  height: number,
+): number {
+  return dist(seamRetract(a, aRev, height), seamApproach(b, bRev, height));
+}
+
+export function totalAirLength(
+  seams: SeamSpec[],
+  order: SeamOrientation[],
+  approachHeight = 0.05,
+  startPoint?: Vec3,
+): number {
+  if (!order.length) return 0;
+  let total = 0;
+  const first = order[0];
+  const firstAp = seamApproach(seams[first.index], first.reversed, approachHeight);
+  if (startPoint) total += dist(startPoint, firstAp);
+  for (let k = 0; k < order.length - 1; k++) {
+    const a = order[k];
+    const b = order[k + 1];
+    total += airTransition(
+      seams[a.index],
+      a.reversed,
+      seams[b.index],
+      b.reversed,
+      approachHeight,
+    );
+  }
+  return total;
+}
+
+export function greedyNearestNeighborOrder(
+  seams: SeamSpec[],
+  approachHeight = 0.05,
+  startPoint: Vec3 = [0, 0, 0],
+): SeamOrientation[] {
+  const remaining = new Set(seams.map((_, i) => i));
+  const order: SeamOrientation[] = [];
+  let bestI = -1;
+  let bestRev = false;
+  let bestD = Infinity;
+  for (const i of Array.from(remaining)) {
+    for (const rev of [false, true]) {
+      const d = dist(startPoint, seamApproach(seams[i], rev, approachHeight));
+      if (d < bestD) {
+        bestD = d;
+        bestI = i;
+        bestRev = rev;
+      }
+    }
+  }
+  if (bestI < 0) return [];
+  order.push({ index: bestI, reversed: bestRev });
+  remaining.delete(bestI);
+  while (remaining.size) {
+    const prev = order[order.length - 1];
+    let nextI = -1;
+    let nextRev = false;
+    let nextD = Infinity;
+    for (const i of Array.from(remaining)) {
+      for (const rev of [false, true]) {
+        const d = airTransition(
+          seams[prev.index],
+          prev.reversed,
+          seams[i],
+          rev,
+          approachHeight,
+        );
+        if (d < nextD) {
+          nextD = d;
+          nextI = i;
+          nextRev = rev;
+        }
+      }
+    }
+    if (nextI < 0) break;
+    order.push({ index: nextI, reversed: nextRev });
+    remaining.delete(nextI);
+  }
+  return order;
+}
+
+function twoOptReverse(order: SeamOrientation[], i: number, j: number): SeamOrientation[] {
+  const mid = order
+    .slice(i, j + 1)
+    .reverse()
+    .map((o) => ({ index: o.index, reversed: !o.reversed }));
+  return [...order.slice(0, i), ...mid, ...order.slice(j + 1)];
+}
+
+export function twoOptImprove(
+  seams: SeamSpec[],
+  order: SeamOrientation[],
+  approachHeight = 0.05,
+  startPoint?: Vec3,
+  maxPasses = 32,
+): SeamOrientation[] {
+  if (order.length < 2) return [...order];
+  let current = [...order];
+  let bestLen = totalAirLength(seams, current, approachHeight, startPoint);
+  const n = current.length;
+  for (let pass = 0; pass < maxPasses; pass++) {
+    let improved = false;
+    for (let k = 0; k < n; k++) {
+      const trial = current.map((o, idx) =>
+        idx === k ? { index: o.index, reversed: !o.reversed } : o,
+      );
+      const L = totalAirLength(seams, trial, approachHeight, startPoint);
+      if (L + 1e-12 < bestLen) {
+        current = trial;
+        bestLen = L;
+        improved = true;
+        break;
+      }
+    }
+    if (improved) continue;
+    outer: for (let i = 0; i < n - 1; i++) {
+      for (let j = i + 1; j < n; j++) {
+        const trial = twoOptReverse(current, i, j);
+        const L = totalAirLength(seams, trial, approachHeight, startPoint);
+        if (L + 1e-12 < bestLen) {
+          current = trial;
+          bestLen = L;
+          improved = true;
+          break outer;
+        }
+      }
+    }
+    if (!improved) break;
+  }
+  return current;
+}
+
+/** Greedy NN + 2-opt over seam order and start↔end direction. */
+export function optimizeSeamSequence(
+  seams: SeamSpec[],
+  opts?: { approachHeight?: number; startPoint?: Vec3 },
+): SeamOrientation[] {
+  if (seams.length <= 1) return seams.length ? [{ index: 0, reversed: false }] : [];
+  const height = opts?.approachHeight ?? 0.05;
+  const seed = greedyNearestNeighborOrder(seams, height, opts?.startPoint ?? [0, 0, 0]);
+  return twoOptImprove(seams, seed, height, opts?.startPoint);
+}
+
+function needsClearance(
+  a: SeamSpec,
+  b: SeamSpec,
+  dotThreshold = DEFAULT_BISECTOR_CLEARANCE_DOT,
+): boolean {
+  const b0 = seamBisectorOf(a);
+  const b1 = seamBisectorOf(b);
+  return b0[0] * b1[0] + b0[1] * b1[1] + b0[2] * b1[2] < dotThreshold;
+}
+
+function clearancePoint(
+  from: SeamSpec,
+  fromRev: boolean,
+  to: SeamSpec,
+  toRev: boolean,
+  approachHeight: number,
+  clearanceHeight: number,
+): Vec3 {
+  const retract = seamRetract(from, fromRev, approachHeight);
+  const approach = seamApproach(to, toRev, approachHeight);
+  const mid: Vec3 = [
+    (retract[0] + approach[0]) / 2,
+    (retract[1] + approach[1]) / 2,
+    (retract[2] + approach[2]) / 2,
+  ];
+  let lift = norm([
+    seamBisectorOf(from)[0] + seamBisectorOf(to)[0],
+    seamBisectorOf(from)[1] + seamBisectorOf(to)[1],
+    seamBisectorOf(from)[2] + seamBisectorOf(to)[2] + 0.35,
+  ]);
+  if (Math.hypot(...lift) < 1e-9) lift = [0, 0, 1];
+  const pos = add(mid, [lift[0] * clearanceHeight, lift[1] * clearanceHeight, lift[2] * clearanceHeight]);
+  const zFloor = Math.max(retract[2], approach[2]) + 0.5 * clearanceHeight;
+  if (pos[2] < zFloor) return [pos[0], pos[1], zFloor];
+  return pos;
+}
+
+function scheduleForCondition(condition: number): WeldScheduleRow {
+  return MOTOWELD_SCHEDULES.find((s) => s.condition === condition) ?? MOTOWELD_SCHEDULES[0];
+}
+
+/**
+ * Build a multi-seam weld program: NN+2-opt order/direction, clearance air
+ * moves between seams, MACRO1 ARGF metadata on each ARCON.
+ */
+export function buildProgramFromSeams(
+  seamsIn: SeamSpec[],
+  opts?: {
+    mount?: Vec3;
+    station?: StationId;
+    condition?: number;
+    samplesPerSeam?: number;
+    approachHeight?: number;
+    clearanceHeight?: number;
+    maxSeams?: number;
+    optimize?: boolean;
+    name?: string;
+  },
+): WeldProgram {
+  const maxSeams = opts?.maxSeams ?? DEFAULT_MAX_SEAMS;
+  const seams = seamsIn.slice(0, Math.max(1, maxSeams));
+  const mount = opts?.mount ?? DEMO_MOUNT;
+  const station = opts?.station ?? "ST1";
+  const approachHeight = opts?.approachHeight ?? 0.14;
+  const clearanceHeight = opts?.clearanceHeight ?? DEFAULT_CLEARANCE_HEIGHT;
+  const samples = Math.max(2, opts?.samplesPerSeam ?? 8);
+  const defaultCond = opts?.condition ?? 1;
+  const defaultSch = scheduleForCondition(defaultCond);
+  const optimize = opts?.optimize ?? true;
+
+  const order = optimize
+    ? optimizeSeamSequence(seams, { approachHeight, startPoint: mount })
+    : seams.map((_, i) => ({ index: i, reversed: false }));
+
+  const waypoints: Waypoint[] = [];
+  const torchFrames: { pos: Vec3; dir: Vec3 }[] = [];
+  const allSeamPts: Vec3[] = [];
+  let weldLen = 0;
+  const airLabel = "VJ=50%";
+
+  for (let k = 0; k < order.length; k++) {
+    const { index, reversed } = order[k];
+    const seam = seams[index];
+    const { start, end } = seamEndpoints(seam, reversed);
+    const bis = seamBisectorOf(seam);
+    const travel: Vec3 = [end[0] - start[0], end[1] - start[1], end[2] - start[2]];
+    const torchDir = torchWireDirection(bis, travel, 12, true);
+    const cond = seam.condition ?? defaultCond;
+    const sch = scheduleForCondition(cond);
+    const weldLabel = `V=${seam.weldSpeed ?? sch.travelCmMin} cm/min`;
+
+    if (k > 0) {
+      const prev = order[k - 1];
+      let extra = clearanceHeight;
+      if (needsClearance(seams[prev.index], seam)) {
+        extra = Math.max(extra, clearanceHeight * 1.5);
+      }
+      const clr = clearancePoint(
+        seams[prev.index],
+        prev.reversed,
+        seam,
+        reversed,
+        approachHeight,
+        extra,
+      );
+      waypoints.push({
+        id: pad(waypoints.length + 1),
+        pos: clr,
+        move: "MOVJ",
+        speedLabel: airLabel,
+        arc: false,
+        kind: "travel",
+      });
+    }
+
+    const approach = add(start, approachOffset(seam, approachHeight));
+    const retract = add(end, approachOffset(seam, approachHeight));
+    waypoints.push({
+      id: pad(waypoints.length + 1),
+      pos: approach,
+      move: "MOVJ",
+      speedLabel: airLabel,
+      arc: false,
+      kind: "approach",
+    });
+
+    const seamPts: Vec3[] = [];
+    for (let s = 0; s <= samples; s++) {
+      const t = s / samples;
+      seamPts.push([
+        start[0] + (end[0] - start[0]) * t,
+        start[1] + (end[1] - start[1]) * t,
+        start[2] + (end[2] - start[2]) * t,
+      ]);
+    }
+    allSeamPts.push(...seamPts);
+    weldLen += dist(start, end) * 1000;
+    for (const pos of seamPts) torchFrames.push({ pos, dir: torchDir });
+
+    waypoints.push({
+      id: pad(waypoints.length + 1),
+      pos: seamPts[0],
+      move: "MOVL",
+      speedLabel: weldLabel,
+      arc: true,
+      kind: "weld",
+      tag: "ARCON",
+      condition: sch.condition,
+      argf: sch.argf,
+    });
+    for (let s = 1; s < seamPts.length - 1; s++) {
+      waypoints.push({
+        id: pad(waypoints.length + 1),
+        pos: seamPts[s],
+        move: "MOVL",
+        speedLabel: weldLabel,
+        arc: true,
+        kind: "weld",
+      });
+    }
+    waypoints.push({
+      id: pad(waypoints.length + 1),
+      pos: seamPts[seamPts.length - 1],
+      move: "MOVL",
+      speedLabel: weldLabel,
+      arc: true,
+      kind: "weld",
+      tag: "ARCOF",
+    });
+    waypoints.push({
+      id: pad(waypoints.length + 1),
+      pos: retract,
+      move: "MOVJ",
+      speedLabel: airLabel,
+      arc: false,
+      kind: "retract",
+    });
+  }
+
+  const firstBis = seams.length ? seamBisectorOf(seams[order[0]?.index ?? 0]) : undefined;
+  const draft: WeldProgram = {
+    name: opts?.name ?? "MULTI_SEAM",
+    mount,
+    station,
+    plates: [],
+    seam: allSeamPts,
+    seams,
+    seamOrder: order,
+    torchFrames,
+    waypoints,
+    segDurations: [],
+    cycleSec: 0,
+    weldLenMm: weldLen,
+    schedule: defaultSch,
+    filletBisector: firstBis,
+  };
+  return withMeta(rebuildDurations(draft), { sequenceOptimized: optimize });
+}
+
+/**
+ * Optimise multi-seam order/direction (NN + 2-opt). Single-seam programs still
+ * flip start↔end when that shortens the first approach.
+ */
 export function optimizeSequence(prog: WeldProgram): WeldProgram {
+  if (prog.seams && prog.seams.length >= 2) {
+    return refreshMeta(
+      buildProgramFromSeams(prog.seams, {
+        mount: prog.mount,
+        station: prog.station,
+        condition: prog.schedule.condition,
+        optimize: true,
+        name: prog.name,
+      }),
+    );
+  }
+
   const approach = prog.waypoints.find((w) => w.kind === "approach");
   if (!approach || prog.seam.length < 2) {
     return withMeta(prog, { sequenceOptimized: true });
@@ -986,7 +1415,6 @@ export function generateJbi(
   const doBookend = (opts?.bookendHome ?? true) && usePulse;
   const group2 = (opts?.station ?? "ST1").toUpperCase().replace(/\s+/g, "");
   const sch = prog.schedule;
-  const macroArg = opts?.macroArg ?? sch.argf;
 
   const pathStationDeg = pathPts.map((_, i) => {
     if (Array.isArray(opts?.stationDeg)) return opts!.stationDeg![i] ?? opts!.stationDeg![0] ?? 0;
@@ -1107,6 +1535,8 @@ export function generateJbi(
   lines.push("NOP");
 
   let weaveOn = false;
+  // MACRO1 at first ARCON, then only when ARGF / schedule changes between seams.
+  let lastMacroArg: number | null = null;
   rows.forEach((row, i) => {
     const c = `C${String(i).padStart(5, "0")}`;
     const bc = `BC${String(i).padStart(5, "0")}`;
@@ -1118,18 +1548,27 @@ export function generateJbi(
     }
 
     const p = pathPts[row.pathIndex];
-    const parsed = parseSpeed(p.speedLabel, p.kind === "weld" ? sch.travelCmMin : 80);
+    const wpSch =
+      p.condition != null ? scheduleForCondition(p.condition) : sch;
+    const wpArgf = p.argf ?? opts?.macroArg ?? wpSch.argf;
+    const parsed = parseSpeed(
+      p.speedLabel,
+      p.kind === "weld" ? wpSch.travelCmMin : 80,
+    );
     const useJoint =
       p.move === "MOVJ" || p.kind === "approach" || p.kind === "retract" || p.kind === "travel";
 
     if (p.tag === "ARCON") {
       lines.push("TIMER T=0.50");
-      lines.push(`MACRO1 MJ#(0) ARGF${macroArg}`);
-      lines.push(
-        `' MOTOWELD-E cond ${sch.condition} / MACRO1 ARGF${macroArg}: ${sch.currentA}A / ${sch.voltageV.toFixed(1)}V / wire ${sch.wireMmin.toFixed(
-          1,
-        )} m/min — UI estimate; verify ARCSRT.CND`,
-      );
+      if (lastMacroArg == null || wpArgf !== lastMacroArg) {
+        lines.push(`MACRO1 MJ#(0) ARGF${wpArgf}`);
+        lines.push(
+          `' MOTOWELD-E cond ${wpSch.condition} / MACRO1 ARGF${wpArgf}: ${wpSch.currentA}A / ${wpSch.voltageV.toFixed(1)}V / wire ${wpSch.wireMmin.toFixed(
+            1,
+          )} m/min — UI estimate; verify ARCSRT.CND`,
+        );
+        lastMacroArg = wpArgf;
+      }
       lines.push("ARCON");
       if (weaveNo != null) {
         lines.push(`WVON WEV#(${weaveNo})`);
