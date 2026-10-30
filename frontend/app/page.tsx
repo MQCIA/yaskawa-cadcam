@@ -26,11 +26,14 @@ import {
   jointArrayToMap,
   generateJbi,
   waypointsToIkPoints,
-  DEMO_MOUNT,
   MOTOWELD_SCHEDULES,
+  STATION_FRAMES,
+  stationMount,
+  stationRailZ,
   ensureTouchSense,
   optimizeSequence,
   planMotions,
+  type StationId,
   type WeldProgram,
 } from "@/lib/weldProgram";
 
@@ -62,6 +65,8 @@ export default function Home() {
   const [stations, setStations] = useState([
     { tilt: 0, rotate: 0 },
     { tilt: 0, rotate: 0 },
+    { tilt: 0, rotate: 0 },
+    { tilt: 0, rotate: 0 },
   ]);
 
   const [program, setProgram] = useState<WeldProgram | null>(null);
@@ -83,7 +88,7 @@ export default function Home() {
 
   const [ribbon, setRibbon] = useState<Ribbon>("plan");
   const [leftTab, setLeftTab] = useState<LeftTab>("workspace");
-  const [selectedStation, setSelectedStation] = useState<0 | 1 | null>(null);
+  const [selectedStation, setSelectedStation] = useState<0 | 1 | 2 | 3 | null>(null);
 
   const rafRef = useRef<number | undefined>(undefined);
   const lastRef = useRef<number | undefined>(undefined);
@@ -181,7 +186,10 @@ export default function Home() {
   }
 
   function makeProgram(cond: number) {
-    const prog = buildDemoProgram(DEMO_MOUNT, cond);
+    const stIdx = selectedStation ?? 0;
+    const stationId = `ST${stIdx + 1}` as StationId;
+    const mount = stationMount(stationId);
+    const prog = buildDemoProgram(mount, cond, stationId);
     setProgram(prog);
     setPathJointsDeg(null);
     setIkAllReachable(false);
@@ -190,8 +198,8 @@ export default function Home() {
     setSimT(0);
     setSimPlaying(false);
     setModelId("ma2010");
-    setRailTravel(Math.max(-1.6, Math.min(1.6, DEMO_MOUNT[2])));
-    setStation(0, { rotate: 0 });
+    setRailTravel(Math.max(-1.6, Math.min(1.6, stationRailZ(stationId))));
+    setStation(stIdx, { rotate: 0 });
     setLeftTab("welds");
     setStatus(
       t("status.programReady", {
@@ -657,18 +665,24 @@ export default function Home() {
                     {railTravel.toFixed(2)}m
                   </span>
                 </div>
-                {[0, 1].map((i) => (
+                {([0, 1, 2, 3] as const).map((i) => {
+                  const sid = `ST${i + 1}` as StationId;
+                  const frame = STATION_FRAMES[sid];
+                  return (
                   <button
                     key={i}
-                    onClick={() => setSelectedStation(i as 0 | 1)}
+                    onClick={() => setSelectedStation(i)}
                     className={`flex w-full items-center gap-2 rounded px-2 py-1 text-left hover:bg-slate-100 ${
                       selectedStation === i ? "bg-slate-100 text-[#e87722]" : ""
                     }`}
                   >
-                    <span className="text-slate-500">●</span> {t("workspace.table", { n: i + 1 })} —{" "}
+                    <span className="text-slate-500">●</span> {t("workspace.table", { n: i + 1 })}{" "}
+                    ({sid}
+                    {frame.approximate ? "≈" : ""}) —{" "}
                     {activePositioner?.label ?? t("workspace.positioner")}
                   </button>
-                ))}
+                  );
+                })}
                 <div className="mt-3 px-1 text-[10px] font-semibold uppercase text-slate-500">{t("workspace.parts")}</div>
                 <div className="rounded px-2 py-1 text-slate-700">
                   {program ? (

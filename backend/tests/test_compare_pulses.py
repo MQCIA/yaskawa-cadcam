@@ -102,3 +102,34 @@ def test_rectan_job_is_rejected():
     assert job.postype == "USER"
     with pytest.raises(ValueError, match="POSTYPE"):
         cp.compare_job(job, do_ik=False)
+
+
+def test_analyze_stations_st1_from_000():
+    stats = cp.analyze_stations(cp.iter_jbi_paths(FIXTURES))
+    st1 = stats["ST1"]
+    assert st1.n_points >= 10
+    assert "000" in st1.jobs
+    assert st1.bc_mean == pytest.approx(878037, abs=1)
+    assert st1.center_base_m is not None
+    assert st1.bbox_min_m is not None and st1.bbox_max_m is not None
+    assert st1.bbox_min_m[0] < st1.center_base_m[0] < st1.bbox_max_m[0]
+    # ST2–ST4 have no work C# in fixtures — still present with envelope BC.
+    for key in ("ST2", "ST3", "ST4"):
+        assert stats[key].n_points == 0
+        assert stats[key].bc_mean is not None
+    text = cp.format_station_analysis(stats)
+    assert "ST1" in text and "centre base m" in text
+
+
+def test_station_frames_match_analysis():
+    from app.robot_config import STATION_FRAMES, station_frame
+    from app.pulse_config import STATION_BC_MID
+
+    st1 = station_frame("ST1")
+    assert st1.approximate is False
+    assert st1.bc_mean == STATION_BC_MID["ST1"] == 878037
+    assert st1.mount_m[1] == pytest.approx(1.3255, abs=1e-3)
+    assert st1.rail_z_m == pytest.approx(-1.1948, abs=1e-3)
+    for key in ("ST2", "ST3", "ST4"):
+        assert STATION_FRAMES[key].approximate is True
+        assert STATION_FRAMES[key].bc_mean == STATION_BC_MID[key]

@@ -38,9 +38,13 @@ export type WeldScheduleRow = {
   paramsSource: string;
 };
 
+export type StationId = "ST1" | "ST2" | "ST3" | "ST4";
+
 export type WeldProgram = {
   name: string;
   mount: Vec3;
+  /** GROUP2 station the part is clamped on (ST1..ST4). */
+  station?: StationId;
   plates: { size: Vec3; center: Vec3 }[];
   seam: Vec3[];
   torchFrames: { pos: Vec3; dir: Vec3 }[];
@@ -114,8 +118,98 @@ export const PRODUCTION_WEAVE_NOS = [1, 15, 16, 21, 22, 24, 25] as const;
 export const SAFE_HOME_PULSES = [-283, -101162, -84213, 3710, -80188, -1936] as const;
 export const SAFE_HOME_EC: [number, number] = [192, 0];
 
-// Mount point on work-station 1's positioner faceplate (world coords, metres).
-export const DEMO_MOUNT: Vec3 = [1.6, 0.98, -1.2];
+/**
+ * Station workspaces (M2) — mirrored from ``backend/app/robot_config.STATION_FRAMES``.
+ *
+ * ``center`` / ``bbox*`` are torch TCP in the MA2010 robot-base frame (metres),
+ * mined by ``tools/compare_pulses.py --analyze-stations``. ``mount`` is the CAD
+ * part origin for IK (same frame). ``railZ`` is cell-world carriage Z at
+ * ``bcMean`` (positive track mm → negative Z).
+ */
+export type StationFrame = {
+  bcMean: number;
+  bcMin: number;
+  bcMax: number;
+  center: Vec3;
+  bboxMin: Vec3;
+  bboxMax: Vec3;
+  railZ: number;
+  mount: Vec3;
+  approximate: boolean;
+};
+
+/** Taught BC envelope midpoints (same calibration as ``pulse_config``). */
+const _BC_ST2_MID = (124171 + 375361) / 2;
+const _BC_ST13_MID = (808680 + 927851) / 2;
+
+const _ST1_CENTER: Vec3 = [-0.032, 1.3555, 0.5876];
+const _ST1_BBOX_MIN: Vec3 = [-0.6833, 0.8571, 0.3307];
+const _ST1_BBOX_MAX: Vec3 = [0.688, 1.9002, 0.9089];
+const _ST1_MOUNT: Vec3 = [-0.032, 1.3255, 0.5876];
+
+export const STATION_FRAMES: Record<StationId, StationFrame> = {
+  ST1: {
+    bcMean: 878037,
+    bcMin: 878036,
+    bcMax: 878037,
+    center: _ST1_CENTER,
+    bboxMin: _ST1_BBOX_MIN,
+    bboxMax: _ST1_BBOX_MAX,
+    railZ: -1.1948,
+    mount: _ST1_MOUNT,
+    approximate: false,
+  },
+  ST2: {
+    bcMean: Math.round(_BC_ST2_MID),
+    bcMin: Math.round(_BC_ST2_MID),
+    bcMax: Math.round(_BC_ST2_MID),
+    center: _ST1_CENTER,
+    bboxMin: _ST1_BBOX_MIN,
+    bboxMax: _ST1_BBOX_MAX,
+    railZ: 1.2431,
+    mount: _ST1_MOUNT,
+    approximate: true,
+  },
+  ST3: {
+    bcMean: Math.round(_BC_ST13_MID),
+    bcMin: Math.round(_BC_ST13_MID),
+    bcMax: Math.round(_BC_ST13_MID),
+    center: _ST1_CENTER,
+    bboxMin: _ST1_BBOX_MIN,
+    bboxMax: _ST1_BBOX_MAX,
+    railZ: -1.1569,
+    mount: _ST1_MOUNT,
+    approximate: true,
+  },
+  ST4: {
+    bcMean: Math.round(_BC_ST2_MID),
+    bcMin: Math.round(_BC_ST2_MID),
+    bcMax: Math.round(_BC_ST2_MID),
+    center: _ST1_CENTER,
+    bboxMin: _ST1_BBOX_MIN,
+    bboxMax: _ST1_BBOX_MAX,
+    railZ: 1.2431,
+    mount: _ST1_MOUNT,
+    approximate: true,
+  },
+};
+
+/** Mount point on ST1 — real weld-cloud origin (robot-base metres) for IK. */
+export const DEMO_MOUNT: Vec3 = [...STATION_FRAMES.ST1.mount];
+
+export function stationMount(station: StationId | string = "ST1"): Vec3 {
+  const key = station.toUpperCase().replace(/\s+/g, "") as StationId;
+  const frame = STATION_FRAMES[key];
+  if (!frame) throw new Error(`Unknown station '${station}'. Use ST1..ST4.`);
+  return [...frame.mount];
+}
+
+export function stationRailZ(station: StationId | string = "ST1"): number {
+  const key = station.toUpperCase().replace(/\s+/g, "") as StationId;
+  const frame = STATION_FRAMES[key];
+  if (!frame) throw new Error(`Unknown station '${station}'. Use ST1..ST4.`);
+  return frame.railZ;
+}
 
 const add = (a: Vec3, b: Vec3): Vec3 => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
 const dist = (a: Vec3, b: Vec3) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
@@ -151,15 +245,20 @@ function segmentHitsAabb(a: Vec3, b: Vec3, box: Aabb, steps = 8): boolean {
   return false;
 }
 
-/** Coarse cell obstacles (rail + H1000D pedestals) for demo collision checks. */
+/** Coarse cell obstacles (rail + positioner pedestals at mined station anchors). */
 function cellObstacles(): Aabb[] {
-  return [
-    { min: [-0.25, 0.0, -2.4], max: [0.25, 0.28, 2.4] },
-    { min: [1.35, 0.0, -1.55], max: [1.55, 0.9, -1.35] },
-    { min: [1.65, 0.0, -1.55], max: [1.85, 0.9, -1.35] },
-    { min: [1.35, 0.0, 1.05], max: [1.55, 0.9, 1.25] },
-    { min: [1.65, 0.0, 1.05], max: [1.85, 0.9, 1.25] },
-  ];
+  const rail: Aabb = { min: [-0.25, 0.0, -2.4], max: [0.25, 0.28, 2.4] };
+  const pedestals: Aabb[] = (Object.keys(STATION_FRAMES) as StationId[]).map((id) => {
+    const f = STATION_FRAMES[id];
+    const xOff = id === "ST3" || id === "ST4" ? 0.55 : 0;
+    const x = f.mount[0] + xOff;
+    const z = f.railZ;
+    return {
+      min: [x - 0.12, 0.0, z - 0.12] as Vec3,
+      max: [x + 0.12, 0.9, z + 0.12] as Vec3,
+    };
+  });
+  return [rail, ...pedestals];
 }
 
 function plateObstacles(prog: WeldProgram): Aabb[] {
@@ -239,19 +338,27 @@ function refreshMeta(prog: WeldProgram): WeldProgram {
   });
 }
 
-/** Build a T-fillet demo weld program mounted on the given positioner. */
-export function buildDemoProgram(mount: Vec3 = DEMO_MOUNT, condition = 1): WeldProgram {
+/** Build a T-fillet demo weld program mounted on the given positioner / station. */
+export function buildDemoProgram(
+  mount: Vec3 = DEMO_MOUNT,
+  condition = 1,
+  station: StationId = "ST1",
+): WeldProgram {
   const sch =
     MOTOWELD_SCHEDULES.find((s) => s.condition === condition) ?? MOTOWELD_SCHEDULES[0];
+  const resolvedMount = mount ?? stationMount(station);
 
   const platesLocal: { size: Vec3; center: Vec3 }[] = [
     { size: [0.5, 0.02, 0.34], center: [0, 0.01, 0] },
     { size: [0.5, 0.24, 0.02], center: [0, 0.13, -0.15] },
   ];
-  const plates = platesLocal.map((p) => ({ size: p.size, center: add(mount, p.center) }));
+  const plates = platesLocal.map((p) => ({
+    size: p.size,
+    center: add(resolvedMount, p.center),
+  }));
 
-  const seamStart = add(mount, [-0.22, 0.03, -0.135]);
-  const seamEnd = add(mount, [0.22, 0.03, -0.135]);
+  const seamStart = add(resolvedMount, [-0.22, 0.03, -0.135]);
+  const seamEnd = add(resolvedMount, [0.22, 0.03, -0.135]);
 
   const N = 12;
   const seam: Vec3[] = [];
@@ -357,7 +464,8 @@ export function buildDemoProgram(mount: Vec3 = DEMO_MOUNT, condition = 1): WeldP
 
   const draft: WeldProgram = {
     name: "DEMO_TFILLET",
-    mount,
+    mount: resolvedMount,
+    station,
     plates,
     seam,
     torchFrames,
@@ -646,8 +754,6 @@ const f1 = (v: number) => v.toFixed(1);
  * calibrated from taught BC envelopes (ST2 mid ↔ ST1/ST3 mid) over the 2400 mm
  * station span. Encoder SV1G = 4096 alone is not enough without lead/gear.
  */
-const _BC_ST2_MID = (124171 + 375361) / 2;
-const _BC_ST13_MID = (808680 + 927851) / 2;
 const _RECT_X_PULSES_PER_MM = (_BC_ST13_MID - _BC_ST2_MID) / 2400;
 
 export const BC_HOME_PULSE = 570125;
@@ -674,12 +780,12 @@ export const CELL_PULSE = {
   baseParkPulse: BC_PARK_PULSE,
   /** Calibrated pulses per millimetre along BS1. */
   pulsesPerMm: PULSES_PER_MM,
-  /** Taught station midpoints (BC#). */
+  /** Nominal BC per station (matches ``STATION_FRAMES`` / ``pulse_config``). */
   stationBcMid: {
-    ST1: Math.round(_BC_ST13_MID),
-    ST2: Math.round(_BC_ST2_MID),
-    ST3: Math.round(_BC_ST13_MID),
-    ST4: Math.round(_BC_ST2_MID),
+    ST1: STATION_FRAMES.ST1.bcMean,
+    ST2: STATION_FRAMES.ST2.bcMean,
+    ST3: STATION_FRAMES.ST3.bcMean,
+    ST4: STATION_FRAMES.ST4.bcMean,
   } as const,
 } as const;
 

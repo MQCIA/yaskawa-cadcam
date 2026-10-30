@@ -29,7 +29,9 @@ import numpy as np
 from .pulse_config import (
     MA2010_LIMITS_DEG,
     MA2010_PULSES_PER_DEGREE,
+    STATION_BC_MID,
     STATION_PULSES_PER_DEGREE,
+    track_pulses_to_mm,
 )
 
 
@@ -267,3 +269,118 @@ def _select_positioner() -> Positioner:
 
 ACTIVE_MODEL: RobotModel = _select_model()
 ACTIVE_POSITIONER: Positioner = _select_positioner()
+
+
+# ---------------------------------------------------------------------------
+# Station workspaces (M2) — weld TCP clouds in the robot-base frame + RECT-X.
+#
+# Computed by ``python tools/compare_pulses.py --analyze-stations`` over
+# production GROUP2 jobs (fixtures ship ``000.JBI`` for ST1; full dump jobs
+# ``11`` / ``12`` / ``02025_*`` / ``1-DEFRO-5*`` / ``1KT`` when present under
+# ``reference/robot-cell-dx200/jobs/``).
+#
+# ``center_m`` / ``bbox_*`` are FK(MA2010)×TOOL0 metres in the robot base.
+# ``rail_z_m = -track_pulses_to_mm(bc_mean)/1000`` (cell world, rail along Z).
+# ``mount_m`` is the CAD / demo part origin for IK (≈ cloud centre, slightly
+# below the torch tip so the coupon face sits under the seam).
+# ---------------------------------------------------------------------------
+@dataclass(frozen=True)
+class StationFrame:
+    name: str
+    bc_mean: int
+    bc_min: int
+    bc_max: int
+    center_m: tuple[float, float, float]
+    bbox_min_m: tuple[float, float, float]
+    bbox_max_m: tuple[float, float, float]
+    rail_z_m: float
+    mount_m: tuple[float, float, float]
+    source_jobs: tuple[str, ...]
+    approximate: bool = False
+
+
+def _rail_z_from_bc(bc: int) -> float:
+    return -track_pulses_to_mm(bc) / 1000.0
+
+
+# ST1 workspace mined from fixture ``000.JBI`` (GROUP2 ST1, park BC).
+_ST1_CENTER = (-0.0320, 1.3555, 0.5876)
+_ST1_BBOX_MIN = (-0.6833, 0.8571, 0.3307)
+_ST1_BBOX_MAX = (0.6880, 1.9002, 0.9089)
+_ST1_MOUNT = (-0.0320, 1.3255, 0.5876)  # ~30 mm under seam centroid
+_ST1_BC = 878037  # mean of work-point BC# in 000.JBI
+
+
+def _frame_from_st1_cloud(
+    name: str,
+    bc_mean: int,
+    bc_min: int,
+    bc_max: int,
+    source_jobs: tuple[str, ...],
+    *,
+    approximate: bool,
+) -> StationFrame:
+    """Reuse the ST1 relative weld cloud when a station has no C# in-repo yet."""
+    return StationFrame(
+        name=name,
+        bc_mean=bc_mean,
+        bc_min=bc_min,
+        bc_max=bc_max,
+        center_m=_ST1_CENTER,
+        bbox_min_m=_ST1_BBOX_MIN,
+        bbox_max_m=_ST1_BBOX_MAX,
+        rail_z_m=_rail_z_from_bc(bc_mean),
+        mount_m=_ST1_MOUNT,
+        source_jobs=source_jobs,
+        approximate=approximate,
+    )
+
+
+STATION_FRAMES: dict[str, StationFrame] = {
+    "ST1": StationFrame(
+        name="ST1",
+        bc_mean=_ST1_BC,
+        bc_min=878036,
+        bc_max=878037,
+        center_m=_ST1_CENTER,
+        bbox_min_m=_ST1_BBOX_MIN,
+        bbox_max_m=_ST1_BBOX_MAX,
+        rail_z_m=_rail_z_from_bc(_ST1_BC),
+        mount_m=_ST1_MOUNT,
+        source_jobs=("000.JBI",),  # production twin: 11.JBI (gitignore dump)
+        approximate=False,
+    ),
+    # ST2 / ST4: low-BC rail end. Cloud pending 12.JBI / 02025_* / 1KT.JBI.
+    "ST2": _frame_from_st1_cloud(
+        "ST2",
+        bc_mean=STATION_BC_MID["ST2"],
+        bc_min=STATION_BC_MID["ST2"],
+        bc_max=STATION_BC_MID["ST2"],
+        source_jobs=("12.JBI", "02025_KOSZ_DO_RURY_70-PLUS-RAMKI.JBI"),
+        approximate=True,
+    ),
+    # ST3: high-BC end with ST1 (TURN-2). Cloud pending 1-DEFRO-5*.JBI.
+    "ST3": _frame_from_st1_cloud(
+        "ST3",
+        bc_mean=STATION_BC_MID["ST3"],
+        bc_min=STATION_BC_MID["ST3"],
+        bc_max=STATION_BC_MID["ST3"],
+        source_jobs=("1-DEFRO-5.JBI", "1-DEFRO-5-KOSZ.JBI"),
+        approximate=True,
+    ),
+    "ST4": _frame_from_st1_cloud(
+        "ST4",
+        bc_mean=STATION_BC_MID["ST4"],
+        bc_min=STATION_BC_MID["ST4"],
+        bc_max=STATION_BC_MID["ST4"],
+        source_jobs=("1KT.JBI", "BAZA1.JBI"),
+        approximate=True,
+    ),
+}
+
+
+def station_frame(name: str) -> StationFrame:
+    key = name.upper().replace(" ", "")
+    if key not in STATION_FRAMES:
+        raise ValueError(f"Unknown station '{name}'. Use ST1..ST4.")
+    return STATION_FRAMES[key]

@@ -16,7 +16,7 @@ import {
   POSITIONER_MODELS,
   type PositionerModel,
 } from "@/lib/models";
-import type { WeldProgram } from "@/lib/weldProgram";
+import { STATION_FRAMES, type StationId, type WeldProgram } from "@/lib/weldProgram";
 
 export type SeamSegment = {
   start: [number, number, number];
@@ -31,16 +31,27 @@ const CARRIAGE_TOP_Y = 0.26;
 const AXLE_Y = 0.95;
 // X position of the trailing power-source dolly on the carriage (matches RobotTrack).
 const DOLLY_X = -0.62;
-// The two work-station positioner positions (robot faces +X, rail runs along Z).
-const STATION_POS: [number, number, number][] = [
-  [1.6, 0, -1.2],
-  [1.6, 0, 1.2],
-];
+
+/** Floor anchors for ST1..ST4 from mined ``STATION_FRAMES`` (rail along Z). */
+export const STATION_ORDER: StationId[] = ["ST1", "ST2", "ST3", "ST4"];
+/** TURN-2 (ST3/ST4) offset along X so both positioners at a rail end are visible. */
+const TURN2_X_OFFSET = 0.55;
+export const STATION_POS: [number, number, number][] = STATION_ORDER.map((id) => {
+  const f = STATION_FRAMES[id];
+  const xOff = id === "ST3" || id === "ST4" ? TURN2_X_OFFSET : 0;
+  // Pedestal under the weld cloud; X from mount (+ TURN-2 offset), Z from mean BC.
+  return [f.mount[0] + xOff, 0, f.railZ];
+});
 
 const deg2rad = (d: number) => (d * Math.PI) / 180;
 
-// Index of the station a part is mounted on, from its world mount point.
-function mountStationIndex(mount: [number, number, number]): number {
+/** Index of the station a part is mounted on (GROUP2 label, else nearest rail anchor). */
+function mountStationIndex(program: WeldProgram): number {
+  if (program.station) {
+    const idx = STATION_ORDER.indexOf(program.station);
+    if (idx >= 0) return idx;
+  }
+  const mount = program.mount;
   let best = 0;
   let bestD = Infinity;
   STATION_POS.forEach((p, i) => {
@@ -185,6 +196,8 @@ export default function RobotWorkspace({
   stations = [
     { tilt: 0, rotate: 0 },
     { tilt: 0, rotate: 0 },
+    { tilt: 0, rotate: 0 },
+    { tilt: 0, rotate: 0 },
   ],
   program = null,
   simT = 0,
@@ -209,7 +222,7 @@ export default function RobotWorkspace({
 
   // The workpiece is clamped to the positioner table, so it rotates with it.
   // Compute the pivot (axle) and rotation for the mounting station.
-  const partStation = program ? mountStationIndex(program.mount) : 0;
+  const partStation = program ? mountStationIndex(program) : 0;
   const partPivot: [number, number, number] = [
     STATION_POS[partStation][0],
     AXLE_Y,
@@ -261,10 +274,10 @@ export default function RobotWorkspace({
         <WeldPowerSource position={[DOLLY_X, 0, 0]} />
       </group>
 
-      {/* Two work stations, each with its own positioner */}
+      {/* Four work stations (ST1..ST4) at mined rail / mount anchors */}
       {positioner &&
         STATION_POS.map((pos, i) => (
-          <group key={`station-${i}`}>
+          <group key={`station-${STATION_ORDER[i]}`}>
             <Suspense key={`pos-${positioner.id}-${i}`} fallback={null}>
               <SelectedPositioner
                 positioner={positioner}
@@ -274,7 +287,7 @@ export default function RobotWorkspace({
               />
             </Suspense>
             <StationLabel
-              text={`Stół ${i + 1}`}
+              text={`Stół ${i + 1} (${STATION_ORDER[i]})`}
               position={[pos[0], 1.7, pos[2]]}
             />
           </group>

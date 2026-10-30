@@ -6,6 +6,7 @@ Usage
     python tools/compare_pulses.py path/to/job.JBI
     python tools/compare_pulses.py path/to/jobs_dir
     python tools/compare_pulses.py job.JBI --no-ik
+    python tools/compare_pulses.py backend/tests/fixtures/robot-cell --analyze-stations
 
 For every ``C#`` the script:
 
@@ -23,13 +24,19 @@ pendant golden Cartesian for M1.4 sign-off).
 ``BC#`` stays in pulses (RECT-X mm/pulse is not certified). ``EC#`` is two
 components: axis 1 uses the RBCALIB TURN scale (91771 pulse / 90°); axis 2
 is printed in pulses only.
+
+``--analyze-stations`` gathers ARCON / MOVL / MOVC work points per GROUP2
+``ST1``…``ST4``, reports TCP in the robot-base frame, RECT-X rail offset from
+``BC#``, and the weld-cloud centre + AABB used by ``STATION_FRAMES``.
 """
 
 from __future__ import annotations
 
 import argparse
 import math
+import re
 import sys
+from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -41,12 +48,19 @@ from app.pulse_config import (  # noqa: E402
     CELL_PULSE,
     RC1G_SOFTLIMIT_NEG,
     RC1G_SOFTLIMIT_POS,
+    STATION_BC_MID,
     deg_to_joint_pulses,
     joint_pulses_to_deg,
+    track_pulses_to_mm,
 )
 
 AXIS = ("S", "L", "U", "R", "B", "T")
 OPCODES = ("MOVJ", "MOVL", "MOVC", "MOVS", "ARCON", "ARCOF", "WVON", "MACRO1")
+WORK_MOVE_OPCODES = frozenset({"MOVL", "MOVC"})
+STATION_IDS = ("ST1", "ST2", "ST3", "ST4")
+_C_INDEX_RE = re.compile(r"\bC(\d+)\b", re.IGNORECASE)
+
+DEFAULT_FIXTURES = ROOT / "backend" / "tests" / "fixtures" / "robot-cell"
 
 
 def pulses_to_degrees(pulses: list[int]) -> list[float]:
@@ -303,6 +317,214 @@ def _max_abs(values: list[float] | list[int] | None) -> float | None:
     return max(abs(float(v)) for v in values)
 
 
+def normalize_group2(group2: str | None) -> str | None:
+    if not group2:
+        return None
+    key = group2.upper().replace(" ", "")
+    # GROUP2 may be "ST1" or "ST1,BS1"-like; take the STn token.
+    for tok in key.replace(",", " ").split():
+        if tok in STATION_IDS:
+            return tok
+    return key if key in STATION_IDS else None
+
+
+def work_point_indices(job: JbiJob) -> set[int]:
+    """C# indices used as weld/work moves (MOVL / MOVC, or any move inside ARCON)."""
+    out: set[int] = set()
+    in_arc = False
+    for inst in job.instructions:
+        match = _C_INDEX_RE.search(inst.text)
+        idx = int(match.group(1)) if match else None
+        if inst.opcode == "ARCON":
+            in_arc = True
+            continue
+        if inst.opcode == "ARCOF":
+            in_arc = False
+            continue
+        if idx is None:
+            continue
+        if inst.opcode in WORK_MOVE_OPCODES or (in_arc and inst.opcode.startswith("MOV")):
+            out.add(idx)
+    return out
+
+
+@dataclass
+class WorkSample:
+    station: str
+    job_name: str
+    source: str
+    index: int
+    bc: int
+    rail_mm: float
+    tcp_base_m: tuple[float, float, float]
+    world_m: tuple[float, float, float]
+
+
+@dataclass
+class StationStats:
+    station: str
+    n_points: int = 0
+    jobs: list[str] = field(default_factory=list)
+    bc_mean: float | None = None
+    bc_min: int | None = None
+    bc_max: int | None = None
+    rail_mm_mean: float | None = None
+    center_base_m: tuple[float, float, float] | None = None
+    bbox_min_m: tuple[float, float, float] | None = None
+    bbox_max_m: tuple[float, float, float] | None = None
+    center_world_m: tuple[float, float, float] | None = None
+    bbox_world_min_m: tuple[float, float, float] | None = None
+    bbox_world_max_m: tuple[float, float, float] | None = None
+    samples: list[WorkSample] = field(default_factory=list)
+
+
+def tcp_base_to_world(
+    tcp_m: tuple[float, float, float],
+    rail_mm: float,
+) -> tuple[float, float, float]:
+    """Robot-base TCP (Z-up) + RECT-X travel → cell world (rail along Z).
+
+    World X/Y follow the robot base; world Z shifts with the carriage so
+    ``mm = 0`` at ``BC_HOME`` sits at ``Z = 0``, and positive track mm (toward
+    ST1 / park) maps to negative world Z — same sign as ``track_mm_from_world_z``.
+    """
+    x, y, z = tcp_m
+    return (x, y, z - rail_mm / 1000.0)
+
+
+def collect_work_samples(job: JbiJob) -> list[WorkSample]:
+    station = normalize_group2(job.group2)
+    if station is None:
+        return []
+    if job.postype and job.postype.upper() != "PULSE":
+        return []
+    samples: list[WorkSample] = []
+    job_name = job.name or Path(job.source).stem
+    for idx in sorted(work_point_indices(job)):
+        pt = job.points.get(idx)
+        if pt is None or not pt.c or len(pt.c) != 6 or pt.bc is None:
+            continue
+        tcp = tcp_from_joints(pulses_to_degrees(pt.c))
+        base = (float(tcp["x"]), float(tcp["y"]), float(tcp["z"]))
+        rail_mm = track_pulses_to_mm(pt.bc)
+        samples.append(
+            WorkSample(
+                station=station,
+                job_name=job_name,
+                source=job.source,
+                index=idx,
+                bc=int(pt.bc),
+                rail_mm=rail_mm,
+                tcp_base_m=base,
+                world_m=tcp_base_to_world(base, rail_mm),
+            )
+        )
+    return samples
+
+
+def _mean3(points: list[tuple[float, float, float]]) -> tuple[float, float, float]:
+    n = len(points) or 1
+    return (
+        sum(p[0] for p in points) / n,
+        sum(p[1] for p in points) / n,
+        sum(p[2] for p in points) / n,
+    )
+
+
+def _bbox3(
+    points: list[tuple[float, float, float]],
+) -> tuple[tuple[float, float, float], tuple[float, float, float]]:
+    xs = [p[0] for p in points]
+    ys = [p[1] for p in points]
+    zs = [p[2] for p in points]
+    return (min(xs), min(ys), min(zs)), (max(xs), max(ys), max(zs))
+
+
+def summarize_station(station: str, samples: list[WorkSample]) -> StationStats:
+    stats = StationStats(station=station, samples=list(samples))
+    if not samples:
+        # Fall back to taught envelope mid so empty stations still get a BC anchor.
+        mid = STATION_BC_MID.get(station)
+        if mid is not None:
+            stats.bc_mean = float(mid)
+            stats.bc_min = mid
+            stats.bc_max = mid
+            stats.rail_mm_mean = track_pulses_to_mm(mid)
+        return stats
+    stats.n_points = len(samples)
+    stats.jobs = sorted({s.job_name for s in samples})
+    bcs = [s.bc for s in samples]
+    stats.bc_mean = sum(bcs) / len(bcs)
+    stats.bc_min = min(bcs)
+    stats.bc_max = max(bcs)
+    stats.rail_mm_mean = sum(s.rail_mm for s in samples) / len(samples)
+    bases = [s.tcp_base_m for s in samples]
+    worlds = [s.world_m for s in samples]
+    stats.center_base_m = _mean3(bases)
+    stats.bbox_min_m, stats.bbox_max_m = _bbox3(bases)
+    stats.center_world_m = _mean3(worlds)
+    stats.bbox_world_min_m, stats.bbox_world_max_m = _bbox3(worlds)
+    return stats
+
+
+def analyze_stations(paths: list[Path]) -> dict[str, StationStats]:
+    """Aggregate work-point clouds per GROUP2 station from the given .JBI files."""
+    by_station: dict[str, list[WorkSample]] = defaultdict(list)
+    for path in paths:
+        job = parse_jbi_file(path)
+        for sample in collect_work_samples(job):
+            by_station[sample.station].append(sample)
+    return {st: summarize_station(st, by_station.get(st, [])) for st in STATION_IDS}
+
+
+def format_station_analysis(stats_map: dict[str, StationStats]) -> str:
+    lines = [
+        "== Station workspaces (ARCON / MOVL / MOVC TCP clouds)",
+        "   TCP base = FK(MA2010 URDF)×TOOL0 in the robot-base frame (metres).",
+        "   Rail mm  = track_pulses_to_mm(BC) from BC_HOME; world Z = base Z − rail_m.",
+        "",
+    ]
+    for st in STATION_IDS:
+        stats = stats_map[st]
+        lines.append(f"-- {st}")
+        if stats.n_points == 0:
+            mid = STATION_BC_MID.get(st)
+            rail = track_pulses_to_mm(mid) if mid is not None else None
+            lines.append(
+                f"   no work points in scanned jobs; "
+                f"envelope BC mid={mid}  rail_mm={rail:.1f}" if mid is not None and rail is not None
+                else "   no work points in scanned jobs"
+            )
+            lines.append("")
+            continue
+        c = stats.center_base_m
+        mn = stats.bbox_min_m
+        mx = stats.bbox_max_m
+        cw = stats.center_world_m
+        assert c and mn and mx and cw and stats.bc_mean is not None
+        lines.append(f"   jobs ({len(stats.jobs)}): {', '.join(stats.jobs)}")
+        lines.append(f"   work points: {stats.n_points}")
+        lines.append(
+            f"   BC mean/min/max: {stats.bc_mean:.0f} / {stats.bc_min} / {stats.bc_max}  "
+            f"rail_mm_mean={stats.rail_mm_mean:.1f}"
+        )
+        lines.append(
+            f"   centre base m:  ({c[0]: .4f}, {c[1]: .4f}, {c[2]: .4f})"
+        )
+        lines.append(
+            f"   bbox base m:    "
+            f"[{mn[0]: .4f}…{mx[0]: .4f}]  "
+            f"[{mn[1]: .4f}…{mx[1]: .4f}]  "
+            f"[{mn[2]: .4f}…{mx[2]: .4f}]"
+        )
+        lines.append(
+            f"   centre world m: ({cw[0]: .4f}, {cw[1]: .4f}, {cw[2]: .4f})  "
+            f"(rail Z shift included)"
+        )
+        lines.append("")
+    return "\n".join(lines)
+
+
 def format_job(job: JbiJob, rows: list[PointReport]) -> str:
     counts: dict[str, int] = {op: 0 for op in OPCODES}
     for inst in job.instructions:
@@ -372,27 +594,50 @@ def format_job(job: JbiJob, rows: list[PointReport]) -> str:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Compare INFORM C# pulses with FK/IK round-trip.")
-    parser.add_argument("path", type=Path, help="A .JBI file or a directory of .JBI files")
+    parser.add_argument(
+        "path",
+        type=Path,
+        nargs="?",
+        default=None,
+        help="A .JBI file or a directory of .JBI files "
+        f"(default with --analyze-stations: {DEFAULT_FIXTURES})",
+    )
     parser.add_argument(
         "--no-ik",
         action="store_true",
         help="Skip IK round-trip (pulses, degrees, TCP and softlimits only)",
     )
+    parser.add_argument(
+        "--analyze-stations",
+        action="store_true",
+        help="Aggregate ARCON/MOVL/MOVC TCP clouds per GROUP2 ST1..ST4 "
+        "(bounding box, centre, mean BC / rail mm)",
+    )
     args = parser.parse_args(argv)
-    paths = iter_jbi_paths(args.path)
+    path = args.path
+    if path is None:
+        if not args.analyze_stations:
+            parser.error("path is required unless --analyze-stations is set")
+        path = DEFAULT_FIXTURES
+    paths = iter_jbi_paths(path)
     if not paths:
-        print(f"No .JBI files under {args.path}", file=sys.stderr)
+        print(f"No .JBI files under {path}", file=sys.stderr)
         return 2
     missing = [p for p in paths if not p.is_file()]
     if missing:
         print(f"Not a file: {missing[0]}", file=sys.stderr)
         return 2
-    for i, path in enumerate(paths):
-        job = parse_jbi_file(path)
+
+    if args.analyze_stations:
+        print(format_station_analysis(analyze_stations(paths)))
+        return 0
+
+    for i, jbi_path in enumerate(paths):
+        job = parse_jbi_file(jbi_path)
         try:
             rows = compare_job(job, do_ik=not args.no_ik)
         except ValueError as exc:
-            print(f"== skip {path}: {exc}")
+            print(f"== skip {jbi_path}: {exc}")
             continue
         if i:
             print()

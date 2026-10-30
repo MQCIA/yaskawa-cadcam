@@ -108,9 +108,12 @@ class PulseConfig:
 
 CELL_PULSE = PulseConfig()
 
-# Nominal BC for each station (midpoint of taught envelope).
+# Nominal BC for each station.
+# ST1 uses the mean work-point BC from fixture ``000.JBI`` (park / ST1 weld);
+# ST2–ST4 use taught envelope midpoints until their production clouds are mined
+# (see ``robot_config.STATION_FRAMES`` / ``compare_pulses --analyze-stations``).
 STATION_BC_MID: dict[str, int] = {
-    "ST1": int(round(_ST13_MID)),
+    "ST1": 878037,  # mean BC of ARCON/MOVL/MOVC points in 000.JBI
     "ST2": int(round(_ST2_MID)),
     "ST3": int(round(_ST13_MID)),
     # ST4 not listed in the taught envelopes; opposite end of the rail (ST2 side).

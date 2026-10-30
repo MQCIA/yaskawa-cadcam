@@ -4,7 +4,12 @@ import { useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Line } from "@react-three/drei";
 import * as THREE from "three";
-import { sampleProgram, type Vec3, type WeldProgram } from "@/lib/weldProgram";
+import {
+  sampleProgram,
+  STATION_FRAMES,
+  type Vec3,
+  type WeldProgram,
+} from "@/lib/weldProgram";
 
 const dist = (a: Vec3, b: Vec3) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
 
@@ -76,8 +81,44 @@ export default function WeldScene({
   const f = Math.max(0, Math.min(1, (s.elapsedSec - approachDur) / weldDur));
   const bead = beadPoints(program.seam, f);
 
+  const frame = program.station ? STATION_FRAMES[program.station] : STATION_FRAMES.ST1;
+  const bboxSize: Vec3 = [
+    frame.bboxMax[0] - frame.bboxMin[0],
+    frame.bboxMax[1] - frame.bboxMin[1],
+    frame.bboxMax[2] - frame.bboxMin[2],
+  ];
+  const bboxCenter: Vec3 = [
+    (frame.bboxMin[0] + frame.bboxMax[0]) / 2,
+    (frame.bboxMin[1] + frame.bboxMax[1]) / 2,
+    (frame.bboxMin[2] + frame.bboxMax[2]) / 2,
+  ];
+
   return (
     <group>
+      {/* Mined station weld AABB (robot-base frame) — guides CAD into the real zone */}
+      <mesh position={bboxCenter}>
+        <boxGeometry args={bboxSize} />
+        <meshStandardMaterial
+          color="#e87722"
+          transparent
+          opacity={0.06}
+          depthWrite={false}
+        />
+      </mesh>
+      <Line
+        points={[
+          [frame.bboxMin[0], frame.bboxMin[1], frame.bboxMin[2]],
+          [frame.bboxMax[0], frame.bboxMin[1], frame.bboxMin[2]],
+          [frame.bboxMax[0], frame.bboxMin[1], frame.bboxMax[2]],
+          [frame.bboxMin[0], frame.bboxMin[1], frame.bboxMax[2]],
+          [frame.bboxMin[0], frame.bboxMin[1], frame.bboxMin[2]],
+        ]}
+        color="#e87722"
+        lineWidth={1}
+        opacity={0.45}
+        transparent
+      />
+
       {/* Workpiece plates (T-fillet coupon) */}
       {program.plates.map((pl, i) => (
         <mesh key={i} position={pl.center} castShadow receiveShadow>

@@ -27,6 +27,8 @@ M1.4.
 
 ```bash
 python tools/compare_pulses.py backend/tests/fixtures/robot-cell
+python tools/compare_pulses.py --analyze-stations
+python tools/compare_pulses.py reference/robot-cell-dx200/jobs --analyze-stations
 ```
 
 Pełne joby produkcyjne: `reference/robot-cell-dx200/jobs/` (gitignore).
@@ -103,10 +105,10 @@ Na URDF łańcuchu cały `000.JBI` round-tripuje w granicach dziesiątek impuls�
 
 | Stacja | Sprzęt | Job w skanie dumpa | W gicie |
 |--|--|--|--|
-| ST1 | S1 TURN-1 | `000.JBI`, `1.JBI` | pełne `C#` dla `000.JBI` |
+| ST1 | S1 TURN-1 | `000.JBI`, `1.JBI`, `11.JBI` | pełne `C#` dla `000.JBI` |
 | ST2 | S2 TURN-1 | `12.JBI`, `02025_KOSZ_…` | nagłówki w `_dump_scan.json` |
-| ST3 | S3 TURN-2 | `1-DEFRO-5.JBI` | nagłówek + home fixture |
-| ST4 | S4 TURN-2 | `BAZA1.JBI` | nagłówek |
+| ST3 | S3 TURN-2 | `1-DEFRO-5.JBI`, `1-DEFRO-5-KOSZ.JBI` | nagłówek + home fixture |
+| ST4 | S4 TURN-2 | `1KT.JBI`, `BAZA1.JBI` | nagłówek |
 
 Przykłady `EC`:
 
@@ -116,10 +118,36 @@ Przykłady `EC`:
 | `-1746,0` | -1.712 | 0 | `000.JBI` ST1 |
 | `-2638,-94527` | -2.587 | impulsy, bez skali ° | TURN-2 |
 
+## Strefy robocze ST1–ST4 (M2)
+
+Źródło: `python tools/compare_pulses.py --analyze-stations` (punkty
+`ARCON` / `MOVL` / `MOVC` → FK×TOOL0 w bazie robota + `BC#` → mm szyny).
+
+Wynik zapisany w `backend/app/robot_config.STATION_FRAMES` (frontend:
+`STATION_FRAMES` / `DEMO_MOUNT` w `weldProgram.ts`). Układ bazowy = robot
+base (metry); `rail_z_m = −track_mm(bc_mean)/1000` (szyna wzdłuż Z świata).
+
+| Stacja | BC mean (min…max) | rail Z m | środek TCP baza m | bbox baza m (min…max) | źródło |
+|--|--|--|--|--|--|
+| ST1 | 878037 (878036…878037) | −1.195 | (−0.032, 1.356, 0.588) | X −0.683…0.688 · Y 0.857…1.900 · Z 0.331…0.909 | `000.JBI` (17 pkt); produkcja: `11.JBI` |
+| ST2 | 249766 | +1.243 | *jak ST1 (≈)* | *jak ST1 (≈)* | oczekuje `12.JBI` / `02025_KOSZ_…` |
+| ST3 | 868266 | −1.157 | *jak ST1 (≈)* | *jak ST1 (≈)* | oczekuje `1-DEFRO-5*.JBI` |
+| ST4 | 249766 | +1.243 | *jak ST1 (≈)* | *jak ST1 (≈)* | oczekuje `1KT.JBI` / `BAZA1.JBI` |
+
+`mount_m` ST1 (CAD / demo IK): `(−0.032, 1.326, 0.588)` — ≈30 mm pod
+centroidem chmury, żeby blacha leżała pod spoiną. Po wyborze stacji UI
+ustawia `railTravel = rail_z_m` i buduje program na `stationMount(STn)`.
+
+Gdy lokalny dump ma pełne joby, uruchom `--analyze-stations` na
+`reference/robot-cell-dx200/jobs/` i zaktualizuj `STATION_FRAMES`
+(ST2–ST4 przestają być `approximate`).
+
 ## Czego ta tabela jeszcze nie jest
 
 - Nie zastępuje złotych poz z pendantu (XYZ uczone na kontrolerze).
-- Nie daje `BC` w milimetrach.
+- Skala `BC` mm jest kalibracją ze środków zakresów / 2400 mm (brak leadu w RC1G).
 - Nie daje stopni drugiej osi TURN-2.
 - Duży ΔPULSE przy małym błędzie TCP znaczyłby drugą konfigurację IK — na
   obecnym URDF tego praktycznie nie widać na `000.JBI`.
+- Chmury ST2–ST4 w repozytorium są przybliżeniem zasięgu ST1 do czasu
+  wczytania pełnych jobów produkcyjnych.
