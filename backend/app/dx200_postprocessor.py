@@ -28,6 +28,13 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 
+from .cell_frames import (
+    DEFAULT_TOUCH_SENSE,
+    DEFAULT_TOOL_NO,
+    DEFAULT_USER_FRAME,
+    TOOL0,
+    touch_sense_jbi_comments,
+)
 from .pulse_config import (
     BASE_PULSES_PER_MM,
     BC_HOME_PULSE,
@@ -68,8 +75,8 @@ class WeldSegment:
 @dataclass
 class PostprocessorConfig:
     job_name: str = "WELD_AUTO"
-    tool_no: int = 0
-    user_frame: int = 1
+    tool_no: int = DEFAULT_TOOL_NO
+    user_frame: int = DEFAULT_USER_FRAME
     # "ma2010_cell" | "cartesian_review"
     profile: str = "ma2010_cell"
     move_speed: float = 80.0  # air VJ= on the production cell
@@ -79,8 +86,8 @@ class PostprocessorConfig:
     use_station_axis: bool = True
     station_pulses_per_deg: float = STATION_PULSES_PER_DEGREE
     joint_approach: bool = True
-    # Production TOOL 0 tip Z ≈ 415.7 mm (informational / comments).
-    tool_tcp_mm: tuple[float, float, float] = (-54.280, 1.052, 415.702)
+    # Production TOOL 0 tip (TOOL.CND / cell_frames.TOOL0).
+    tool_tcp_mm: tuple[float, float, float] = TOOL0.xyz_mm
     # Default weave; override per WeldSegment or pass weave_no=None to disable.
     default_weave: int | None = 21
     # MACRO1 MJ#(0) ARGFn — production uses 1, 4, 5 (also 2, 8, 11…).
@@ -102,6 +109,8 @@ class PostprocessorConfig:
     robot_pulses_per_degree: list[float] = field(
         default_factory=lambda: list(CELL_PULSE.robot_pulses_per_degree)
     )
+    # SZUKAJ1 pattern: CALL JOB:SRCH-2D1 before first ARCON (needs job on CF).
+    emit_touch_sense_call: bool = False
 
 
 def _fmt(v: float, decimals: int = 4) -> str:
@@ -182,6 +191,7 @@ def generate_jbi(
     weave_no: int | None = None,
     bookend_home: bool | None = None,
     disable_weave: bool = False,
+    emit_touch_sense_call: bool | None = None,
 ) -> str:
     """Generate a DX200 ``.JBI`` job from Cartesian TCP points.
 
@@ -195,6 +205,9 @@ def generate_jbi(
     ``station`` also sets ``///GROUP2 STn`` when provided.
     Home bookends (safe C/BC over the rail) are on by default when PULSE
     joints are supplied (``bookend_home``).
+
+    ``emit_touch_sense_call`` inserts ``CALL JOB:SRCH-2D1`` before the first
+    ARCON (SZUKAJ1 pattern — job must exist on the controller / MotoSim).
     """
     cfg = config or PostprocessorConfig()
     if macro_arg is not None:
@@ -205,6 +218,8 @@ def generate_jbi(
         cfg.default_weave = weave_no
     if bookend_home is not None:
         cfg.bookend_home = bookend_home
+    if emit_touch_sense_call is not None:
+        cfg.emit_touch_sense_call = emit_touch_sense_call
     if station:
         cfg.group2_station = _normalize_group2(station)
 
@@ -432,6 +447,7 @@ def _generate_ma2010_cell(
     # Motoweld preset: emit MACRO1 at the first ARCON, then again only when
     # the schedule / ARGF changes between seams (02025_KOSZ_… pattern).
     last_macro_arg: int | None = None
+    touch_sense_emitted = False
     for i in range(npos):
         c = f"C{i:05d}"
         bc = f"BC{i:05d}"
@@ -445,6 +461,15 @@ def _generate_ma2010_cell(
             seg = arc_on_at[i]
             argf = _macro_arg_for_segment(seg, cfg)
             weave = _weave_for_segment(seg, cfg)
+
+            # SZUKAJ1 → CALL JOB:SRCH-2D1 once before the first weld.
+            if cfg.emit_touch_sense_call and not touch_sense_emitted:
+                lines.extend(
+                    touch_sense_jbi_comments(
+                        DEFAULT_TOUCH_SENSE, emit_call=True
+                    )
+                )
+                touch_sense_emitted = True
 
             lines.append("TIMER T=0.50")
             if last_macro_arg is None or argf != last_macro_arg:

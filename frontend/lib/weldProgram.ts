@@ -93,6 +93,46 @@ export const DEFAULT_MAX_SEAMS = 50;
 export const DEFAULT_CLEARANCE_HEIGHT = 0.08;
 export const DEFAULT_BISECTOR_CLEARANCE_DOT = 0.35;
 
+/**
+ * Cell frame registry (M2.1 / M2.4) — mirrors ``backend/app/cell_frames.py``.
+ * See ``docs/CELL_FRAMES.md``.
+ */
+export const TOOL0_FRAME = {
+  toolNo: 0,
+  name: "STANDARD TOOL11",
+  xyzMm: [-54.28, 1.052, 415.702] as Vec3,
+  rpyDeg: [1.3119, -42.6215, -6.8387] as Vec3,
+} as const;
+
+export const DEFAULT_USER_FRAME = 1;
+
+/** CUBEINTF pulse corners (first 3 axes) for STACJA_1 / STACJA_2. */
+export const CUBE_ZONES = {
+  STACJA_1: {
+    cubeNo: 1,
+    station: "ST1" as StationId,
+    cornerA: [632891, -23550, 139716] as const,
+    cornerB: [622891, -33550, 129716] as const,
+  },
+  STACJA_2: {
+    cubeNo: 2,
+    station: "ST2" as StationId,
+    cornerA: [633450, 15097, 139701] as const,
+    cornerB: [623450, 5097, 129701] as const,
+  },
+} as const;
+
+/** Production TouchSense: SZUKAJ1 → CALL JOB:SRCH-2D1. */
+export const TOUCH_SENSE = {
+  masterJob: "SZUKAJ1",
+  searchJob: "SRCH-2D1",
+  rin: 1,
+  speedV: 15.0,
+  timeoutS: 0.2,
+  distanceMm: 20.0,
+  distance2Mm: 10.0,
+} as const;
+
 /** Cell identity shown in UI headers. */
 export const CELL_LABEL = "DX200 · MA2010 · RECT-X · TURN-ST1 · MOTOWELD-E 350A";
 
@@ -1404,6 +1444,8 @@ export function generateJbi(
     station?: string;
     macroArg?: number;
     bookendHome?: boolean;
+    /** Insert CALL JOB:SRCH-2D1 before first ARCON (default: when sense WPs exist). */
+    emitTouchSenseCall?: boolean;
   },
 ): string {
   const pathPts = prog.waypoints;
@@ -1415,6 +1457,9 @@ export function generateJbi(
   const doBookend = (opts?.bookendHome ?? true) && usePulse;
   const group2 = (opts?.station ?? "ST1").toUpperCase().replace(/\s+/g, "");
   const sch = prog.schedule;
+  const hasSense = pathPts.some((w) => w.kind === "sense" || w.tag === "TOUCH");
+  const emitTouchSense =
+    opts?.emitTouchSenseCall ?? hasSense;
 
   const pathStationDeg = pathPts.map((_, i) => {
     if (Array.isArray(opts?.stationDeg)) return opts!.stationDeg![i] ?? opts!.stationDeg![0] ?? 0;
@@ -1482,7 +1527,10 @@ export function generateJbi(
   }
   lines.push("//POS");
   lines.push(`///NPOS ${npos},${npos},${npos},0,0,0`);
-  lines.push("///TOOL 0");
+  if (!usePulse) {
+    lines.push(`///USER ${DEFAULT_USER_FRAME}`);
+  }
+  lines.push(`///TOOL ${TOOL0_FRAME.toolNo}`);
 
   if (usePulse) {
     lines.push("///POSTYPE PULSE");
@@ -1537,6 +1585,7 @@ export function generateJbi(
   let weaveOn = false;
   // MACRO1 at first ARCON, then only when ARGF / schedule changes between seams.
   let lastMacroArg: number | null = null;
+  let touchSenseEmitted = false;
   rows.forEach((row, i) => {
     const c = `C${String(i).padStart(5, "0")}`;
     const bc = `BC${String(i).padStart(5, "0")}`;
@@ -1559,6 +1608,16 @@ export function generateJbi(
       p.move === "MOVJ" || p.kind === "approach" || p.kind === "retract" || p.kind === "travel";
 
     if (p.tag === "ARCON") {
+      if (emitTouchSense && !touchSenseEmitted) {
+        lines.push(
+          `' TouchSense CAD↔part — production ${TOUCH_SENSE.masterJob} → CALL JOB:${TOUCH_SENSE.searchJob}`,
+        );
+        lines.push(
+          `' SRCH RIN#(${TOUCH_SENSE.rin})=ON T=${TOUCH_SENSE.timeoutS.toFixed(2)} DIS=${TOUCH_SENSE.distanceMm.toFixed(1)} / DIS2=${TOUCH_SENSE.distance2Mm.toFixed(1)} V=${TOUCH_SENSE.speedV.toFixed(1)}`,
+        );
+        lines.push(`CALL JOB:${TOUCH_SENSE.searchJob}`);
+        touchSenseEmitted = true;
+      }
       lines.push("TIMER T=0.50");
       if (lastMacroArg == null || wpArgf !== lastMacroArg) {
         lines.push(`MACRO1 MJ#(0) ARGF${wpArgf}`);
@@ -1590,7 +1649,9 @@ export function generateJbi(
     }
 
     if (p.tag === "TOUCH") {
-      lines.push("' TouchSense search (CAD↔reality offset)");
+      lines.push(
+        `' TouchSense pose (CAD) — runtime search via CALL JOB:${TOUCH_SENSE.searchJob}`,
+      );
     }
     if (p.tag === "ARCOF") {
       if (weaveOn) {

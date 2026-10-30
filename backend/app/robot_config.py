@@ -26,6 +26,7 @@ import os
 from dataclasses import dataclass, field
 import numpy as np
 
+from .cell_frames import TOOL0
 from .pulse_config import (
     MA2010_LIMITS_DEG,
     MA2010_PULSES_PER_DEGREE,
@@ -77,8 +78,9 @@ class Ma2010Geometry:
 MA2010_URDF = Ma2010Geometry()
 
 # Cell dump TOOL.CND — torch TCP relative to the flange (URDF tool0).
-TOOL0_XYZ_MM: tuple[float, float, float] = (-54.280, 1.052, 415.702)
-TOOL0_RPY_DEG: tuple[float, float, float] = (1.3119, -42.6215, -6.8387)
+# Canonical registry: ``cell_frames.TOOL0`` / ``docs/CELL_FRAMES.md``.
+TOOL0_XYZ_MM: tuple[float, float, float] = TOOL0.xyz_mm
+TOOL0_RPY_DEG: tuple[float, float, float] = TOOL0.rpy_deg
 
 # Safe home / transport over the rail — repeating C00000 in production jobs.
 # Pulses: (-283, -101162, -84213, 3710, -80188, -1936). See docs/CELL_POSES.md.

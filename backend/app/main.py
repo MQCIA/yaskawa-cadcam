@@ -157,6 +157,10 @@ class JbiRequest(BaseModel):
         default=None,
         description="///GROUP2 STn (ST1..ST4). Defaults to station or ST1.",
     )
+    emit_touch_sense_call: bool = Field(
+        default=False,
+        description="Insert CALL JOB:SRCH-2D1 before first ARCON (SZUKAJ1 pattern).",
+    )
 
 
 # --------------------------------------------------------------------------- #
@@ -341,6 +345,7 @@ def generate_job(req: JbiRequest):
             weave_no=req.weave_no,
             bookend_home=req.bookend_home,
             disable_weave=req.disable_weave,
+            emit_touch_sense_call=req.emit_touch_sense_call,
         )
     except ValueError as exc:
         raise HTTPException(400, str(exc)) from exc

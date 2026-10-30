@@ -471,6 +471,60 @@ def test_full_pipeline(lbracket):
     assert "RB1,BS1" in jbi
 
 
+def test_cell_frames_tool_uf_cube_touchsense():
+    """M2.1 / M2.4: TOOL0, UF1, CUBEINTF STACJA_*, SZUKAJ1 → SRCH-2D1."""
+    from app.cell_frames import (
+        CUBE_ZONES,
+        DEFAULT_TOUCH_SENSE,
+        DEFAULT_TOOL_NO,
+        DEFAULT_USER_FRAME,
+        TOOL0,
+        USER_FRAMES,
+        cube_for_station,
+        touch_sense_jbi_comments,
+        tool_tcp_mm,
+    )
+    from app.dx200_postprocessor import PostprocessorConfig, generate_jbi
+    from app.robot_config import TOOL0_XYZ_MM, TOOL0_RPY_DEG
+
+    assert TOOL0.tool_no == DEFAULT_TOOL_NO == 0
+    assert TOOL0.xyz_mm == TOOL0_XYZ_MM
+    assert TOOL0.rpy_deg == TOOL0_RPY_DEG
+    assert tool_tcp_mm() == TOOL0.xyz_mm
+    assert DEFAULT_USER_FRAME == 1
+    assert USER_FRAMES[1].user_no == 1
+    assert not USER_FRAMES[1].pulse_jobs_use
+    assert cube_for_station("ST1") is CUBE_ZONES["STACJA_1"]
+    assert cube_for_station("ST2") is CUBE_ZONES["STACJA_2"]
+    assert cube_for_station("ST3") is CUBE_ZONES["STACJA_1"]
+    assert DEFAULT_TOUCH_SENSE.search_job == "SRCH-2D1.JBI"
+    assert DEFAULT_TOUCH_SENSE.rin == 1
+    comments = touch_sense_jbi_comments(emit_call=True)
+    assert any("CALL JOB:SRCH-2D1" == ln for ln in comments)
+    assert any("RIN#(1)" in ln for ln in comments)
+
+    pts = [
+        {"x": 0.8, "y": 0.5, "z": 0.4, "rx": 180.0, "ry": 0.0, "rz": 0.0},
+        {"x": 0.9, "y": 0.5, "z": 0.4, "rx": 180.0, "ry": 0.0, "rz": 0.0},
+        {"x": 1.0, "y": 0.5, "z": 0.4, "rx": 180.0, "ry": 0.0, "rz": 0.0},
+    ]
+    from app.dx200_postprocessor import WeldSegment
+
+    segs = [WeldSegment(start_index=1, end_index=2, weld_speed=5.0, arc_file=1)]
+    jbi = generate_jbi(
+        pts,
+        segs,
+        PostprocessorConfig(crlf=False, bookend_home=False, default_weave=None),
+        station_deg=[0.0] * 3,
+        emit_touch_sense_call=True,
+    )
+    assert "///TOOL 0" in jbi
+    assert "CALL JOB:SRCH-2D1" in jbi
+    assert "MACRO1 MJ#(0) ARGF1" in jbi
+    # CALL appears before the first ARCON.
+    assert jbi.index("CALL JOB:SRCH-2D1") < jbi.index("ARCON")
+
+
 def test_multi_seam_sequence_optimization():
     """NN + 2-opt shortens air travel for ≥4 scattered seams (order + direction)."""
     from app.path_planning import (

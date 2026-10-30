@@ -26,7 +26,7 @@ Tiny fixtures for tests: `backend/tests/fixtures/robot-cell/`.
 | Task | File(s) |
 |------|---------|
 | Who is R1/B1/S*? | `SYSTEM.SYS` |
-| TOOL0 TCP | `TOOL.CND` |
+| TOOL0 TCP / UF / CUBE / SRCH | `TOOL.CND`, `docs/CELL_FRAMES.md`, `cell_frames.py` |
 | Welder | `WELDER.DAT` → Motoweld-E 350A |
 | Example production job | `jobs/000.JBI` |
 | Robot pulses/deg | `params/RC.PRM` RC1G softlimits → already in `pulse_config.py` |
