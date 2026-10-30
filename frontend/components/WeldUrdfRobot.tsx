@@ -6,7 +6,12 @@ import * as THREE from "three";
 import { STLLoader } from "three/examples/jsm/loaders/STLLoader.js";
 import URDFLoader, { type URDFRobot } from "urdf-loader";
 import WeldingTorch from "./WeldingTorch";
-import { sampleProgram, type Vec3, type WeldProgram } from "@/lib/weldProgram";
+import {
+  sampleJointPath,
+  sampleProgram,
+  type Vec3,
+  type WeldProgram,
+} from "@/lib/weldProgram";
 import { AXES, type Joints } from "./AxisSliders";
 
 // Base -> tip revolute chain of the Motoman AR2010 URDF.
@@ -30,9 +35,12 @@ type URDFJointLike = THREE.Object3D & {
 };
 
 /**
- * Real Yaskawa MOTOMAN-AR2010 (URDF + STL) with a welding torch on the flange,
- * driven by a browser-side CCD inverse-kinematics solver so the torch tip tracks
- * the weld path. This makes the animated welding robot the actual AR2010 model.
+ * Real Yaskawa MOTOMAN-MA2010 (URDF + STL) with a welding torch on the flange.
+ *
+ * Drive modes (priority):
+ *  1. Manual jog — S/L/U/R/B/T sliders
+ *  2. Backend IK path — linear joint interpolation of `/api/calculate-ik` poses
+ *  3. Fallback CCD — browser IK so the tip still tracks TCP when no IK path yet
  */
 export default function WeldUrdfRobot({
   url,
@@ -42,6 +50,7 @@ export default function WeldUrdfRobot({
   base,
   joints,
   manual = false,
+  pathJointsDeg = null,
   partPivot,
   partRotZ = 0,
 }: {
@@ -54,6 +63,8 @@ export default function WeldUrdfRobot({
   // When true (or when no program is loaded) the robot follows the jog sliders
   // instead of the inverse-kinematics weld path.
   manual?: boolean;
+  /** Per-waypoint [S,L,U,R,B,T] deg from `/api/calculate-ik`. */
+  pathJointsDeg?: number[][] | null;
   // Pivot + rotation of the workpiece on the positioner, so the IK target
   // tracks the seam when the table is rotated (matches WeldScene wrapping).
   partPivot?: Vec3;
@@ -94,14 +105,31 @@ export default function WeldUrdfRobot({
   const progRef = useRef(program);
   const jointsRef = useRef(joints);
   const manualRef = useRef(manual);
+  const pathJointsRef = useRef(pathJointsDeg);
   const pivotRef = useRef(partPivot);
   const rotZRef = useRef(partRotZ);
   simRef.current = simT;
   progRef.current = program;
   jointsRef.current = joints;
   manualRef.current = manual;
+  pathJointsRef.current = pathJointsDeg;
   pivotRef.current = partPivot;
   rotZRef.current = partRotZ;
+
+  function applyAxesDeg(qDeg: number[] | Joints) {
+    const robotJoints = (
+      robot as unknown as { setJointValue?: (n: string, v: number) => boolean }
+    ).setJointValue;
+    for (let k = 0; k < CHAIN.length; k++) {
+      const axis = AXES[k];
+      if (!axis) continue;
+      const deg = Array.isArray(qDeg) ? Number(qDeg[k] ?? 0) : Number(qDeg[axis] ?? 0);
+      const rad = deg2rad(deg);
+      if (robotJoints) robotJoints.call(robot, CHAIN[k], rad);
+      else if (chainRef.current[k]) chainRef.current[k].setJointValue(rad);
+    }
+    robot.updateMatrixWorld(true);
+  }
 
   // Attach an end-effector marker (torch tip) to the flange for IK.
   useEffect(() => {
@@ -175,27 +203,29 @@ export default function WeldUrdfRobot({
     if (!chain.length || !tcp || !mount) return;
 
     const prog = progRef.current;
-    const ikActive = !!prog && !manualRef.current;
+    const pathQ = pathJointsRef.current;
+    const hasPathIk =
+      !!prog &&
+      Array.isArray(pathQ) &&
+      pathQ.length === prog.waypoints.length;
 
-    // Manual jog: drive each axis straight from the S/L/U/R/B/T sliders.
-    if (!ikActive) {
-      const jm = jointsRef.current;
-      for (let k = 0; k < CHAIN.length; k++) {
-        const axis = AXES[k];
-        if (!axis) continue;
-        const rad = deg2rad(jm[axis] ?? 0);
-        // Prefer the robot-level API (same as UrdfModel) — more reliable than
-        // calling setJointValue on a joint handle that may be stale.
-        const robotJoints = (robot as unknown as { setJointValue?: (n: string, v: number) => boolean }).setJointValue;
-        if (robotJoints) robotJoints.call(robot, CHAIN[k], rad);
-        else if (chain[k]) chain[k].setJointValue(rad);
-      }
-      robot.updateMatrixWorld(true);
+    // Manual jog (or idle): S/L/U/R/B/T sliders.
+    if (manualRef.current || !prog) {
+      applyAxesDeg(jointsRef.current);
       placeTorch();
       return;
     }
 
-    const s = prog ? sampleProgram(prog, simRef.current) : null;
+    // Backend IK trajectory — linear joint interpolation between waypoints.
+    if (hasPathIk) {
+      const { q } = sampleJointPath(pathQ!, prog, simRef.current);
+      applyAxesDeg(q);
+      placeTorch();
+      return;
+    }
+
+    // Fallback CCD so the tip still tracks TCP when IK has not been solved yet.
+    const s = sampleProgram(prog, simRef.current);
     if (s) {
       target.set(s.pos[0], s.pos[1], s.pos[2]);
       desiredDir.set(s.dir[0], s.dir[1], s.dir[2]).normalize();
