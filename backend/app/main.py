@@ -92,12 +92,19 @@ class WeldSegmentIn(BaseModel):
 class SeamIn(BaseModel):
     start: list[float]
     end: list[float]
+    # Optional fillet geometry from /api/analyze-cad.
+    n1: list[float] | None = None
+    n2: list[float] | None = None
+    bisector: list[float] | None = None
+    dihedral_deg: float | None = None
 
 
 class PlanRequest(BaseModel):
     seams: list[SeamIn]
     samples_per_seam: int = 5
     approach_height: float = 0.05
+    travel_angle_deg: float = 12.0
+    push: bool = True
     weld_speed: float = 10.0
     arc_file: int = 1
 
@@ -265,6 +272,8 @@ def plan_path(req: PlanRequest):
         [s.model_dump() for s in req.seams],
         samples_per_seam=req.samples_per_seam,
         approach_height=req.approach_height,
+        travel_angle_deg=req.travel_angle_deg,
+        push=req.push,
         weld_speed=req.weld_speed,
         arc_file=req.arc_file,
     )

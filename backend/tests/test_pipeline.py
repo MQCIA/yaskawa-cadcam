@@ -362,6 +362,82 @@ def test_cad_seam_detection(lbracket):
     res = detect_seams(lbracket, angle_tol_deg=25, target_angle_deg=90)
     assert res["seam_count"] >= 1
     assert res["total_length"] > 0
+    # Fillet segments carry face normals + outward bisector.
+    seg = res["segments"][0]
+    assert "n1" in seg and "n2" in seg and "bisector" in seg
+    n1 = np.asarray(seg["n1"], dtype=float)
+    n2 = np.asarray(seg["n2"], dtype=float)
+    bis = np.asarray(seg["bisector"], dtype=float)
+    assert abs(np.linalg.norm(n1) - 1.0) < 1e-6
+    assert abs(np.linalg.norm(n2) - 1.0) < 1e-6
+    assert abs(np.linalg.norm(bis) - 1.0) < 1e-6
+    expected = n1 + n2
+    expected = expected / np.linalg.norm(expected)
+    assert np.allclose(bis, expected, atol=1e-5)
+
+
+def test_tfillet_bisector_approach_and_torch(tmp_path):
+    """T-fillet (extruded L): approach offset and torch wire follow face bisector."""
+    from app.path_planning import (
+        plan_from_seams,
+        seam_bisector,
+        torch_dir_to_rpy_deg,
+        torch_wire_direction,
+    )
+
+    # Concave 90° corner: faces with normals +Y and +X → bisector ≈ (0.707, 0.707, 0).
+    poly = Polygon(
+        [(0, 0), (0.3, 0), (0.3, 0.05), (0.05, 0.05), (0.05, 0.3), (0, 0.3)]
+    )
+    solid = trimesh.creation.extrude_polygon(poly, height=0.4)
+    path = str(tmp_path / "tfillet.stl")
+    solid.export(path)
+
+    seams = detect_seams(path, angle_tol_deg=25, target_angle_deg=90)
+    assert seams["seam_count"] >= 1
+    seg = seams["segments"][0]
+    bis = np.asarray(seg["bisector"], dtype=float)
+    assert abs(np.linalg.norm(bis) - 1.0) < 1e-6
+    assert bis[0] > 0.3 and bis[1] > 0.3
+    assert abs(bis[2]) < 1e-6
+    assert np.allclose(seg["n1"], [0.0, 1.0, 0.0], atol=1e-5) or np.allclose(
+        seg["n2"], [0.0, 1.0, 0.0], atol=1e-5
+    )
+
+    travel = np.asarray(seg["end"], dtype=float) - np.asarray(seg["start"], dtype=float)
+    wire = torch_wire_direction(bis, travel, travel_angle_deg=12.0, push=True)
+    # Wire aims into the joint ≈ −bisector (within travel tilt).
+    assert float(np.dot(wire, -bis)) > 0.85
+    assert float(np.dot(wire, bis)) < 0.0
+
+    standoff = 0.05
+    planned = plan_from_seams(
+        [seg],
+        samples_per_seam=3,
+        approach_height=standoff,
+        travel_angle_deg=12.0,
+        arc_file=1,
+    )
+    assert len(planned.points) >= 5
+    approach = np.array(
+        [planned.points[0]["x"], planned.points[0]["y"], planned.points[0]["z"]]
+    )
+    seam_start = np.asarray(seg["start"], dtype=float)
+    delta = approach - seam_start
+    # Approach is offset along +bisector, not world +Z alone.
+    assert float(np.dot(delta / np.linalg.norm(delta), bis)) > 0.95
+    assert abs(np.linalg.norm(delta) - standoff) < 1e-6
+    assert abs(delta[2]) < 1e-6  # bisector is in XY → no pure +Z lift
+
+    rx, ry, rz = torch_dir_to_rpy_deg(wire)
+    assert planned.points[1]["rx"] == pytest.approx(rx, abs=1e-3)
+    assert planned.points[1]["ry"] == pytest.approx(ry, abs=1e-3)
+    assert planned.points[1]["rz"] == pytest.approx(rz, abs=1e-3)
+    forced = plan_from_seams(
+        [seg], samples_per_seam=2, torch_rpy_deg=(180.0, 0.0, 0.0)
+    )
+    assert forced.points[1]["rx"] == 180.0
+    assert np.allclose(seam_bisector(seg), bis)
 
 
 def test_full_pipeline(lbracket):
