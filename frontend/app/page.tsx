@@ -2,10 +2,11 @@
 
 /**
  * UI modelled on Verbotics Weld:
- *  - Top ribbon (Plan / Settings / View)
+ *  - Top ribbon (Plan / Settings / View) — desktop
  *  - Left dock: Workspace | Welds | Program + Details
  *  - Center: 3D viewer with simulation bar underneath
- *  - Right dock (ALWAYS visible): Robot — joint jog, Home/Zero, tool, status
+ *  - Right dock: Robot — joint jog, Home/Zero, tool, status
+ *  - Phones: full-width viewer + bottom nav (Preview / Cell / Robot sheets)
  *
  * Manual joint jogging lives permanently in the right Robot dock, matching
  * Verbotics' Robot Positioning panel.
@@ -73,6 +74,7 @@ export default function Home() {
   const [ribbon, setRibbon] = useState<Ribbon>("plan");
   const [leftTab, setLeftTab] = useState<LeftTab>("workspace");
   const [selectedStation, setSelectedStation] = useState<0 | 1 | null>(null);
+  const [mobileSheet, setMobileSheet] = useState<null | "cell" | "robot">(null);
 
   const rafRef = useRef<number | undefined>(undefined);
   const lastRef = useRef<number | undefined>(undefined);
@@ -127,6 +129,14 @@ export default function Home() {
   function loadDemo() {
     makeProgram(weldCondition);
   }
+
+  useEffect(() => {
+    makeProgram(weldCondition);
+    setManualJog(false);
+    setSimPlaying(true);
+    // Boot the demo once so phones see the cell instead of a blank viewer.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function identifyWelds() {
     if (!program) {
@@ -313,32 +323,33 @@ export default function Home() {
   );
 
   return (
-    <main className="flex h-screen flex-col bg-[#f4f6f8] text-slate-800">
+    <main className="flex h-dvh max-h-dvh flex-col overflow-hidden bg-[#f4f6f8] text-slate-800">
       {/* Title bar */}
-      <header className="flex items-center justify-between border-b border-slate-200 bg-white px-3 py-1.5">
-        <div className="flex items-center gap-3">
-          <span className="flex h-6 w-6 items-center justify-center rounded bg-[#e87722] text-[11px] font-bold text-white">
+      <header className="flex shrink-0 items-center justify-between border-b border-slate-200 bg-white px-2 py-1.5 sm:px-3">
+        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-[#e87722] text-[11px] font-bold text-white">
             VW
           </span>
-          <div>
-            <div className="text-sm font-semibold leading-tight">
+          <div className="min-w-0">
+            <div className="truncate text-sm font-semibold leading-tight">
               {t("app.title")}
-              <span className="ml-2 text-[10px] font-normal text-slate-500">
+              <span className="ml-2 hidden text-[10px] font-normal text-slate-500 lg:inline">
                 {t("app.styleHint")}
               </span>
             </div>
-            <div className="text-[10px] text-slate-500">{t("app.subtitle")}</div>
+            <div className="hidden text-[10px] text-slate-500 sm:block">{t("app.subtitle")}</div>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
           <LanguageToggle />
-          <button onClick={loadDemo} className={btnGhost}>{t("header.newProject")}</button>
-          <button onClick={downloadJbi} disabled={!program} className={btnPrimary}>{t("header.generateCode")}</button>
+          <button onClick={loadDemo} className={`${btnGhost} hidden sm:inline-flex`}>{t("header.newProject")}</button>
+          <button onClick={loadDemo} className={`${btnGhost} !px-2 sm:hidden`}>{t("plan.loadDemo")}</button>
+          <button onClick={downloadJbi} disabled={!program} className={`${btnPrimary} hidden md:inline-flex`}>{t("header.generateCode")}</button>
         </div>
       </header>
 
-      {/* Ribbon */}
-      <div className="border-b border-slate-200 bg-white">
+      {/* Ribbon — desktop only; on phones it would crush the 3D viewer */}
+      <div className="hidden shrink-0 border-b border-slate-200 bg-white lg:block">
         <div className="flex gap-1 px-2 pt-1">
           {ribbonTab("plan", t("ribbon.plan"))}
           {ribbonTab("settings", t("ribbon.settings"))}
@@ -450,12 +461,12 @@ export default function Home() {
         </div>
       </div>
 
-      <div className="bg-amber-50 px-3 py-0.5 text-[11px] text-amber-800">
+      <div className="hidden shrink-0 bg-amber-50 px-3 py-0.5 text-[11px] text-amber-800 lg:block">
         {t("app.warning")}
       </div>
 
       {/* ArcNC-style workflow strip */}
-      <div className="flex flex-wrap items-center gap-1 border-b border-slate-200 bg-white px-3 py-1.5 text-[11px]">
+      <div className="hidden shrink-0 flex-wrap items-center gap-1 border-b border-slate-200 bg-white px-3 py-1.5 text-[11px] lg:flex">
         <span className="mr-2 font-semibold uppercase tracking-wide text-slate-500">
           {t("arcnc.workflow")}
         </span>
@@ -481,10 +492,39 @@ export default function Home() {
         ))}
       </div>
 
-      {/* Main 3-column layout */}
-      <div className="flex min-h-0 flex-1">
+      {/* Main 3-column layout. On phones the docks overlay as sheets so the
+          3D viewer keeps the full viewport width (otherwise 288+320px side
+          panels crush the canvas to 0). */}
+      <div className="relative flex min-h-0 min-w-0 flex-1 overflow-hidden">
+        {mobileSheet && (
+          <button
+            type="button"
+            className="absolute inset-0 z-30 bg-black/30 lg:hidden"
+            aria-label={t("common.close")}
+            onClick={() => setMobileSheet(null)}
+          />
+        )}
+
         {/* LEFT DOCK */}
-        <aside className="flex w-72 shrink-0 flex-col border-r border-slate-200 bg-white">
+        <aside
+          className={`z-40 min-h-0 flex-col overflow-hidden border-slate-200 bg-white ${
+            mobileSheet === "cell"
+              ? "absolute inset-x-0 bottom-0 top-[10%] flex rounded-t-xl border-t shadow-[0_-12px_40px_rgba(0,0,0,0.18)] lg:static lg:inset-auto lg:top-auto lg:z-auto lg:w-72 lg:shrink-0 lg:rounded-none lg:border-r lg:border-t-0 lg:shadow-none"
+              : "hidden lg:flex lg:w-72 lg:shrink-0 lg:border-r"
+          }`}
+        >
+          <div className="flex items-center justify-between border-b border-slate-200 px-3 py-2 lg:hidden">
+            <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+              {t("mobile.cell")}
+            </span>
+            <button
+              type="button"
+              onClick={() => setMobileSheet(null)}
+              className="text-xs font-semibold text-[#e87722]"
+            >
+              {t("common.close")}
+            </button>
+          </div>
           <div className="flex border-b border-slate-200">
             {leftTabBtn("workspace", t("left.workspace"))}
             {leftTabBtn("welds", t("left.welds"))}
@@ -678,8 +718,8 @@ export default function Home() {
         </aside>
 
         {/* CENTER — Viewer + sim bar */}
-        <div className="relative flex min-w-0 flex-1 flex-col">
-          <div className="relative min-h-0 flex-1">
+        <div className="relative z-0 flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+          <div className="relative min-h-0 min-w-0 flex-1">
             <RobotWorkspace
               modelId={modelId}
               joints={joints}
@@ -690,10 +730,11 @@ export default function Home() {
               program={program}
               simT={simT}
               manualJog={manualJog}
+              showLabels={mobileSheet === null}
             />
 
             {program && sample && (
-              <div className="pointer-events-none absolute left-3 top-3 rounded border border-slate-200 bg-white/90 px-2.5 py-1.5 font-mono text-[11px] text-slate-700">
+              <div className="pointer-events-none absolute left-2 top-2 max-w-[calc(100%-1rem)] rounded border border-slate-200 bg-white/90 px-2.5 py-1.5 font-mono text-[11px] text-slate-700 sm:left-3 sm:top-3">
                 <div className="mb-0.5 font-sans text-[10px] font-semibold uppercase text-slate-500">
                   {program.name}
                 </div>
@@ -709,9 +750,12 @@ export default function Home() {
                 </div>
               </div>
             )}
+            <div className="pointer-events-none absolute inset-x-0 bottom-1 text-center text-[10px] text-slate-500 lg:hidden">
+              {t("view.helpMobile")}
+            </div>
           </div>
 
-          <div className="flex items-center gap-2 border-t border-slate-200 bg-white px-3 py-1.5">
+          <div className="flex shrink-0 items-center gap-1.5 border-t border-slate-200 bg-white px-2 py-1.5 sm:gap-2 sm:px-3">
             <button
               onClick={() => stepTo(-1)}
               disabled={!program}
@@ -746,13 +790,13 @@ export default function Home() {
             >
               ⟲
             </button>
-            <div className="min-w-0 flex-1 truncate px-2 font-mono text-[11px] text-slate-500">
+            <div className="hidden min-w-0 flex-1 truncate px-2 font-mono text-[11px] text-slate-500 sm:block">
               {instruction}
             </div>
             <select
               value={simSpeed}
               onChange={(e) => setSimSpeed(Number(e.target.value))}
-              className="rounded bg-slate-100 px-2 py-1 text-xs"
+              className="rounded bg-slate-100 px-1.5 py-1 text-xs sm:px-2"
             >
               <option value={0.5}>0.5×</option>
               <option value={1}>1×</option>
@@ -771,18 +815,33 @@ export default function Home() {
                 setManualJog(false);
                 setSimT(Number(e.target.value));
               }}
-              className="w-40 accent-[#e87722]"
+              className="min-w-0 flex-1 accent-[#e87722] sm:w-40 sm:flex-none"
             />
           </div>
         </div>
 
-        {/* RIGHT DOCK — Robot (ALWAYS visible) */}
-        <aside className="flex w-80 shrink-0 flex-col border-l border-slate-200 bg-white">
-          <div className="border-b border-slate-200 px-3 py-2">
-            <div className="text-xs font-semibold uppercase tracking-wide text-slate-700">{t("robot.title")}</div>
-            <div className="text-[10px] text-slate-500">
-              {activeModel?.label ?? "AR2010"} · {t("robot.jointJog")}
+        {/* RIGHT DOCK — Robot (always on desktop; sheet on phones) */}
+        <aside
+          className={`z-40 min-h-0 flex-col overflow-hidden border-slate-200 bg-white ${
+            mobileSheet === "robot"
+              ? "absolute inset-x-0 bottom-0 top-[10%] flex rounded-t-xl border-t shadow-[0_-12px_40px_rgba(0,0,0,0.18)] lg:static lg:inset-auto lg:top-auto lg:z-auto lg:w-80 lg:shrink-0 lg:rounded-none lg:border-l lg:border-t-0 lg:shadow-none"
+              : "hidden lg:flex lg:w-80 lg:shrink-0 lg:border-l"
+          }`}
+        >
+          <div className="flex items-center justify-between border-b border-slate-200 px-3 py-2">
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-wide text-slate-700">{t("robot.title")}</div>
+              <div className="text-[10px] text-slate-500">
+                {activeModel?.label ?? "AR2010"} · {t("robot.jointJog")}
+              </div>
             </div>
+            <button
+              type="button"
+              onClick={() => setMobileSheet(null)}
+              className="text-xs font-semibold text-[#e87722] lg:hidden"
+            >
+              {t("common.close")}
+            </button>
           </div>
 
           <div className="flex-1 overflow-y-auto p-3">
@@ -870,6 +929,35 @@ export default function Home() {
           </div>
         </aside>
       </div>
+
+      <nav
+        className="flex shrink-0 items-stretch border-t border-slate-200 bg-white pb-[env(safe-area-inset-bottom)] lg:hidden"
+        aria-label="Mobile"
+      >
+        {(
+          [
+            ["preview", "mobile.preview", null],
+            ["cell", "mobile.cell", "cell"],
+            ["robot", "mobile.robot", "robot"],
+          ] as const
+        ).map(([id, key, sheet]) => {
+          const active = sheet === null ? mobileSheet === null : mobileSheet === sheet;
+          return (
+            <button
+              key={id}
+              type="button"
+              onClick={() =>
+                setMobileSheet((cur) => (sheet === null ? null : cur === sheet ? null : sheet))
+              }
+              className={`flex min-h-11 flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[11px] font-semibold ${
+                active ? "bg-orange-50 text-[#e87722]" : "text-slate-500"
+              }`}
+            >
+              {t(key)}
+            </button>
+          );
+        })}
+      </nav>
     </main>
   );
 }
