@@ -11,9 +11,10 @@
  * Verbotics' Robot Positioning panel.
  */
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import dynamic from "next/dynamic";
 import AxisSliders, { defaultJoints, type Joints } from "@/components/AxisSliders";
+import JbiPreview from "@/components/JbiPreview";
 import { useI18n, LanguageToggle } from "@/lib/i18n";
 import type { SeamSegment } from "@/components/RobotWorkspace";
 import { analyzeCad, calculateIk } from "@/lib/api";
@@ -21,10 +22,12 @@ import { ROBOT_MODELS, POSITIONER_MODELS } from "@/lib/models";
 import {
   buildDemoProgram,
   sampleProgram,
+  sampleJointPath,
+  jointArrayToMap,
   generateJbi,
   waypointsToIkPoints,
   DEMO_MOUNT,
-  LORCH_S8_SCHEDULES,
+  MOTOWELD_SCHEDULES,
   ensureTouchSense,
   optimizeSequence,
   planMotions,
@@ -37,7 +40,7 @@ const RobotWorkspace = dynamic(() => import("@/components/RobotWorkspace"), {
 
 const PLAYBACK_BASE_SEC = 12;
 
-type LeftTab = "workspace" | "welds" | "program";
+type LeftTab = "workspace" | "welds" | "program" | "jbi";
 type Ribbon = "plan" | "settings" | "view";
 
 const btnPrimary =
@@ -69,6 +72,14 @@ export default function Home() {
 
   // Verbotics-style: joint jog is always available; ON until the user plays a plan.
   const [manualJog, setManualJog] = useState(true);
+
+  /** Per-waypoint [S,L,U,R,B,T] deg from `/api/calculate-ik`. */
+  const [pathJointsDeg, setPathJointsDeg] = useState<number[][] | null>(null);
+  const [ikAllReachable, setIkAllReachable] = useState(false);
+  const [ikBasePulses, setIkBasePulses] = useState<number[] | null>(null);
+  const [jbiText, setJbiText] = useState<string | null>(null);
+  const [showJbiModal, setShowJbiModal] = useState(false);
+  const [ikBusy, setIkBusy] = useState(false);
 
   const [ribbon, setRibbon] = useState<Ribbon>("plan");
   const [leftTab, setLeftTab] = useState<LeftTab>("workspace");
@@ -107,9 +118,75 @@ export default function Home() {
     return cum.map((c) => c / program.cycleSec);
   }, [program]);
 
+  const stationLabel = `ST${(selectedStation ?? 0) + 1}`;
+
+  const solveIkForProgram = useCallback(
+    async (prog: WeldProgram): Promise<{
+      joints: number[][] | null;
+      allReachable: boolean;
+      basePulses: number[] | null;
+    }> => {
+      setIkBusy(true);
+      try {
+        const ik = await calculateIk(waypointsToIkPoints(prog), undefined, {
+          station: stationLabel,
+        });
+        const joints =
+          Array.isArray(ik?.joint_angles_deg) &&
+          ik.joint_angles_deg.length === prog.waypoints.length
+            ? (ik.joint_angles_deg as number[][])
+            : null;
+        const basePulses =
+          Array.isArray(ik?.base_pulses) && ik.base_pulses.length
+            ? (ik.base_pulses as number[])
+            : null;
+        const allReachable = Boolean(ik?.all_reachable && joints);
+        setPathJointsDeg(joints);
+        setIkAllReachable(allReachable);
+        setIkBasePulses(basePulses);
+        return { joints, allReachable, basePulses };
+      } catch {
+        setPathJointsDeg(null);
+        setIkAllReachable(false);
+        setIkBasePulses(null);
+        return { joints: null, allReachable: false, basePulses: null };
+      } finally {
+        setIkBusy(false);
+      }
+    },
+    [stationLabel],
+  );
+
+  // Drive jog sliders from interpolated IK while in path / playback mode.
+  useEffect(() => {
+    if (manualJog || !program || !pathJointsDeg) return;
+    if (pathJointsDeg.length !== program.waypoints.length) return;
+    const { q } = sampleJointPath(pathJointsDeg, program, simT);
+    setJoints(jointArrayToMap(q) as Joints);
+  }, [simT, manualJog, program, pathJointsDeg]);
+
+  function buildJbiText(
+    prog: WeldProgram,
+    jointAnglesDeg?: number[][] | null,
+    basePulse?: number[] | null,
+  ): string {
+    const stIdx = selectedStation ?? 0;
+    const stationAngle = stations[stIdx]?.rotate ?? 0;
+    return generateJbi(prog, {
+      stationDeg: stationAngle,
+      jointAnglesDeg: jointAnglesDeg ?? undefined,
+      station: basePulse?.length ? undefined : stationLabel,
+      basePulse: basePulse ?? undefined,
+    });
+  }
+
   function makeProgram(cond: number) {
     const prog = buildDemoProgram(DEMO_MOUNT, cond);
     setProgram(prog);
+    setPathJointsDeg(null);
+    setIkAllReachable(false);
+    setIkBasePulses(null);
+    setJbiText(null);
     setSimT(0);
     setSimPlaying(false);
     setModelId("ma2010");
@@ -122,6 +199,16 @@ export default function Home() {
         sec: prog.cycleSec.toFixed(1),
       }),
     );
+    void solveIkForProgram(prog).then((res) => {
+      if (res.allReachable) {
+        setStatus(
+          t("status.ikReady", {
+            n: prog.waypoints.length,
+            mm: prog.weldLenMm.toFixed(0),
+          }),
+        );
+      }
+    });
   }
 
   function loadDemo() {
@@ -145,12 +232,15 @@ export default function Home() {
     }
     const planned = planMotions(program);
     setProgram(planned);
+    setPathJointsDeg(null);
+    setJbiText(null);
     setLeftTab("program");
     setStatus(
       t("status.planDone", {
         collision: planned.meta?.collisionFree ? t("arcnc.yes") : t("arcnc.no"),
       }),
     );
+    void solveIkForProgram(planned);
   }
 
   function addTouchSense() {
@@ -160,8 +250,11 @@ export default function Home() {
     }
     const next = ensureTouchSense(program);
     setProgram(next);
+    setPathJointsDeg(null);
+    setJbiText(null);
     setLeftTab("program");
     setStatus(t("status.touchSenseAdded"));
+    void solveIkForProgram(next);
   }
 
   function optimizeWeldSequence() {
@@ -171,8 +264,11 @@ export default function Home() {
     }
     const next = optimizeSequence(program);
     setProgram(next);
+    setPathJointsDeg(null);
+    setJbiText(null);
     setLeftTab("program");
     setStatus(t("status.sequenceOptimized"));
+    void solveIkForProgram(next);
   }
 
   function changeCondition(c: number) {
@@ -180,24 +276,41 @@ export default function Home() {
     if (program) makeProgram(c);
   }
 
+  async function refreshJbiPreview(openModal = false) {
+    if (!program) return;
+    setStatus(t("status.exportIk"));
+    let joints = pathJointsDeg;
+    let basePulse = ikBasePulses;
+    let reachable = ikAllReachable;
+    if (!joints || joints.length !== program.waypoints.length) {
+      const res = await solveIkForProgram(program);
+      joints = res.joints;
+      basePulse = res.basePulses;
+      reachable = res.allReachable;
+    }
+    const text = buildJbiText(program, joints, basePulse);
+    setJbiText(text);
+    if (openModal) setShowJbiModal(true);
+    setLeftTab("jbi");
+    setStatus(
+      reachable && joints
+        ? t("status.exportPulse", { n: joints.length })
+        : t("status.exportRectan"),
+    );
+  }
+
   async function downloadJbi() {
     if (!program) return;
-    const stIdx = selectedStation ?? 0;
-    const stationAngle = stations[stIdx]?.rotate ?? 0;
-    let jointAnglesDeg: number[][] | undefined;
-    try {
+    let joints = pathJointsDeg;
+    let basePulse = ikBasePulses;
+    if (!joints || joints.length !== program.waypoints.length) {
       setStatus(t("status.exportIk"));
-      const ik = await calculateIk(waypointsToIkPoints(program));
-      if (ik?.all_reachable && Array.isArray(ik.joint_angles_deg)) {
-        jointAnglesDeg = ik.joint_angles_deg as number[][];
-      }
-    } catch {
-      // Backend offline — fall back to local RECTAN review export.
+      const res = await solveIkForProgram(program);
+      joints = res.joints;
+      basePulse = res.basePulses;
     }
-    const text = generateJbi(program, {
-      stationDeg: stationAngle,
-      jointAnglesDeg,
-    });
+    const text = buildJbiText(program, joints, basePulse);
+    setJbiText(text);
     const blob = new Blob([text], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -206,15 +319,19 @@ export default function Home() {
     a.click();
     URL.revokeObjectURL(url);
     setStatus(
-      jointAnglesDeg
-        ? t("status.exportPulse", { n: jointAnglesDeg.length })
+      joints
+        ? t("status.exportPulse", { n: joints.length })
         : t("status.exportRectan"),
     );
   }
 
-  function togglePlay() {
+  async function togglePlay() {
     if (!program) return;
     setManualJog(false);
+    if (!pathJointsDeg || pathJointsDeg.length !== program.waypoints.length) {
+      setStatus(t("status.exportIk"));
+      await solveIkForProgram(program);
+    }
     if (simT >= 1) setSimT(0);
     setSimPlaying((p) => !p);
   }
@@ -280,6 +397,11 @@ export default function Home() {
 
   const robotStatus = manualJog
     ? { ok: true, label: t("robot.statusManual") }
+    : pathJointsDeg && program && pathJointsDeg.length === program.waypoints.length
+    ? {
+        ok: ikAllReachable,
+        label: ikAllReachable ? t("robot.statusIkPath") : t("robot.statusIkPartial"),
+      }
     : program
     ? { ok: true, label: t("robot.statusPath") }
     : { ok: true, label: t("robot.statusIdle") };
@@ -333,7 +455,16 @@ export default function Home() {
         <div className="flex items-center gap-2">
           <LanguageToggle />
           <button onClick={loadDemo} className={btnGhost}>{t("header.newProject")}</button>
-          <button onClick={downloadJbi} disabled={!program} className={btnPrimary}>{t("header.generateCode")}</button>
+          <button
+            onClick={() => void refreshJbiPreview(true)}
+            disabled={!program || ikBusy}
+            className={btnGhost}
+          >
+            {t("jbi.preview")}
+          </button>
+          <button onClick={() => void downloadJbi()} disabled={!program} className={btnPrimary}>
+            {t("header.generateCode")}
+          </button>
         </div>
       </header>
 
@@ -390,7 +521,15 @@ export default function Home() {
                 disabled={!program}
               >
                 <span className="text-base">▶</span>{t("plan.simulate")}</button>
-              <button onClick={downloadJbi} className={btnRibbon} disabled={!program}>
+              <button
+                onClick={() => void refreshJbiPreview(true)}
+                className={btnRibbon}
+                disabled={!program || ikBusy}
+              >
+                <span className="text-base">👁</span>
+                {t("jbi.preview")}
+              </button>
+              <button onClick={() => void downloadJbi()} className={btnRibbon} disabled={!program}>
                 <span className="text-base">💾</span>
                 {t("plan.generateCode")}
               </button>
@@ -405,10 +544,10 @@ export default function Home() {
                   onChange={(e) => changeCondition(Number(e.target.value))}
                   className="rounded bg-slate-100 px-2 py-1"
                 >
-                  {LORCH_S8_SCHEDULES.map((s) => (
+                  {MOTOWELD_SCHEDULES.map((s) => (
                     <option key={s.condition} value={s.condition}>
-                      #{s.condition} — {s.currentA}A / {s.voltageV.toFixed(1)}V / {s.travelCmMin}{" "}
-                      cm/min
+                      ARGF{s.argf} — {s.currentA}A / {s.voltageV.toFixed(1)}V / {s.travelCmMin}{" "}
+                      cm/min (UI est.)
                     </option>
                   ))}
                 </select>
@@ -466,6 +605,7 @@ export default function Home() {
           ["arcnc.sense", !!program?.meta?.touchSense],
           ["arcnc.sim", simT > 0 || simPlaying],
           ["arcnc.export", !!program],
+          ["arcnc.jbi", !!jbiText],
         ].map(([key, done], i) => (
           <span
             key={String(key)}
@@ -489,6 +629,7 @@ export default function Home() {
             {leftTabBtn("workspace", t("left.workspace"))}
             {leftTabBtn("welds", t("left.welds"))}
             {leftTabBtn("program", t("left.program"))}
+            {leftTabBtn("jbi", t("left.jbi"))}
           </div>
 
           <div className="flex-1 overflow-y-auto p-2 text-sm">
@@ -564,15 +705,60 @@ export default function Home() {
                       onChange={(e) => changeCondition(Number(e.target.value))}
                       className="mt-0.5 w-full rounded bg-slate-100 px-2 py-1 text-xs"
                     >
-                      {LORCH_S8_SCHEDULES.map((s) => (
+                      {MOTOWELD_SCHEDULES.map((s) => (
                         <option key={s.condition} value={s.condition}>
-                          #{s.condition} {s.process} · {s.currentA}A
+                          ARGF{s.argf} {s.process} · {s.currentA}A (UI est.)
                         </option>
                       ))}
                     </select>
                   </div>
                 ) : (
                   <p className="px-1 text-xs text-slate-500">{t("welds.empty")}</p>
+                )}
+              </div>
+            )}
+
+            {leftTab === "jbi" && (
+              <div className="flex h-full min-h-[20rem] flex-col gap-2">
+                {!program ? (
+                  <p className="px-1 text-xs text-slate-500">{t("jbi.empty")}</p>
+                ) : (
+                  <>
+                    <div className="flex gap-1">
+                      <button
+                        type="button"
+                        className={`${btnGhost} flex-1 !py-1 text-[11px]`}
+                        disabled={ikBusy}
+                        onClick={() => void refreshJbiPreview(false)}
+                      >
+                        {ikBusy ? t("jbi.solving") : t("jbi.refresh")}
+                      </button>
+                      <button
+                        type="button"
+                        className={`${btnPrimary} flex-1 !py-1 text-[11px]`}
+                        disabled={!jbiText}
+                        onClick={() => setShowJbiModal(true)}
+                      >
+                        {t("jbi.openModal")}
+                      </button>
+                    </div>
+                    <div className="min-h-0 flex-1 overflow-hidden rounded border border-slate-200">
+                      {jbiText ? (
+                        <JbiPreview
+                          text={jbiText}
+                          ikPulse={Boolean(
+                            ikAllReachable &&
+                              pathJointsDeg &&
+                              pathJointsDeg.length === program.waypoints.length,
+                          )}
+                          onDownload={() => void downloadJbi()}
+                          t={t}
+                        />
+                      ) : (
+                        <p className="p-3 text-xs text-slate-500">{t("jbi.hint")}</p>
+                      )}
+                    </div>
+                  </>
                 )}
               </div>
             )}
@@ -690,6 +876,7 @@ export default function Home() {
               program={program}
               simT={simT}
               manualJog={manualJog}
+              pathJointsDeg={pathJointsDeg}
             />
 
             {program && sample && (
@@ -781,7 +968,7 @@ export default function Home() {
           <div className="border-b border-slate-200 px-3 py-2">
             <div className="text-xs font-semibold uppercase tracking-wide text-slate-700">{t("robot.title")}</div>
             <div className="text-[10px] text-slate-500">
-              {activeModel?.label ?? "AR2010"} · {t("robot.jointJog")}
+              {activeModel?.label ?? "MA2010"} · {t("robot.jointJog")}
             </div>
           </div>
 
@@ -870,6 +1057,24 @@ export default function Home() {
           </div>
         </aside>
       </div>
+
+      {showJbiModal && jbiText && program && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
+          <div className="flex h-[min(90vh,52rem)] w-full max-w-4xl flex-col overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xl">
+            <JbiPreview
+              text={jbiText}
+              ikPulse={Boolean(
+                ikAllReachable &&
+                  pathJointsDeg &&
+                  pathJointsDeg.length === program.waypoints.length,
+              )}
+              onClose={() => setShowJbiModal(false)}
+              onDownload={() => void downloadJbi()}
+              t={t}
+            />
+          </div>
+        </div>
+      )}
     </main>
   );
 }
