@@ -28,6 +28,7 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
+from .cell_frames import DEFAULT_TOUCH_SENSE, all_cube_aabbs_m
 from .dx200_postprocessor import WeldSegment
 
 # Production basket job ``02025_KOSZ_DO_RURY_70-PLUS-RAMKI.JBI`` has 200+ C#.
@@ -390,6 +391,173 @@ def clearance_waypoint(
     return pos, lift_dir
 
 
+def touch_sense_offsets_m(
+    *,
+    pattern_distance_mm: float | None = None,
+    pattern_distance2_mm: float | None = None,
+) -> tuple[float, float]:
+    """SRCH DIS values (mm) → metres along +bisector for sense poses."""
+    d1 = (
+        float(pattern_distance_mm)
+        if pattern_distance_mm is not None
+        else float(DEFAULT_TOUCH_SENSE.distance_mm)
+    )
+    d2 = (
+        float(pattern_distance2_mm)
+        if pattern_distance2_mm is not None
+        else float(
+            DEFAULT_TOUCH_SENSE.distance2_mm
+            if DEFAULT_TOUCH_SENSE.distance2_mm is not None
+            else d1 * 0.5
+        )
+    )
+    return d1 / 1000.0, d2 / 1000.0
+
+
+def insert_touch_sense_points(
+    points: list[dict],
+    weld_segments: list[WeldSegment],
+    *,
+    bisector: np.ndarray | None = None,
+    seam_start: np.ndarray | None = None,
+) -> tuple[list[dict], list[WeldSegment]]:
+    """Insert two SRCH-style sense poses before the first weld (SZUKAJ1 / SRCH-2D1).
+
+    Sense points sit along +bisector at DIS=20 mm and DIS=10 mm from the first
+    seam start (production ``SRCH-2D1`` distances). Weld segment indices shift.
+    """
+    if not weld_segments or not points:
+        return points, weld_segments
+    first = weld_segments[0]
+    # First weld sample is at start_index; approach is start_index - 1 when present.
+    weld0 = points[first.start_index]
+    if seam_start is None:
+        seam_start = np.array(
+            [weld0["x"], weld0["y"], weld0["z"]], dtype=float
+        )
+    bis = (
+        _normalize(np.asarray(bisector, dtype=float))
+        if bisector is not None
+        else np.array([0.0, 0.0, 1.0])
+    )
+    if float(np.linalg.norm(bis)) < 1e-9:
+        bis = np.array([0.0, 0.0, 1.0])
+    d20, d10 = touch_sense_offsets_m()
+    # Lateral offset for the second search (SRCH-2D1 second direction).
+    helper = np.array([1.0, 0.0, 0.0]) if abs(bis[0]) < 0.9 else np.array([0.0, 1.0, 0.0])
+    lateral = _normalize(np.cross(bis, helper)) * 0.03
+
+    def sense_pose(p: np.ndarray) -> dict:
+        return {
+            "x": float(p[0]),
+            "y": float(p[1]),
+            "z": float(p[2]),
+            "rx": float(weld0.get("rx", 180.0)),
+            "ry": float(weld0.get("ry", 0.0)),
+            "rz": float(weld0.get("rz", 0.0)),
+            "kind": "sense",
+            "tag": "TOUCH",
+        }
+
+    s1 = sense_pose(np.asarray(seam_start, dtype=float) + bis * d20)
+    s2 = sense_pose(np.asarray(seam_start, dtype=float) + bis * d10 + lateral)
+    insert_at = max(0, first.start_index)
+    new_points = points[:insert_at] + [s1, s2] + points[insert_at:]
+    shift = 2
+    new_segs = [
+        WeldSegment(
+            start_index=s.start_index + (shift if s.start_index >= insert_at else 0),
+            end_index=s.end_index + (shift if s.end_index >= insert_at else 0),
+            weld_speed=s.weld_speed,
+            arc_file=s.arc_file,
+            weave_no=s.weave_no,
+        )
+        for s in weld_segments
+    ]
+    return new_points, new_segs
+
+
+def cube_interference_aabbs_m() -> list[
+    tuple[tuple[float, float, float], tuple[float, float, float]]
+]:
+    """CUBEINTF soft cubes as (min, max) metres for collision checks."""
+    return [(mn, mx) for _name, mn, mx in all_cube_aabbs_m()]
+
+
+def _point_in_aabb(
+    p: np.ndarray,
+    mn: tuple[float, float, float],
+    mx: tuple[float, float, float],
+    *,
+    margin: float = 0.02,
+) -> bool:
+    return bool(
+        p[0] >= mn[0] - margin
+        and p[0] <= mx[0] + margin
+        and p[1] >= mn[1] - margin
+        and p[1] <= mx[1] + margin
+        and p[2] >= mn[2] - margin
+        and p[2] <= mx[2] + margin
+    )
+
+
+def segment_hits_aabb(
+    a: np.ndarray,
+    b: np.ndarray,
+    mn: tuple[float, float, float],
+    mx: tuple[float, float, float],
+    *,
+    steps: int = 8,
+    margin: float = 0.02,
+) -> bool:
+    """Sample the segment a→b; True if any sample lies in the AABB (+margin)."""
+    aa = np.asarray(a, dtype=float)
+    bb = np.asarray(b, dtype=float)
+    for i in range(steps + 1):
+        t = i / steps
+        p = aa + t * (bb - aa)
+        if _point_in_aabb(p, mn, mx, margin=margin):
+            return True
+    return False
+
+
+def path_hits_cube_interference(
+    points: list[dict],
+    *,
+    skip_kinds: frozenset[str] | set[str] | None = None,
+) -> list[str]:
+    """Return names of CUBEINTF zones that air-move segments intersect.
+
+    Weld and sense segments are skipped by default (torch is meant to work
+    near the part / search into the joint). Soft cubes are coarse keep-outs
+    for travel/approach/retract air moves.
+    """
+    skip = skip_kinds if skip_kinds is not None else frozenset({"weld", "sense"})
+    cubes = all_cube_aabbs_m()
+    hits: list[str] = []
+    for i in range(len(points) - 1):
+        a, b = points[i], points[i + 1]
+        ka = str(a.get("kind", ""))
+        kb = str(b.get("kind", ""))
+        if ka in skip and kb in skip:
+            continue
+        pa = np.array([a["x"], a["y"], a["z"]], dtype=float)
+        pb = np.array([b["x"], b["y"], b["z"]], dtype=float)
+        for name, mn, mx in cubes:
+            if name not in hits and segment_hits_aabb(pa, pb, mn, mx):
+                hits.append(name)
+    return hits
+
+
+def check_collision_free(
+    points: list[dict],
+    *,
+    skip_kinds: frozenset[str] | set[str] | None = None,
+) -> bool:
+    """True when air-moves clear all CUBEINTF soft cubes."""
+    return not path_hits_cube_interference(points, skip_kinds=skip_kinds)
+
+
 def plan_from_seams(
     seams: list[dict],
     *,
@@ -405,6 +573,7 @@ def plan_from_seams(
     clearance_height: float = DEFAULT_CLEARANCE_HEIGHT,
     bisector_clearance_dot: float = DEFAULT_BISECTOR_CLEARANCE_DOT,
     start_point: list[float] | tuple[float, float, float] | None = None,
+    touch_sense: bool = False,
 ) -> PlannedPath:
     """Build a weld path from seam segments (each with 'start'/'end' 3D lists).
 
@@ -415,6 +584,9 @@ def plan_from_seams(
     ``max_seams`` caps how many input seams are planned (default 50, sized for
     production multi-seam jobs such as ``02025_KOSZ_…``). Set ``optimize=False``
     to keep input order and forward direction only.
+
+    ``touch_sense=True`` inserts SRCH-2D1-distance sense poses before the first
+    ARCON (pair with ``emit_touch_sense_call`` in the postprocessor).
     """
     if max_seams < 1:
         raise ValueError("max_seams must be >= 1")
@@ -435,6 +607,8 @@ def plan_from_seams(
     air_len = total_air_length(
         seams, order, approach_height=approach_height, start_point=start_pt
     )
+    first_bis: np.ndarray | None = None
+    first_seam_start: np.ndarray | None = None
 
     def pose_at(p: np.ndarray, rx: float, ry: float, rz: float) -> dict:
         return {
@@ -464,6 +638,10 @@ def plan_from_seams(
         seg_arc = int(arc_file if raw_arc is None else raw_arc)
         raw_speed = seam.get("weld_speed", None)
         seg_speed = float(weld_speed if raw_speed is None else raw_speed)
+
+        if k == 0:
+            first_bis = bis
+            first_seam_start = start.copy()
 
         # Clearance air move between previous retract and this approach so the
         # torch clears the part while reorienting (taller when walls change).
@@ -509,6 +687,14 @@ def plan_from_seams(
                 weld_speed=seg_speed,
                 arc_file=seg_arc,
             )
+        )
+
+    if touch_sense:
+        points, weld_segments = insert_touch_sense_points(
+            points,
+            weld_segments,
+            bisector=first_bis,
+            seam_start=first_seam_start,
         )
 
     return PlannedPath(

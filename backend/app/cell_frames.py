@@ -98,27 +98,28 @@ DEFAULT_TOOL_NO: int = 0
 # ---------------------------------------------------------------------------
 # USER / UF#
 # ---------------------------------------------------------------------------
-USER_FRAMES: dict[int, UserFrame] = {
-    1: UserFrame(
-        user_no=1,
-        name="UF1 (offline / DROP01 review)",
-        used_by=("DROP01.JBI",),
-        pulse_jobs_use=False,
-        notes=(
-            "Cartesian USER/RECTAN review jobs select ///USER 1 and "
-            "////FRAME USER 1. Production welding jobs are ///POSTYPE PULSE "
-            "with ///TOOL 0 only — no UF# in the POS header."
-        ),
-    ),
-}
-
-# TCP calibration helpers in the dump (headers only in-repo) — document as
-# teach aids, not runtime UF numbers.
+# TCP / UF teach helpers in the dump (mixed TOOL/BASE/USER postype blocks).
+# Headers in docs/_dump_scan.json; full bodies stay under reference/ (gitignore).
 UF_TEACH_JOBS: tuple[str, ...] = (
     "TCP-R1-Y-BA.JBI",
     "TCP-R1-Y-BAREL.JBI",
     "EICH-R1-Y-BA.JBI",
 )
+
+USER_FRAMES: dict[int, UserFrame] = {
+    1: UserFrame(
+        user_no=1,
+        name="UF1 (DROP01 review + TCP teach)",
+        used_by=("DROP01.JBI",) + UF_TEACH_JOBS,
+        pulse_jobs_use=False,
+        notes=(
+            "DROP01: ///USER 1 + ////FRAME USER 1 (RECTAN review). "
+            "TCP-R1-Y-BA* / EICH-R1-Y-BA: teach helpers with mixed "
+            "TOOL/BASE/USER postype blocks. Live ARCON jobs stay ///TOOL 0 PULSE "
+            "without UF#."
+        ),
+    ),
+}
 
 DEFAULT_USER_FRAME: int = 1
 
@@ -157,6 +158,45 @@ def cube_for_station(station: str) -> CubeZone | None:
     if key == "ST4":
         return CUBE_ZONES.get("STACJA_2")
     return None
+
+
+# Motoman CUBEINTF geometric axes: cartesian pulse ≈ 1000 pulse/mm
+# (same numeric scale as 0.001 mm units in RC1G link lengths).
+CUBE_PULSES_PER_MM: float = 1000.0
+
+
+def cube_corner_mm(corner: tuple[int, ...]) -> tuple[float, float, float]:
+    """First three CUBEINTF components → millimetres."""
+    return (
+        float(corner[0]) / CUBE_PULSES_PER_MM,
+        float(corner[1]) / CUBE_PULSES_PER_MM,
+        float(corner[2]) / CUBE_PULSES_PER_MM,
+    )
+
+
+def cube_aabb_m(
+    cube: CubeZone,
+) -> tuple[tuple[float, float, float], tuple[float, float, float]]:
+    """Axis-aligned bbox of a CUBEINTF zone in metres (robot / cell frame).
+
+    Returns ``(min_xyz_m, max_xyz_m)`` from the two taught corners.
+    """
+    a = cube_corner_mm(cube.corner_a)
+    b = cube_corner_mm(cube.corner_b)
+    mn = (min(a[0], b[0]) / 1000.0, min(a[1], b[1]) / 1000.0, min(a[2], b[2]) / 1000.0)
+    mx = (max(a[0], b[0]) / 1000.0, max(a[1], b[1]) / 1000.0, max(a[2], b[2]) / 1000.0)
+    return mn, mx
+
+
+def all_cube_aabbs_m() -> list[
+    tuple[str, tuple[float, float, float], tuple[float, float, float]]
+]:
+    """Named interference cubes for coarse collision checks."""
+    out: list[tuple[str, tuple[float, float, float], tuple[float, float, float]]] = []
+    for name, cube in CUBE_ZONES.items():
+        mn, mx = cube_aabb_m(cube)
+        out.append((name, mn, mx))
+    return out
 
 
 # ---------------------------------------------------------------------------
@@ -219,16 +259,59 @@ def tool_rpy_deg(tool_no: int = DEFAULT_TOOL_NO) -> tuple[float, float, float]:
     return frame.rpy_deg
 
 
+def touch_sense_srch_block_comments(
+    pattern: TouchSensePattern | None = None,
+) -> list[str]:
+    """Document the production SRCH-* grammar as INFORM comments (not executable).
+
+    Live search stays on the controller job (``CALL JOB:SRCH-2D1``); CAD only
+    supplies approach poses. Inline ``MOVL … SRCH`` would need taught P-vars.
+    """
+    pat = pattern or DEFAULT_TOUCH_SENSE
+    job = pat.search_job.replace(".JBI", "")
+    lines = [
+        f"' --- TouchSense block (production {pat.master_job} → {job}) ---",
+        f"' MOVL P001 V={pat.speed_v:.1f}   (pre-search)",
+        (
+            f"' MOVL P002 V={pat.speed_v:.1f} SRCH RIN#({pat.rin})=ON "
+            f"T={pat.timeout_s:.2f} DIS={pat.distance_mm:.1f}"
+        ),
+    ]
+    if pat.distance2_mm is not None:
+        lines.extend(
+            [
+                f"' MOVL P001 V=25.0          (retract)",
+                (
+                    f"' MOVL P003 V={pat.speed_v:.1f} SRCH RIN#({pat.rin})=ON "
+                    f"T={pat.timeout_s:.2f} DIS={pat.distance2_mm:.1f}"
+                ),
+            ]
+        )
+    lines.append(f"' Runtime: CALL JOB:{job}  (job must exist on CF / MotoSim)")
+    return lines
+
+
 def touch_sense_jbi_comments(
     pattern: TouchSensePattern | None = None,
     *,
     emit_call: bool = True,
+    emit_srch_block: bool = True,
 ) -> list[str]:
-    """INFORM comment / CALL lines matching SZUKAJ1 → SRCH-2D1."""
+    """INFORM comment / CALL lines matching SZUKAJ1 → SRCH-2D1.
+
+    When ``emit_srch_block`` is True, also document the full SRCH grammar from
+    the dump (DIS / RIN / T / V) so the exported job is self-describing.
+    """
     pat = pattern or DEFAULT_TOUCH_SENSE
-    lines = [
-        f"' TouchSense CAD↔part — production {pat.master_job} → CALL JOB:{pat.search_job}",
-        (
+    lines: list[str] = []
+    if emit_srch_block:
+        lines.extend(touch_sense_srch_block_comments(pat))
+    else:
+        lines.append(
+            f"' TouchSense CAD↔part — production {pat.master_job} → "
+            f"CALL JOB:{pat.search_job.replace('.JBI', '')}"
+        )
+        lines.append(
             f"' SRCH RIN#({pat.rin})=ON T={pat.timeout_s:.2f} "
             f"DIS={pat.distance_mm:.1f}"
             + (
@@ -237,8 +320,7 @@ def touch_sense_jbi_comments(
                 else ""
             )
             + f" V={pat.speed_v:.1f}"
-        ),
-    ]
+        )
     if emit_call:
         lines.append(f"CALL JOB:{pat.search_job.replace('.JBI', '')}")
     return lines

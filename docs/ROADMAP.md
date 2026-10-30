@@ -90,11 +90,11 @@ flowchart LR
 
 | # | Zadanie | Done when |
 |---|---------|-----------|
-| 2.1 | Rejestr ram: TOOL / USER (`docs/CELL_FRAMES.md`) z teach jobs | **`CELL_FRAMES.md` + `cell_frames.py`** — TOOL 0, UF1 (DROP01), CUBEINTF STACJA_1/2 |
+| 2.1 | Rejestr ram: TOOL / USER (`docs/CELL_FRAMES.md`) z teach jobs | **`CELL_FRAMES.md` + `cell_frames.py`** — TOOL 0, UF1 (DROP01 + `UF_TEACH_JOBS`), CUBEINTF STACJA_1/2 |
 | 2.2 | Wybór stacji ST1–ST4 + group w eksporcie | JBI z `GROUP2` + `STATION_FRAMES` |
 | 2.3 | BC# z pozycji szyny (mm), nie stały park | `track_*` + per-point BC# |
-| 2.4 | TouchSense / search zgodne z `SRCH-*` / `SZUKAJ*` (wzorzec) | **CALL JOB:SRCH-2D1** + sense WP (opcjonalnie) |
-| 2.5 | Kolizje: coarse AABB → modele cube z `CUBEINTF` | Cuby w rejestrze; AABB stacji z `STATION_FRAMES` — pełna konwersja pulse→mm otwarta |
+| 2.4 | TouchSense / search zgodne z `SRCH-*` / `SZUKAJ*` (wzorzec) | Sense WP DIS=20/10 mm + komentarz SRCH-2D1 + **CALL JOB:SRCH-2D1** |
+| 2.5 | Kolizje: coarse AABB → modele cube z `CUBEINTF` | **pulse→mm AABB** w `cube_aabb_m` + `checkCollisionFree` / `path_hits_cube_interference` |
 | 2.6 | Multi-seam sequence (kolejność, retract) | **NN+2-opt + clearance** (`path_planning` / `weldProgram`) |
 
 **Wyjście M2:** Program na jedną stację z sensowną sekwencją air/weld/retract.

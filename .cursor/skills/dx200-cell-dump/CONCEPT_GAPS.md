@@ -40,7 +40,7 @@ This skill + dump catalog cover the **CF text dump**. A complete “production c
 ### IO & safety
 
 - [ ] IO map for curtains/gates (`OTWORZ-BRAMA` / `ZAMKNIJ-KURTYNA` SOUT/SIN numbers)
-- [ ] Cube / interference zones named ↔ `CUBEINTF` ↔ station masters
+- [x] Cube / interference zones named ↔ `CUBEINTF` ↔ station masters (`cell_frames` + AABB collision)
 - [ ] Safety logic summary (`YSFLOGIC.DAT`) in plain language
 
 ### Ops packaging

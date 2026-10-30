@@ -479,9 +479,11 @@ def test_cell_frames_tool_uf_cube_touchsense():
         DEFAULT_TOOL_NO,
         DEFAULT_USER_FRAME,
         TOOL0,
+        UF_TEACH_JOBS,
         USER_FRAMES,
         cube_for_station,
         touch_sense_jbi_comments,
+        touch_sense_srch_block_comments,
         tool_tcp_mm,
     )
     from app.dx200_postprocessor import PostprocessorConfig, generate_jbi
@@ -494,14 +496,22 @@ def test_cell_frames_tool_uf_cube_touchsense():
     assert DEFAULT_USER_FRAME == 1
     assert USER_FRAMES[1].user_no == 1
     assert not USER_FRAMES[1].pulse_jobs_use
+    assert "TCP-R1-Y-BA.JBI" in UF_TEACH_JOBS
+    assert "EICH-R1-Y-BA.JBI" in UF_TEACH_JOBS
     assert cube_for_station("ST1") is CUBE_ZONES["STACJA_1"]
     assert cube_for_station("ST2") is CUBE_ZONES["STACJA_2"]
     assert cube_for_station("ST3") is CUBE_ZONES["STACJA_1"]
     assert DEFAULT_TOUCH_SENSE.search_job == "SRCH-2D1.JBI"
     assert DEFAULT_TOUCH_SENSE.rin == 1
-    comments = touch_sense_jbi_comments(emit_call=True)
+    assert DEFAULT_TOUCH_SENSE.distance_mm == 20.0
+    assert DEFAULT_TOUCH_SENSE.distance2_mm == 10.0
+    block = touch_sense_srch_block_comments()
+    assert any("DIS=20.0" in ln for ln in block)
+    assert any("DIS=10.0" in ln for ln in block)
+    comments = touch_sense_jbi_comments(emit_call=True, emit_srch_block=True)
     assert any("CALL JOB:SRCH-2D1" == ln for ln in comments)
     assert any("RIN#(1)" in ln for ln in comments)
+    assert any("DIS=20.0" in ln for ln in comments)
 
     pts = [
         {"x": 0.8, "y": 0.5, "z": 0.4, "rx": 180.0, "ry": 0.0, "rz": 0.0},
@@ -520,9 +530,91 @@ def test_cell_frames_tool_uf_cube_touchsense():
     )
     assert "///TOOL 0" in jbi
     assert "CALL JOB:SRCH-2D1" in jbi
+    assert "DIS=20.0" in jbi
+    assert "DIS=10.0" in jbi
     assert "MACRO1 MJ#(0) ARGF1" in jbi
     # CALL appears before the first ARCON.
     assert jbi.index("CALL JOB:SRCH-2D1") < jbi.index("ARCON")
+
+
+def test_cubeintf_aabb_collision_and_touch_sense_offsets():
+    """M2.5 pulse→mm AABB + M2.4 sense poses at SRCH DIS=20/10 mm."""
+    from app.cell_frames import CUBE_ZONES, CUBE_PULSES_PER_MM, cube_aabb_m, all_cube_aabbs_m
+    from app.path_planning import (
+        check_collision_free,
+        insert_touch_sense_points,
+        path_hits_cube_interference,
+        plan_from_seams,
+        touch_sense_offsets_m,
+    )
+    from app.dx200_postprocessor import WeldSegment
+
+    assert CUBE_PULSES_PER_MM == 1000.0
+    mn, mx = cube_aabb_m(CUBE_ZONES["STACJA_1"])
+    # 622891…632891 / 1000 → mm, /1000 → m
+    assert mn[0] == pytest.approx(0.622891, rel=1e-6)
+    assert mx[0] == pytest.approx(0.632891, rel=1e-6)
+    assert mn[1] == pytest.approx(-0.03355, rel=1e-6)
+    assert mx[1] == pytest.approx(-0.02355, rel=1e-6)
+    assert mn[2] == pytest.approx(0.129716, rel=1e-6)
+    assert mx[2] == pytest.approx(0.139716, rel=1e-6)
+    named = all_cube_aabbs_m()
+    assert {n for n, _, _ in named} == {"STACJA_1", "STACJA_2"}
+
+    # Clear path far from cubes.
+    clear = [
+        {"x": 0.0, "y": 1.0, "z": 0.5, "kind": "approach"},
+        {"x": 0.1, "y": 1.0, "z": 0.5, "kind": "travel"},
+    ]
+    assert check_collision_free(clear)
+    assert path_hits_cube_interference(clear) == []
+
+    # Segment through STACJA_1 soft cube → hit.
+    hit_pts = [
+        {"x": 0.62, "y": -0.03, "z": 0.13, "kind": "approach"},
+        {"x": 0.64, "y": -0.02, "z": 0.14, "kind": "travel"},
+    ]
+    assert path_hits_cube_interference(hit_pts) == ["STACJA_1"]
+    assert not check_collision_free(hit_pts)
+
+    d20, d10 = touch_sense_offsets_m()
+    assert d20 == pytest.approx(0.020)
+    assert d10 == pytest.approx(0.010)
+
+    pts = [
+        {"x": 0.0, "y": 0.0, "z": 0.05, "rx": 180.0, "ry": 0.0, "rz": 0.0},
+        {"x": 0.0, "y": 0.0, "z": 0.0, "rx": 180.0, "ry": 0.0, "rz": 0.0},
+        {"x": 0.2, "y": 0.0, "z": 0.0, "rx": 180.0, "ry": 0.0, "rz": 0.0},
+        {"x": 0.2, "y": 0.0, "z": 0.05, "rx": 180.0, "ry": 0.0, "rz": 0.0},
+    ]
+    segs = [WeldSegment(start_index=1, end_index=2, weld_speed=5.0, arc_file=1)]
+    new_pts, new_segs = insert_touch_sense_points(
+        pts,
+        segs,
+        bisector=[0.0, 0.0, 1.0],
+        seam_start=[0.0, 0.0, 0.0],
+    )
+    assert len(new_pts) == len(pts) + 2
+    assert new_segs[0].start_index == 3
+    assert new_pts[1]["kind"] == "sense"
+    assert new_pts[1]["z"] == pytest.approx(0.020)
+    assert new_pts[2]["z"] == pytest.approx(0.010)
+
+    planned = plan_from_seams(
+        [
+            {
+                "start": [0.0, 0.0, 0.0],
+                "end": [0.2, 0.0, 0.0],
+                "bisector": [0.0, 0.0, 1.0],
+            }
+        ],
+        samples_per_seam=3,
+        touch_sense=True,
+        optimize=False,
+    )
+    sense = [p for p in planned.points if p.get("kind") == "sense"]
+    assert len(sense) == 2
+    assert sense[0]["z"] == pytest.approx(0.020)
 
 
 def test_multi_seam_sequence_optimization():

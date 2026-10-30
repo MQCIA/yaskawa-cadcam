@@ -16,7 +16,7 @@ from pydantic import BaseModel, Field
 
 from .kinematics_engine import forward_kinematics, get_robot, solve_ik_path
 from .dx200_postprocessor import PostprocessorConfig, WeldSegment, generate_jbi
-from .path_planning import plan_from_seams
+from .path_planning import check_collision_free, path_hits_cube_interference, plan_from_seams
 from .pulse_config import (
     BASE_PULSES_PER_MM,
     BC_HOME_PULSE,
@@ -113,6 +113,10 @@ class PlanRequest(BaseModel):
     max_seams: int = 50
     optimize: bool = True
     clearance_height: float = 0.08
+    touch_sense: bool = Field(
+        default=False,
+        description="Insert SRCH-2D1 DIS=20/10 mm sense poses before first ARCON.",
+    )
 
 
 class JbiRequest(BaseModel):
@@ -289,7 +293,9 @@ def plan_path(req: PlanRequest):
         max_seams=req.max_seams,
         optimize=req.optimize,
         clearance_height=req.clearance_height,
+        touch_sense=req.touch_sense,
     )
+    cube_hits = path_hits_cube_interference(planned.points)
     return {
         "points": planned.points,
         "weld_segments": [
@@ -301,6 +307,8 @@ def plan_path(req: PlanRequest):
             {"index": i, "reversed": rev} for i, rev in planned.seam_order
         ],
         "air_length_m": planned.air_length_m,
+        "collision_free": check_collision_free(planned.points),
+        "cube_hits": cube_hits,
     }
 
 

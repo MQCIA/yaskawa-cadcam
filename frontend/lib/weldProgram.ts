@@ -11,6 +11,7 @@
 // real hardware use.
 
 export type Vec3 = [number, number, number];
+export type Aabb = { min: Vec3; max: Vec3 };
 export type MoveType = "MOVJ" | "MOVL";
 
 export type Waypoint = {
@@ -106,6 +107,9 @@ export const TOOL0_FRAME = {
 
 export const DEFAULT_USER_FRAME = 1;
 
+/** Motoman CUBEINTF geometric axes ≈ 1000 pulse/mm (0.001 mm units). */
+export const CUBE_PULSES_PER_MM = 1000;
+
 /** CUBEINTF pulse corners (first 3 axes) for STACJA_1 / STACJA_2. */
 export const CUBE_ZONES = {
   STACJA_1: {
@@ -122,6 +126,46 @@ export const CUBE_ZONES = {
   },
 } as const;
 
+/** First three CUBEINTF components → millimetres. */
+export function cubeCornerMm(
+  corner: readonly [number, number, number] | readonly number[],
+): Vec3 {
+  return [
+    corner[0] / CUBE_PULSES_PER_MM,
+    corner[1] / CUBE_PULSES_PER_MM,
+    corner[2] / CUBE_PULSES_PER_MM,
+  ];
+}
+
+/** CUBEINTF zone → axis-aligned bbox in metres (robot / cell frame). */
+export function cubeAabbM(zone: {
+  cornerA: readonly number[];
+  cornerB: readonly number[];
+}): Aabb {
+  const a = cubeCornerMm(zone.cornerA);
+  const b = cubeCornerMm(zone.cornerB);
+  return {
+    min: [
+      Math.min(a[0], b[0]) / 1000,
+      Math.min(a[1], b[1]) / 1000,
+      Math.min(a[2], b[2]) / 1000,
+    ],
+    max: [
+      Math.max(a[0], b[0]) / 1000,
+      Math.max(a[1], b[1]) / 1000,
+      Math.max(a[2], b[2]) / 1000,
+    ],
+  };
+}
+
+/** Named CUBEINTF soft cubes as AABBs for coarse collision checks. */
+export function allCubeAabbsM(): { name: string; box: Aabb }[] {
+  return (Object.keys(CUBE_ZONES) as (keyof typeof CUBE_ZONES)[]).map((name) => ({
+    name,
+    box: cubeAabbM(CUBE_ZONES[name]),
+  }));
+}
+
 /** Production TouchSense: SZUKAJ1 → CALL JOB:SRCH-2D1. */
 export const TOUCH_SENSE = {
   masterJob: "SZUKAJ1",
@@ -132,6 +176,11 @@ export const TOUCH_SENSE = {
   distanceMm: 20.0,
   distance2Mm: 10.0,
 } as const;
+
+/** SRCH DIS values (mm) → metres along +bisector for sense poses. */
+export function touchSenseOffsetsM(): [number, number] {
+  return [TOUCH_SENSE.distanceMm / 1000, TOUCH_SENSE.distance2Mm / 1000];
+}
 
 /** Cell identity shown in UI headers. */
 export const CELL_LABEL = "DX200 · MA2010 · RECT-X · TURN-ST1 · MOTOWELD-E 350A";
@@ -284,8 +333,6 @@ const norm = (a: Vec3): Vec3 => {
 };
 const pad = (n: number) => `P${String(n).padStart(3, "0")}`;
 
-type Aabb = { min: Vec3; max: Vec3 };
-
 function pointInAabb(p: Vec3, box: Aabb, margin = 0.02): boolean {
   return (
     p[0] >= box.min[0] - margin &&
@@ -310,7 +357,7 @@ function segmentHitsAabb(a: Vec3, b: Vec3, box: Aabb, steps = 8): boolean {
   return false;
 }
 
-/** Coarse cell obstacles (rail + positioner pedestals at mined station anchors). */
+/** Coarse cell obstacles: rail, pedestals, and CUBEINTF soft cubes (pulse→mm). */
 function cellObstacles(): Aabb[] {
   const rail: Aabb = { min: [-0.25, 0.0, -2.4], max: [0.25, 0.28, 2.4] };
   const pedestals: Aabb[] = (Object.keys(STATION_FRAMES) as StationId[]).map((id) => {
@@ -323,7 +370,8 @@ function cellObstacles(): Aabb[] {
       max: [x + 0.12, 0.9, z + 0.12] as Vec3,
     };
   });
-  return [rail, ...pedestals];
+  const cubes = allCubeAabbsM().map((c) => c.box);
+  return [rail, ...pedestals, ...cubes];
 }
 
 function plateObstacles(prog: WeldProgram): Aabb[] {
@@ -450,8 +498,9 @@ export function buildDemoProgram(
 
   const approachDist = 0.14;
   const approach = offsetAlongBisector(seamStart, filletBisector, approachDist);
-  const sense1 = offsetAlongBisector(seamStart, filletBisector, 0.05);
-  const sense2 = add(offsetAlongBisector(seamStart, filletBisector, 0.04), [
+  const [d20, d10] = touchSenseOffsetsM();
+  const sense1 = offsetAlongBisector(seamStart, filletBisector, d20);
+  const sense2 = add(offsetAlongBisector(seamStart, filletBisector, d10), [
     0.03 * Math.sign(travel[0] || 1),
     0,
     0,
@@ -460,7 +509,8 @@ export function buildDemoProgram(
 
   const weldLabel = `V=${sch.travelCmMin} cm/min`;
   const airLabel = "VJ=50%";
-  const senseLabel = "V=5 cm/min";
+  // Production SRCH-2D1 search speed (V=15.0), not weld travel.
+  const senseLabel = `V=${TOUCH_SENSE.speedV}`;
 
   const waypoints: Waypoint[] = [];
   let n = 1;
@@ -556,7 +606,7 @@ export function buildDemoProgram(
   return refreshMeta(rebuildDurations(draft));
 }
 
-/** Insert TouchSense search points before the first weld if missing. */
+/** Insert TouchSense search points before the first weld if missing (SRCH-2D1 DIS). */
 export function ensureTouchSense(prog: WeldProgram): WeldProgram {
   if (hasTouchSense(prog)) return refreshMeta(prog);
 
@@ -565,10 +615,12 @@ export function ensureTouchSense(prog: WeldProgram): WeldProgram {
 
   const seamStart = prog.seam[0] ?? prog.waypoints[firstWeld].pos;
   const bis = prog.filletBisector ?? ([0, 1, 0] as Vec3);
-  const sense1 = offsetAlongBisector(seamStart, bis, 0.05);
-  const sense2 = add(offsetAlongBisector(seamStart, bis, 0.04), [0.03, 0, 0]);
+  const [d20, d10] = touchSenseOffsetsM();
+  const sense1 = offsetAlongBisector(seamStart, bis, d20);
+  // Second search: DIS=10 mm + lateral offset (SRCH-2D1 second direction).
+  const sense2 = add(offsetAlongBisector(seamStart, bis, d10), [0.03, 0, 0]);
   const insertAt = Math.max(1, firstWeld);
-  const senseLabel = "V=5 cm/min";
+  const senseLabel = `V=${TOUCH_SENSE.speedV}`;
   const extra: Waypoint[] = [
     {
       id: "TMP1",
@@ -1609,11 +1661,20 @@ export function generateJbi(
 
     if (p.tag === "ARCON") {
       if (emitTouchSense && !touchSenseEmitted) {
+        // Full SRCH-2D1 grammar as comments + CALL (SZUKAJ1 master pattern).
         lines.push(
-          `' TouchSense CAD↔part — production ${TOUCH_SENSE.masterJob} → CALL JOB:${TOUCH_SENSE.searchJob}`,
+          `' --- TouchSense block (production ${TOUCH_SENSE.masterJob} → ${TOUCH_SENSE.searchJob}) ---`,
+        );
+        lines.push(`' MOVL P001 V=${TOUCH_SENSE.speedV.toFixed(1)}   (pre-search)`);
+        lines.push(
+          `' MOVL P002 V=${TOUCH_SENSE.speedV.toFixed(1)} SRCH RIN#(${TOUCH_SENSE.rin})=ON T=${TOUCH_SENSE.timeoutS.toFixed(2)} DIS=${TOUCH_SENSE.distanceMm.toFixed(1)}`,
+        );
+        lines.push(`' MOVL P001 V=25.0          (retract)`);
+        lines.push(
+          `' MOVL P003 V=${TOUCH_SENSE.speedV.toFixed(1)} SRCH RIN#(${TOUCH_SENSE.rin})=ON T=${TOUCH_SENSE.timeoutS.toFixed(2)} DIS=${TOUCH_SENSE.distance2Mm.toFixed(1)}`,
         );
         lines.push(
-          `' SRCH RIN#(${TOUCH_SENSE.rin})=ON T=${TOUCH_SENSE.timeoutS.toFixed(2)} DIS=${TOUCH_SENSE.distanceMm.toFixed(1)} / DIS2=${TOUCH_SENSE.distance2Mm.toFixed(1)} V=${TOUCH_SENSE.speedV.toFixed(1)}`,
+          `' Runtime: CALL JOB:${TOUCH_SENSE.searchJob}  (job must exist on CF / MotoSim)`,
         );
         lines.push(`CALL JOB:${TOUCH_SENSE.searchJob}`);
         touchSenseEmitted = true;
@@ -1650,7 +1711,7 @@ export function generateJbi(
 
     if (p.tag === "TOUCH") {
       lines.push(
-        `' TouchSense pose (CAD) — runtime search via CALL JOB:${TOUCH_SENSE.searchJob}`,
+        `' TouchSense CAD pose (SRCH DIS=${TOUCH_SENSE.distanceMm.toFixed(1)}/${TOUCH_SENSE.distance2Mm.toFixed(1)} mm) — CALL JOB:${TOUCH_SENSE.searchJob}`,
       );
     }
     if (p.tag === "ARCOF") {
