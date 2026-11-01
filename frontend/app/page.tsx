@@ -25,6 +25,8 @@ import {
   waypointsToIkPoints,
   DEMO_MOUNT,
   LORCH_S8_SCHEDULES,
+  WEAVE_FILES,
+  DEFAULT_WEAVE_NO,
   ensureTouchSense,
   optimizeSequence,
   planMotions,
@@ -63,6 +65,7 @@ export default function Home() {
 
   const [program, setProgram] = useState<WeldProgram | null>(null);
   const [weldCondition, setWeldCondition] = useState(1);
+  const [weaveNo, setWeaveNo] = useState(DEFAULT_WEAVE_NO);
   const [simT, setSimT] = useState(0);
   const [simPlaying, setSimPlaying] = useState(false);
   const [simSpeed, setSimSpeed] = useState(1);
@@ -197,6 +200,7 @@ export default function Home() {
     const text = generateJbi(program, {
       stationDeg: stationAngle,
       jointAnglesDeg,
+      weaveNo,
     });
     const blob = new Blob([text], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
@@ -407,8 +411,22 @@ export default function Home() {
                 >
                   {LORCH_S8_SCHEDULES.map((s) => (
                     <option key={s.condition} value={s.condition}>
-                      #{s.condition} — {s.currentA}A / {s.voltageV.toFixed(1)}V / {s.travelCmMin}{" "}
+                      ARGF{s.job} — {s.currentA}A / {s.voltageV.toFixed(1)}V / {s.travelCmMin}{" "}
                       cm/min
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex items-center gap-2 px-2 text-xs text-slate-700">
+                <span>WEV#</span>
+                <select
+                  value={weaveNo}
+                  onChange={(e) => setWeaveNo(Number(e.target.value))}
+                  className="rounded bg-slate-100 px-2 py-1"
+                >
+                  {WEAVE_FILES.map((w) => (
+                    <option key={w.wevNo} value={w.wevNo}>
+                      {w.label}
                     </option>
                   ))}
                 </select>
@@ -566,7 +584,20 @@ export default function Home() {
                     >
                       {LORCH_S8_SCHEDULES.map((s) => (
                         <option key={s.condition} value={s.condition}>
-                          #{s.condition} {s.process} · {s.currentA}A
+                          Motoweld ARGF{s.job} · {s.currentA}A / {s.voltageV.toFixed(1)}V · V=
+                          {s.travelCmMin}
+                        </option>
+                      ))}
+                    </select>
+                    <label className="mt-2 block text-[10px] text-slate-500">WEV# (WEAV.CND)</label>
+                    <select
+                      value={weaveNo}
+                      onChange={(e) => setWeaveNo(Number(e.target.value))}
+                      className="mt-0.5 w-full rounded bg-slate-100 px-2 py-1 text-xs"
+                    >
+                      {WEAVE_FILES.map((w) => (
+                        <option key={w.wevNo} value={w.wevNo}>
+                          {w.label}
                         </option>
                       ))}
                     </select>

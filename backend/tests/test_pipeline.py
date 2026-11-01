@@ -20,7 +20,17 @@ from app.dx200_postprocessor import (
 from app.cad_analysis import detect_seams
 from app.path_planning import plan_from_seams
 from app.robot_config import ACTIVE_MODEL, ACTIVE_POSITIONER, MODELS
-from app.welding_config import ACTIVE_POWER_SOURCE, LORCH_S8_SCHEDULES
+from app.welding_config import (
+    ACTIVE_POWER_SOURCE,
+    ARCSRT_TEMPLATE,
+    LORCH_S8_SCHEDULES,
+    MOTOWELD_ARGF_SCHEDULES,
+    TOUCH_SENSE,
+    WEAVE_FILES,
+    get_schedule_by_argf,
+    get_weave,
+    wire_for_current,
+)
 
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -198,3 +208,42 @@ def test_full_pipeline(lbracket):
 
 def test_robot_dof():
     assert get_robot().n == 6
+
+
+def test_motoweld_argf_and_arcsrt_template():
+    """M3: ARGF map + shared ARCSRT 200 A / 20 V template from dump."""
+    assert ARCSRT_TEMPLATE.current_a == 200.0
+    assert ARCSRT_TEMPLATE.voltage_v == 20.0
+    assert set(LORCH_S8_SCHEDULES) >= {1, 2, 3}
+    assert set(MOTOWELD_ARGF_SCHEDULES) >= {1, 4, 5, 8}
+    sch8 = get_schedule_by_argf(8)
+    assert sch8.lorch_job == 8
+    assert sch8.current_a == ARCSRT_TEMPLATE.current_a
+    assert sch8.default_weave == 21
+    assert abs(wire_for_current(200) - 7.2) < 0.15
+    # Fixture ARCSRT EN blocks are identical templates
+    arcsrt = (CELL / "ARCSRT.CND").read_text(encoding="latin-1", errors="replace")
+    assert arcsrt.count("//ARCSRT EN ") == 1000
+    assert "200,20.0,100" in arcsrt
+
+
+def test_weave_files_from_weav_cnd():
+    """M3: WEV#(1/15/16/21) amplitudes match WEAV.CND."""
+    assert get_weave(1).amp_l_mm == 2.0 and get_weave(1).angle_l_deg == 70.0
+    assert get_weave(15).amp_l_mm == 3.0 and get_weave(15).frequency_hz == 3.0
+    assert get_weave(16).angle_r_deg == 0.0
+    assert get_weave(21).amp_l_mm == 4.0 and get_weave(21).amp_r_mm == 0.0
+    weav = (CELL / "WEAV.CND").read_text(encoding="latin-1", errors="replace")
+    assert "//WEAV 21" in weav
+    assert set(WEAVE_FILES) == {1, 15, 16, 21}
+
+
+def test_touchsense_movs_pattern_from_123123():
+    """M3: TouchSense search uses MOVS V=11.0 +MOVJ EC VJ=0.78 (123123.JBI)."""
+    job = (CELL / "123123.JBI").read_text(encoding="latin-1", errors="replace")
+    assert "MOVS C00001 BC00001 V=11.0  +MOVJ EC00001 VJ=0.78" in job
+    assert TOUCH_SENSE.opcode == "MOVS"
+    assert TOUCH_SENSE.search_speed_cm_min == 11.0
+    assert TOUCH_SENSE.station_vj == 0.78
+    macro = (CELL / "MACRO.DAT").read_text(encoding="latin-1", errors="replace")
+    assert "//MACRO1 1" in macro and "PROG-NR:" in macro

@@ -45,7 +45,7 @@ class WeldSegment:
     end_index: int
     weld_speed: float = 5.0  # V= travel (matches cell jobs ~5.0–7.5)
     arc_file: int = 1
-    weave_no: int = 21  # WEV# used on the production cell
+    weave_no: int = 21  # WEV#(21) from WEAV.CND — default production weave
 
 
 @dataclass
