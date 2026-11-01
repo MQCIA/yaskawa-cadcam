@@ -73,9 +73,10 @@ Full map: **[CELL_WELD_MAP.md](CELL_WELD_MAP.md)** · code: `backend/app/welding
 - Default JBI profile: **`ma2010_cell`**
 - Pass IK `joint_angles_deg` into `generate_jbi` / `/api/generate-jbi` → full **PULSE** C#
 - Without joints: C# stays RECTAN; BC/EC still use pulse units
-- Torch in viewer: parented to URDF `tool0` / `link_6_t`, Motoman TOOL 0
-  `xyz=(-54.280, 1.052, 415.702) mm` + RPY `(1.3119, -42.6215, -6.8387)°`
-  (`frontend/lib/tool0.ts`, swan-neck procedural mesh)
+- Torch in viewer: `createPortal` onto URDF `tool0` / `flange` (MA2010
+  `link_6_t` flange face at X≈0.100 m). Live TOOL 0 + mount calibration UI
+  (`frontend/lib/tool0.ts`, `WeldTorch3D`, panel in Robot dock). Default TCP
+  `xyz=(-54.280, 1.052, 415.702) mm` RPY `(1.3119, -42.6215, -6.8387)°`.
 
 Large binaries (`CMOS.BIN`, `ALL.PRM`, …) stay under `reference/` (gitignored).
 
