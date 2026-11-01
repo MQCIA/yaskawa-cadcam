@@ -36,6 +36,7 @@ const pl: Dict = {
   // Plan actions
   "plan.importPart": "Importuj część",
   "plan.loadDemo": "Załaduj demo",
+  "plan.loadHardDemo": "Demo trudne (90° + rura)",
   "plan.identifyWelds": "Wykryj spoiny",
   "plan.weldSettings": "Ustawienia spoiny",
   "plan.plan": "Planuj",
@@ -223,6 +224,7 @@ const en: Dict = {
 
   "plan.importPart": "Import Part",
   "plan.loadDemo": "Load Demo",
+  "plan.loadHardDemo": "Hard demo (90° + pipe)",
   "plan.identifyWelds": "Identify Welds",
   "plan.weldSettings": "Weld Settings",
   "plan.plan": "Plan",

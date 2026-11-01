@@ -21,6 +21,7 @@ import {
   DEFAULT_TORCH_CALIBRATION,
   type TorchCalibration,
 } from "@/lib/tool0";
+import { TSL_CARRIAGE_TOP_Y } from "@/lib/trackMesh";
 
 export type SeamSegment = {
   start: [number, number, number];
@@ -29,8 +30,8 @@ export type SeamSegment = {
 
 export type StationState = { tilt: number; rotate: number };
 
-// Height of the rail carriage top the robot base mounts on.
-const CARRIAGE_TOP_Y = 0.26;
+// Height of the rail carriage top the robot base mounts on (TSL-600 STL).
+const CARRIAGE_TOP_Y = TSL_CARRIAGE_TOP_Y;
 // Height of the positioner rotation axis (matches H1000dPositioner.axisHeight).
 const AXLE_Y = 0.95;
 // X position of the trailing power-source dolly on the carriage (matches RobotTrack).

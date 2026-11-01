@@ -78,11 +78,25 @@ export default function WeldScene({
 
   return (
     <group>
-      {/* Workpiece plates (T-fillet coupon) */}
+      {/* Workpiece plates */}
       {program.plates.map((pl, i) => (
-        <mesh key={i} position={pl.center} castShadow receiveShadow>
+        <mesh key={`pl-${i}`} position={pl.center} castShadow receiveShadow>
           <boxGeometry args={pl.size} />
           <meshStandardMaterial color={0x8a939f} metalness={0.35} roughness={0.55} />
+        </mesh>
+      ))}
+
+      {/* Pipe / tube fixtures (hard demo) */}
+      {program.pipes?.map((pp, i) => (
+        <mesh
+          key={`pipe-${i}`}
+          position={pp.center}
+          rotation={pp.rotation}
+          castShadow
+          receiveShadow
+        >
+          <cylinderGeometry args={[pp.radius, pp.radius, pp.length, 48]} />
+          <meshStandardMaterial color={0x7a8490} metalness={0.45} roughness={0.4} />
         </mesh>
       ))}
 

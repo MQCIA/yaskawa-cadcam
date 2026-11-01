@@ -27,10 +27,12 @@ import {
 } from "@/lib/tool0";
 import {
   buildDemoProgram,
+  buildHardDemoProgram,
   sampleProgram,
   generateJbi,
   waypointsToIkPoints,
   DEMO_MOUNT,
+  DEMO_HARD_MOUNT,
   LORCH_S8_SCHEDULES,
   WEAVE_FILES,
   DEFAULT_WEAVE_NO,
@@ -129,14 +131,15 @@ export default function Home() {
     return cum.map((c) => c / program.cycleSec);
   }, [program]);
 
-  function makeProgram(cond: number) {
-    const prog = buildDemoProgram(DEMO_MOUNT, cond);
+  function applyProgram(prog: WeldProgram, mountZ: number, stationIdx: 0 | 1) {
     setProgram(prog);
     setSimT(0);
     setSimPlaying(false);
+    setManualJog(true);
     setModelId("ma2010");
-    setRailTravel(Math.max(-1.6, Math.min(1.6, DEMO_MOUNT[2])));
-    setStation(0, { rotate: 0 });
+    setRailTravel(Math.max(-1.6, Math.min(1.6, mountZ)));
+    setStation(stationIdx, { rotate: 0, tilt: 0 });
+    setSelectedStation(stationIdx);
     setLeftTab("welds");
     setStatus(
       t("status.programReady", {
@@ -146,8 +149,16 @@ export default function Home() {
     );
   }
 
+  function makeProgram(cond: number) {
+    applyProgram(buildDemoProgram(DEMO_MOUNT, cond), DEMO_MOUNT[2], 0);
+  }
+
   function loadDemo() {
     makeProgram(weldCondition);
+  }
+
+  function loadHardDemo() {
+    applyProgram(buildHardDemoProgram(DEMO_HARD_MOUNT, weldCondition), DEMO_HARD_MOUNT[2], 1);
   }
 
   function identifyWelds() {
@@ -414,6 +425,8 @@ export default function Home() {
               </label>
               <button onClick={loadDemo} className={btnRibbon}>
                 <span className="text-base">🧱</span>{t("plan.loadDemo")}</button>
+              <button onClick={loadHardDemo} className={btnRibbon}>
+                <span className="text-base">🧱</span>{t("plan.loadHardDemo")}</button>
               <div className="mx-1 hidden h-8 w-px shrink-0 bg-slate-200 sm:block" />
               <button onClick={identifyWelds} className={btnRibbon}>
                 <span className="text-base">🔍</span>{t("plan.identifyWelds")}</button>

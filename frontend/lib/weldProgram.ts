@@ -40,10 +40,24 @@ export type WeldScheduleRow = {
   process: string;
 };
 
+/** Optional solid for demo fixtures (pipe / tube) — rendered in WeldScene. */
+export type WeldPipe = {
+  /** Outer radius (m). */
+  radius: number;
+  /** Length along local axis (m). */
+  length: number;
+  /** Centre in world (m). */
+  center: Vec3;
+  /** Euler XYZ radians for the cylinder (Three.js default is Y-up). */
+  rotation: Vec3;
+};
+
 export type WeldProgram = {
   name: string;
   mount: Vec3;
   plates: { size: Vec3; center: Vec3 }[];
+  /** Optional pipe / tube solids (hard demo). */
+  pipes?: WeldPipe[];
   seam: Vec3[];
   torchFrames: { pos: Vec3; dir: Vec3 }[];
   waypoints: Waypoint[];
@@ -107,6 +121,8 @@ export const TOUCH_SENSE = {
 
 // Mount point on work-station 1's positioner faceplate (world coords, metres).
 export const DEMO_MOUNT: Vec3 = [1.6, 0.98, -1.2];
+/** Hard demo (90° fillet + pipe) on station 2 — forces rail travel to +Z. */
+export const DEMO_HARD_MOUNT: Vec3 = [1.6, 0.98, 1.2];
 
 const add = (a: Vec3, b: Vec3): Vec3 => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
 const dist = (a: Vec3, b: Vec3) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
@@ -344,6 +360,227 @@ export function buildDemoProgram(mount: Vec3 = DEMO_MOUNT, condition = 1): WeldP
     segDurations: [],
     cycleSec: 0,
     weldLenMm: dist(seamStart, seamEnd) * 1000,
+    schedule: sch,
+  };
+  return refreshMeta(rebuildDurations(draft));
+}
+
+/**
+ * Harder offline demo on station 2:
+ *  1) Vertical 90° fillet (torch climbs a corner)
+ *  2) Air travel
+ *  3) Circumferential pipe-to-plate weld (MOVC ring)
+ */
+export function buildHardDemoProgram(
+  mount: Vec3 = DEMO_HARD_MOUNT,
+  condition = 1,
+): WeldProgram {
+  const sch =
+    LORCH_S8_SCHEDULES.find((s) => s.condition === condition) ?? LORCH_S8_SCHEDULES[0];
+
+  // --- Fixture: floor + vertical wall at 90°, plus Ø114 pipe on the floor ---
+  const platesLocal: { size: Vec3; center: Vec3 }[] = [
+    { size: [0.55, 0.02, 0.5], center: [0, 0.01, 0] },
+    { size: [0.55, 0.36, 0.02], center: [0, 0.19, -0.24] },
+  ];
+  const plates = platesLocal.map((p) => ({ size: p.size, center: add(mount, p.center) }));
+
+  const pipeRadius = 0.057;
+  const pipeLen = 0.36;
+  const pipeLocalCenter: Vec3 = [0.08, 0.02 + pipeRadius, 0.05];
+  const pipes: WeldPipe[] = [
+    {
+      radius: pipeRadius,
+      length: pipeLen,
+      center: add(mount, pipeLocalCenter),
+      // Cylinder default axis = Y; rotate to lie along +X on the floor plate.
+      rotation: [0, 0, Math.PI / 2],
+    },
+  ];
+
+  // Vertical 90° fillet seam (climbs the wall).
+  const vStart = add(mount, [-0.2, 0.03, -0.23]);
+  const vEnd = add(mount, [-0.2, 0.34, -0.23]);
+  const Nv = 10;
+  const seamV: Vec3[] = [];
+  for (let i = 0; i <= Nv; i++) {
+    const t = i / Nv;
+    seamV.push([
+      vStart[0] + (vEnd[0] - vStart[0]) * t,
+      vStart[1] + (vEnd[1] - vStart[1]) * t,
+      vStart[2] + (vEnd[2] - vStart[2]) * t,
+    ]);
+  }
+  const torchDirV = norm([0, 0, 1]); // into the corner / wall
+
+  // Circumferential seam on the pipe OD at the wall-side end (pipe-to-plate).
+  const ringCenter = add(mount, [
+    pipeLocalCenter[0] - pipeLen / 2 + 0.01,
+    pipeLocalCenter[1],
+    pipeLocalCenter[2],
+  ]);
+  const Nr = 16;
+  const seamR: Vec3[] = [];
+  for (let i = 0; i <= Nr; i++) {
+    const a = (i / Nr) * Math.PI * 2;
+    // Ring in YZ plane (pipe axis = X).
+    seamR.push([
+      ringCenter[0],
+      ringCenter[1] + Math.cos(a) * pipeRadius,
+      ringCenter[2] + Math.sin(a) * pipeRadius,
+    ]);
+  }
+
+  const seam = [...seamV, ...seamR];
+  const torchFrames = [
+    ...seamV.map((pos) => ({ pos, dir: torchDirV })),
+    ...seamR.map((pos) => {
+      // Radial outward from pipe axis (in YZ).
+      const dir = norm([
+        0,
+        pos[1] - ringCenter[1],
+        pos[2] - ringCenter[2],
+      ]);
+      // Slight push toward −X (into the wall joint).
+      return { pos, dir: norm([dir[0] - 0.35, dir[1], dir[2]]) };
+    }),
+  ];
+
+  const weldLabel = `V=${sch.travelCmMin} cm/min`;
+  const airLabel = "VJ=50%";
+  const senseLabel = `V=${TOUCH_SENSE.searchSpeedCmMin} cm/min`;
+
+  const approach = add(vStart, [0.05, 0.1, 0.12]);
+  const sense1 = add(vStart, [0.03, 0.05, 0.04]);
+  const sense2 = add(vStart, [0.0, 0.08, 0.04]);
+  const midTravel = add(mount, [0.05, 0.45, -0.05]);
+  const ringApproach = add(seamR[0], [0.08, 0.06, 0.06]);
+  const retract = add(seamR[Math.floor(Nr / 4)], [0.1, 0.12, 0.08]);
+
+  const waypoints: Waypoint[] = [];
+  let n = 1;
+  waypoints.push({
+    id: pad(n++),
+    pos: approach,
+    move: "MOVJ",
+    speedLabel: airLabel,
+    arc: false,
+    kind: "approach",
+  });
+  waypoints.push({
+    id: pad(n++),
+    pos: sense1,
+    move: "MOVS",
+    speedLabel: senseLabel,
+    arc: false,
+    kind: "sense",
+    tag: "TOUCH",
+  });
+  waypoints.push({
+    id: pad(n++),
+    pos: sense2,
+    move: "MOVS",
+    speedLabel: senseLabel,
+    arc: false,
+    kind: "sense",
+    tag: "TOUCH",
+  });
+  waypoints.push({
+    id: pad(n++),
+    pos: seamV[0],
+    move: "MOVL",
+    speedLabel: "V=15 cm/min",
+    arc: true,
+    kind: "weld",
+    tag: "ARCON",
+  });
+  for (let i = 1; i < seamV.length - 1; i++) {
+    waypoints.push({
+      id: pad(n++),
+      pos: seamV[i],
+      move: "MOVL",
+      speedLabel: weldLabel,
+      arc: true,
+      kind: "weld",
+    });
+  }
+  waypoints.push({
+    id: pad(n++),
+    pos: seamV[seamV.length - 1],
+    move: "MOVL",
+    speedLabel: weldLabel,
+    arc: true,
+    kind: "weld",
+    tag: "ARCOF",
+  });
+  waypoints.push({
+    id: pad(n++),
+    pos: midTravel,
+    move: "MOVJ",
+    speedLabel: airLabel,
+    arc: false,
+    kind: "travel",
+  });
+  waypoints.push({
+    id: pad(n++),
+    pos: ringApproach,
+    move: "MOVJ",
+    speedLabel: airLabel,
+    arc: false,
+    kind: "travel",
+  });
+  waypoints.push({
+    id: pad(n++),
+    pos: seamR[0],
+    move: "MOVC",
+    speedLabel: "V=15 cm/min",
+    arc: true,
+    kind: "weld",
+    tag: "ARCON",
+  });
+  for (let i = 1; i < seamR.length - 1; i++) {
+    waypoints.push({
+      id: pad(n++),
+      pos: seamR[i],
+      move: "MOVC",
+      speedLabel: weldLabel,
+      arc: true,
+      kind: "weld",
+    });
+  }
+  waypoints.push({
+    id: pad(n++),
+    pos: seamR[seamR.length - 1],
+    move: "MOVC",
+    speedLabel: weldLabel,
+    arc: true,
+    kind: "weld",
+    tag: "ARCOF",
+  });
+  waypoints.push({
+    id: pad(n++),
+    pos: retract,
+    move: "MOVJ",
+    speedLabel: airLabel,
+    arc: false,
+    kind: "retract",
+  });
+
+  let weldLen = 0;
+  for (let i = 0; i < seamV.length - 1; i++) weldLen += dist(seamV[i], seamV[i + 1]);
+  for (let i = 0; i < seamR.length - 1; i++) weldLen += dist(seamR[i], seamR[i + 1]);
+
+  const draft: WeldProgram = {
+    name: "DEMO_HARD_90_PIPE",
+    mount,
+    plates,
+    pipes,
+    seam,
+    torchFrames,
+    waypoints,
+    segDurations: [],
+    cycleSec: 0,
+    weldLenMm: weldLen * 1000,
     schedule: sch,
   };
   return refreshMeta(rebuildDurations(draft));

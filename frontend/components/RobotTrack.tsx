@@ -1,130 +1,127 @@
 "use client";
 
+import { useMemo, Suspense } from "react";
 import { useLoader } from "@react-three/fiber";
+import * as THREE from "three";
 import { STLLoader } from "three/examples/jsm/loaders/STLLoader.js";
 import { withBase } from "@/lib/models";
+import {
+  TSL_BASE_URL,
+  TSL_CARRIAGE_URL,
+  TSL_CARRIAGE_TOP_Y,
+} from "@/lib/trackMesh";
 
 /**
- * Procedural Yaskawa robot travel axis (rail / track), optionally dressed with
- * TSL-600 style STL meshes (mm → m) from the Verbotics example cell dump.
+ * Tor BS1 / RECT-X — original TSL-600 STLs (no procedural rail/boxes).
+ * Procedural mesh is only a Suspense fallback while STLs load.
  */
 export default function RobotTrack({
-  length = 4.6,
   carriage = 0,
   color = 0x6b7683,
-  useVendorMesh = true,
 }: {
   length?: number;
   carriage?: number;
   color?: number;
   useVendorMesh?: boolean;
 }) {
-  if (useVendorMesh) {
-    return <TslVendorTrack length={length} carriage={carriage} color={color} />;
-  }
-  return <ProceduralTrack length={length} carriage={carriage} color={color} />;
+  return (
+    <Suspense fallback={<ProceduralTrack carriage={carriage} color={color} />}>
+      <TslVendorTrack carriage={carriage} color={color} />
+    </Suspense>
+  );
 }
 
-function ProceduralTrack({
-  length,
+function orientMmToScene(src: THREE.BufferGeometry): THREE.BufferGeometry {
+  const g = src.clone();
+  g.scale(0.001, 0.001, 0.001);
+  // Mesh Z-up, travel +Y → scene Y-up, travel +Z.
+  g.rotateX(-Math.PI / 2);
+  g.rotateY(Math.PI);
+  return g;
+}
+
+function TslVendorTrack({
   carriage,
   color,
 }: {
-  length: number;
   carriage: number;
   color: number;
 }) {
-  const railX = 0.32;
-  const railTopY = 0.12;
-  const bedW = 1.75;
-  const carriageTopY = railTopY + 0.09;
-  const dollyX = -0.62;
+  const [baseRaw, carriageRaw] = useLoader(STLLoader, [
+    withBase(TSL_BASE_URL),
+    withBase(TSL_CARRIAGE_URL),
+  ]);
+
+  const { baseGeo, carriageGeo } = useMemo(() => {
+    const base = orientMmToScene(baseRaw);
+    const car = orientMmToScene(carriageRaw);
+    base.computeBoundingBox();
+    const bb = base.boundingBox!;
+    const cx = (bb.min.x + bb.max.x) / 2;
+    const cz = (bb.min.z + bb.max.z) / 2;
+    const ty = -bb.min.y;
+    // Shared frame: floor at Y=0, rail centred in XZ.
+    base.translate(-cx, ty, -cz);
+    car.translate(-cx, ty, -cz);
+    // Carriage slides in a group at Z=carriage — centre its local Z on 0.
+    car.computeBoundingBox();
+    const cbb = car.boundingBox!;
+    const carCz = (cbb.min.z + cbb.max.z) / 2;
+    car.translate(0, 0, -carCz);
+    base.computeVertexNormals();
+    car.computeVertexNormals();
+    base.computeBoundingBox();
+    car.computeBoundingBox();
+    return { baseGeo: base, carriageGeo: car };
+  }, [baseRaw, carriageRaw]);
 
   return (
     <group>
-      <mesh position={[0, 0.03, 0]} receiveShadow>
-        <boxGeometry args={[bedW, 0.06, length]} />
-        <meshStandardMaterial color={0x141b23} />
-      </mesh>
-      {[railX, -railX].map((x) => (
-        <mesh key={x} position={[x, railTopY, 0]} castShadow receiveShadow>
-          <boxGeometry args={[0.1, 0.08, length]} />
-          <meshStandardMaterial color={0xb8c0c9} metalness={0.6} roughness={0.35} />
-        </mesh>
-      ))}
-      <mesh position={[dollyX, railTopY, 0]} castShadow>
-        <boxGeometry args={[0.1, 0.08, length]} />
-        <meshStandardMaterial color={0xb8c0c9} metalness={0.6} roughness={0.35} />
-      </mesh>
-      <mesh position={[bedW / 2 - 0.05, 0.1, 0]} castShadow>
-        <boxGeometry args={[0.06, 0.09, length]} />
-        <meshStandardMaterial color={0x1b2733} />
+      <mesh geometry={baseGeo} castShadow receiveShadow>
+        <meshStandardMaterial
+          color={0x9aa3ad}
+          metalness={0.6}
+          roughness={0.38}
+          side={THREE.DoubleSide}
+        />
       </mesh>
       <group position={[0, 0, carriage]}>
-        <mesh position={[0, carriageTopY, 0]} castShadow receiveShadow>
-          <boxGeometry args={[0.8, 0.1, 0.72]} />
-          <meshStandardMaterial color={color} metalness={0.3} roughness={0.6} />
-        </mesh>
-        <mesh position={[(dollyX - 0.25) / 2 - 0.05, carriageTopY, 0]} castShadow>
-          <boxGeometry args={[0.35, 0.06, 0.12]} />
-          <meshStandardMaterial color={0x1b2733} metalness={0.3} roughness={0.6} />
-        </mesh>
-        <mesh position={[dollyX, carriageTopY, 0]} castShadow receiveShadow>
-          <boxGeometry args={[0.6, 0.1, 0.72]} />
-          <meshStandardMaterial color={color} metalness={0.3} roughness={0.6} />
+        <mesh geometry={carriageGeo} castShadow receiveShadow>
+          <meshStandardMaterial
+            color={color}
+            metalness={0.4}
+            roughness={0.5}
+            side={THREE.DoubleSide}
+          />
         </mesh>
       </group>
     </group>
   );
 }
 
-function TslVendorTrack({
-  length,
+function ProceduralTrack({
   carriage,
   color,
 }: {
-  length: number;
   carriage: number;
   color: number;
 }) {
-  const [baseGeo, carriageGeo] = useLoader(STLLoader, [
-    withBase("/models/tsl600/visual/base_link_3150.stl"),
-    withBase("/models/tsl600/visual/carriage_link.stl"),
-  ]);
-
-  const mm = 0.001;
-  const railLenM = 3.15;
-  const zScale = length / railLenM;
-
+  const length = 4.0;
   return (
     <group>
-      <mesh position={[0, 0.02, 0]} receiveShadow>
-        <boxGeometry args={[1.4, 0.04, length + 0.4]} />
+      <mesh position={[0, 0.03, 0]} receiveShadow>
+        <boxGeometry args={[1.2, 0.06, length]} />
         <meshStandardMaterial color={0x141b23} />
       </mesh>
-
-      <group
-        scale={[mm * zScale, mm, mm]}
-        rotation={[-Math.PI / 2, 0, Math.PI / 2]}
-        position={[0, 0.05, -length / 2]}
-      >
-        <mesh geometry={baseGeo} castShadow receiveShadow>
-          <meshStandardMaterial color={0xb8c0c9} metalness={0.55} roughness={0.4} />
+      {[-0.28, 0.28].map((x) => (
+        <mesh key={x} position={[x, 0.1, 0]} castShadow receiveShadow>
+          <boxGeometry args={[0.09, 0.07, length]} />
+          <meshStandardMaterial color={0xb8c0c9} metalness={0.6} roughness={0.35} />
         </mesh>
-      </group>
-
-      <group position={[0, 0.05, carriage]}>
-        <group scale={[mm, mm, mm]} rotation={[-Math.PI / 2, 0, Math.PI / 2]}>
-          <mesh geometry={carriageGeo} castShadow receiveShadow>
-            <meshStandardMaterial color={color} metalness={0.35} roughness={0.55} />
-          </mesh>
-        </group>
-        <mesh position={[0, 0.21, 0]} castShadow receiveShadow>
-          <boxGeometry args={[0.75, 0.08, 0.65]} />
-          <meshStandardMaterial color={color} metalness={0.3} roughness={0.6} />
-        </mesh>
-        <mesh position={[-0.62, 0.21, 0]} castShadow receiveShadow>
-          <boxGeometry args={[0.55, 0.08, 0.65]} />
+      ))}
+      <group position={[0, 0, carriage]}>
+        <mesh position={[0, TSL_CARRIAGE_TOP_Y - 0.04, 0]} castShadow receiveShadow>
+          <boxGeometry args={[0.7, 0.08, 0.7]} />
           <meshStandardMaterial color={color} metalness={0.3} roughness={0.6} />
         </mesh>
       </group>
