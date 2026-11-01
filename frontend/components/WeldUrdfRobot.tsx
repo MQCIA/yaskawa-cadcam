@@ -107,6 +107,7 @@ export default function WeldUrdfRobot({
   const tcpRef = useRef<THREE.Object3D | null>(null);
   const chainRef = useRef<URDFJointLike[]>([]);
   const [flangeNode, setFlangeNode] = useState<THREE.Object3D | null>(null);
+  const flangeRef = useRef<THREE.Object3D | null>(null);
   const syntheticRef = useRef<THREE.Group | null>(null);
 
   const simRef = useRef(simT);
@@ -138,8 +139,12 @@ export default function WeldUrdfRobot({
 
     // Prefer ROS-I flange when present (AR2010).
     if (rosFlange) {
+      flangeRef.current = rosFlange;
       setFlangeNode(rosFlange);
-      return () => setFlangeNode(null);
+      return () => {
+        flangeRef.current = null;
+        setFlangeNode(null);
+      };
     }
 
     // Ensure tool0 exists under link_6_t with the URDF joint_6_t-tool0 pose.
@@ -156,12 +161,15 @@ export default function WeldUrdfRobot({
       link6.add(tool0);
     }
 
-    setFlangeNode(tool0 ?? link6);
+    const parent = tool0 ?? link6;
+    flangeRef.current = parent;
+    setFlangeNode(parent);
     return () => {
       if (syntheticRef.current?.parent) {
         syntheticRef.current.parent.remove(syntheticRef.current);
       }
       syntheticRef.current = null;
+      flangeRef.current = null;
       setFlangeNode(null);
     };
   }, [robot]);
@@ -211,13 +219,15 @@ export default function WeldUrdfRobot({
   }
 
   function readToolDir(out: THREE.Vector3) {
-    const tcp = tcpRef.current;
-    if (!tcp) {
+    // Approach = Motoman +Z ≡ URDF tool0 +X. Ignore TOOL 0 RPY here — that
+    // only tilts the wire for mesh/export; using it in CCD made the arm dive.
+    const fl = flangeRef.current;
+    if (!fl) {
       out.set(0, -1, 0);
       return out;
     }
-    tcp.getWorldQuaternion(qWorld);
-    return out.set(0, 0, 1).applyQuaternion(qWorld).normalize();
+    fl.getWorldQuaternion(qWorld);
+    return out.set(1, 0, 0).applyQuaternion(qWorld).normalize();
   }
 
   useFrame(() => {
@@ -274,7 +284,7 @@ export default function WeldUrdfRobot({
       robot.updateMatrixWorld(true);
     }
 
-    for (let it = 0; it < 10; it++) {
+    for (let it = 0; it < 14; it++) {
       for (let k = chain.length - 1; k >= 0; k--) {
         if (k === 5) continue;
         const j = chain[k];
@@ -291,28 +301,34 @@ export default function WeldUrdfRobot({
         let ang = Math.acos(THREE.MathUtils.clamp(ve.dot(vt), -1, 1));
         cr.crossVectors(ve, vt);
         if (cr.dot(A) < 0) ang = -ang;
-        applyJoint(j, ang);
+        // Slight damping keeps CCD stable with the ~0.42 m TOOL 0 lever.
+        applyJoint(j, ang * 0.9);
       }
 
-      for (let k = Math.min(4, chain.length - 1); k >= 2; k--) {
-        const j = chain[k];
+      tcp.getWorldPosition(E);
+      const posErr = E.distanceTo(target);
+
+      // Soft wrist bend (B only) once the tip is on the seam. Full U/R/B
+      // orientation CCD fights the longer TOOL 0 offset and dives into the floor.
+      if (posErr < 0.025 && chain.length > 4) {
+        const j = chain[4];
         j.getWorldPosition(P);
         A.copy(j.axis).transformDirection(j.matrixWorld).normalize();
         readToolDir(toolDir);
         ve.copy(toolDir).addScaledVector(A, -toolDir.dot(A));
         vt.copy(desiredDir).addScaledVector(A, -desiredDir.dot(A));
-        if (ve.lengthSq() < 1e-8 || vt.lengthSq() < 1e-8) continue;
-        ve.normalize();
-        vt.normalize();
-        let ang = Math.acos(THREE.MathUtils.clamp(ve.dot(vt), -1, 1));
-        cr.crossVectors(ve, vt);
-        if (cr.dot(A) < 0) ang = -ang;
-        applyJoint(j, ang * 0.85);
+        if (ve.lengthSq() > 1e-8 && vt.lengthSq() > 1e-8) {
+          ve.normalize();
+          vt.normalize();
+          let ang = Math.acos(THREE.MathUtils.clamp(ve.dot(vt), -1, 1));
+          cr.crossVectors(ve, vt);
+          if (cr.dot(A) < 0) ang = -ang;
+          applyJoint(j, ang * 0.2);
+          tcp.getWorldPosition(E);
+        }
       }
 
-      tcp.getWorldPosition(E);
-      readToolDir(toolDir);
-      if (E.distanceTo(target) < 0.004 && toolDir.dot(desiredDir) > 0.995) break;
+      if (E.distanceTo(target) < 0.004) break;
     }
   });
 
