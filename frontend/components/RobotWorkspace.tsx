@@ -17,6 +17,10 @@ import {
   type PositionerModel,
 } from "@/lib/models";
 import type { WeldProgram } from "@/lib/weldProgram";
+import {
+  DEFAULT_TORCH_CALIBRATION,
+  type TorchCalibration,
+} from "@/lib/tool0";
 
 export type SeamSegment = {
   start: [number, number, number];
@@ -114,6 +118,7 @@ function SelectedRobot({
   manualJog,
   partPivot,
   partRotZ,
+  torchCalib,
 }: {
   modelId: string;
   joints: Joints;
@@ -123,6 +128,7 @@ function SelectedRobot({
   manualJog: boolean;
   partPivot?: [number, number, number];
   partRotZ?: number;
+  torchCalib: TorchCalibration;
 }) {
   const model = ROBOT_MODELS.find((m) => m.id === modelId) ?? ROBOT_MODELS[0];
   if (model.kind === "urdf" && model.url) {
@@ -139,6 +145,7 @@ function SelectedRobot({
         manual={manualJog}
         partPivot={partPivot}
         partRotZ={partRotZ}
+        torchCalib={torchCalib}
       />
     );
   }
@@ -194,6 +201,7 @@ export default function RobotWorkspace({
   program = null,
   simT = 0,
   manualJog = false,
+  torchCalib = DEFAULT_TORCH_CALIBRATION,
 }: {
   modelId: string;
   joints: Joints;
@@ -204,6 +212,7 @@ export default function RobotWorkspace({
   program?: WeldProgram | null;
   simT?: number;
   manualJog?: boolean;
+  torchCalib?: TorchCalibration;
 }) {
   const positioner = positionerId
     ? POSITIONER_MODELS.find((p) => p.id === positionerId)
@@ -271,6 +280,7 @@ export default function RobotWorkspace({
             manualJog={manualJog}
             partPivot={partPivot}
             partRotZ={partRotZ}
+            torchCalib={torchCalib}
           />
         </Suspense>
         {/* Lorch S8 power source on the trailing dolly — rides with the robot */}

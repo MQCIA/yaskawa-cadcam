@@ -11,13 +11,20 @@
  * Verbotics' Robot Positioning panel.
  */
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import dynamic from "next/dynamic";
 import AxisSliders, { defaultJoints, type Joints } from "@/components/AxisSliders";
+import TorchCalibrationPanel from "@/components/TorchCalibrationPanel";
 import { useI18n, LanguageToggle } from "@/lib/i18n";
 import type { SeamSegment } from "@/components/RobotWorkspace";
 import { analyzeCad, calculateIk } from "@/lib/api";
 import { ROBOT_MODELS, POSITIONER_MODELS } from "@/lib/models";
+import {
+  DEFAULT_TORCH_CALIBRATION,
+  loadTorchCalibration,
+  saveTorchCalibration,
+  type TorchCalibration,
+} from "@/lib/tool0";
 import {
   buildDemoProgram,
   sampleProgram,
@@ -78,6 +85,16 @@ export default function Home() {
   const [leftTab, setLeftTab] = useState<LeftTab>("workspace");
   const [selectedStation, setSelectedStation] = useState<0 | 1 | null>(null);
   const [mobileTab, setMobileTab] = useState<MobileTab>("scene");
+  const [torchCalib, setTorchCalib] = useState<TorchCalibration>(DEFAULT_TORCH_CALIBRATION);
+
+  useEffect(() => {
+    setTorchCalib(loadTorchCalibration());
+  }, []);
+
+  const onTorchCalibChange = useCallback((next: TorchCalibration) => {
+    setTorchCalib(next);
+    saveTorchCalibration(next);
+  }, []);
 
   const rafRef = useRef<number | undefined>(undefined);
   const lastRef = useRef<number | undefined>(undefined);
@@ -490,6 +507,15 @@ export default function Home() {
                   ))}
                 </select>
               </div>
+              <button
+                type="button"
+                className={btnRibbon}
+                onClick={() => setMobileTab("robot")}
+                title={t("torch.panelTitle")}
+              >
+                <span className="text-base">🔧</span>
+                {t("torch.panelTitle")}
+              </button>
               <div className="flex shrink-0 items-center gap-2 px-2 text-xs text-slate-700">
                 <span>{t("settings.positioner")}</span>
                 <select
@@ -797,6 +823,7 @@ export default function Home() {
               program={program}
               simT={simT}
               manualJog={manualJog}
+              torchCalib={torchCalib}
             />
 
             {program && sample && (
@@ -971,6 +998,8 @@ export default function Home() {
 
             <div className="mb-1 text-[10px] font-semibold uppercase text-slate-500">{t("robot.joints")}</div>
             <AxisSliders joints={joints} onChange={onJointsChange} />
+
+            <TorchCalibrationPanel calib={torchCalib} onChange={onTorchCalibChange} />
 
             <div className="mb-1 mt-4 text-[10px] font-semibold uppercase text-slate-500">{t("robot.tool")}</div>
             <dl className="grid grid-cols-[1fr_auto] gap-x-2 gap-y-0.5 font-mono text-[11px] text-slate-700">

@@ -132,6 +132,22 @@ const pl: Dict = {
   "robot.help":
     "Przesuwaj S/L/U/R/B/T, żeby ręcznie ruszać AR2010 (jak panel Robot w Verbotics Weld). Odtwórz przełącza na IK ścieżki. Baza / Zero zerują osie.",
 
+  // Torch / TOOL 0 calibration
+  "torch.panelTitle": "Palnik (TOOL 0) — Lokalizacja i Model 3D",
+  "torch.panelHelp":
+    "TCP z dumpa DX200 (TOOL.CND). Mocowanie względem tool0 / link_6_t. Zmiany są widoczne na żywo w scenie 3D.",
+  "torch.tcpSection": "TCP TOOL 0 (mm / °)",
+  "torch.mountSection": "Kalibracja mocowania na kołnierzu",
+  "torch.flangePreset": "Oś wyjściowa kołnierza URDF",
+  "torch.meshSection": "Model 3D palnika",
+  "torch.meshProcedural": "Proceduralny",
+  "torch.meshCustom": "Własny STL/GLB",
+  "torch.uploadMesh": "Wgraj plik .stl / .glb",
+  "torch.customScale": "Skala siatki",
+  "torch.showAxes": "Pokaż osie XYZ (kołnierz + TCP)",
+  "torch.resetTcp": "Przywróć TCP z dumpa",
+  "torch.resetAll": "Reset całej kalibracji",
+
   // Axis help
   "axis.S": "Obrót podstawy",
   "axis.L": "Ramię dolne",
@@ -292,6 +308,22 @@ const en: Dict = {
   "robot.statusIdle": "Valid",
   "robot.help":
     "Move S/L/U/R/B/T to jog the AR2010 by hand (like Verbotics Weld’s Robot panel). Play switches to path IK. Home / Zero reset the axes.",
+
+  // Torch / TOOL 0 calibration
+  "torch.panelTitle": "Torch (TOOL 0) — Location & 3D Model",
+  "torch.panelHelp":
+    "TCP from the DX200 dump (TOOL.CND). Mount relative to tool0 / link_6_t. Changes update the 3D scene live.",
+  "torch.tcpSection": "TCP TOOL 0 (mm / °)",
+  "torch.mountSection": "Flange mount calibration",
+  "torch.flangePreset": "URDF flange outgoing axis",
+  "torch.meshSection": "Torch 3D model",
+  "torch.meshProcedural": "Procedural",
+  "torch.meshCustom": "Custom STL/GLB",
+  "torch.uploadMesh": "Upload .stl / .glb",
+  "torch.customScale": "Mesh scale",
+  "torch.showAxes": "Show XYZ axes (flange + TCP)",
+  "torch.resetTcp": "Restore dump TCP",
+  "torch.resetAll": "Reset all calibration",
 
   "axis.S": "Base rotation",
   "axis.L": "Lower arm",
