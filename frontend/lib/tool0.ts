@@ -18,6 +18,9 @@ export const TOOL0_XYZ_M = [
   TOOL0_XYZ_MM[2] / 1000,
 ] as const;
 
+/** Straight-line flange→tip length (metres). */
+export const TOOL0_LENGTH_M = Math.hypot(...TOOL0_XYZ_M);
+
 /** Stick-out beyond copper nozzle (m). */
 export const TORCH_STICK_OUT_M = 0.018;
 
@@ -43,8 +46,13 @@ export type TorchCalibration = {
   flangePreset: FlangeAxisPreset;
   /** Show AxesHelper at flange origin and TCP. */
   showAxes: boolean;
-  /** Geometry mode. */
-  meshMode: "procedural" | "custom";
+  /**
+   * Geometry mode.
+   * - `vendor` — bundled ESAB `rm62_36deg.stl` (Verbotics cell mesh)
+   * - `procedural` — simple CAD cylinders / swan-neck
+   * - `custom` — user-uploaded STL/GLB
+   */
+  meshMode: "vendor" | "procedural" | "custom";
   /** Object URL for uploaded STL/GLB (session-only). */
   customMeshUrl: string | null;
   customMeshKind: "stl" | "glb" | null;
@@ -72,8 +80,8 @@ export const DEFAULT_TORCH_CALIBRATION: TorchCalibration = {
   mountRyDeg: 0,
   mountRzDeg: 0,
   flangePreset: "plusZ_iso",
-  showAxes: true,
-  meshMode: "procedural",
+  showAxes: false,
+  meshMode: "vendor",
   customMeshUrl: null,
   customMeshKind: null,
   customXmm: 0,
@@ -85,7 +93,8 @@ export const DEFAULT_TORCH_CALIBRATION: TorchCalibration = {
   customScale: 1,
 };
 
-const STORAGE_KEY = "yaskawa-torch-calibration-v1";
+/** Bumped so previous "procedural" localStorage defaults pick up the ESAB mesh. */
+const STORAGE_KEY = "yaskawa-torch-calibration-v2";
 
 /** Persist numeric/settings fields (not blob object URLs). */
 export function saveTorchCalibration(c: TorchCalibration) {
@@ -102,9 +111,16 @@ export function loadTorchCalibration(): TorchCalibration {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return { ...DEFAULT_TORCH_CALIBRATION };
     const parsed = JSON.parse(raw) as Partial<TorchCalibration>;
+    const meshMode =
+      parsed.meshMode === "vendor" ||
+      parsed.meshMode === "procedural" ||
+      parsed.meshMode === "custom"
+        ? parsed.meshMode
+        : DEFAULT_TORCH_CALIBRATION.meshMode;
     return {
       ...DEFAULT_TORCH_CALIBRATION,
       ...parsed,
+      meshMode,
       customMeshUrl: null,
       customMeshKind: null,
     };
@@ -121,6 +137,9 @@ export function tcpRpyRad(c: TorchCalibration): [number, number, number] {
   const d = Math.PI / 180;
   return [c.tcpRxDeg * d, c.tcpRyDeg * d, c.tcpRzDeg * d];
 }
+
+/** Motoman TOOL RPY Euler order used with the ESAB mesh / TOOL.CND mount. */
+export const TOOL_RPY_ORDER = "ZYX" as const;
 
 /**
  * Euler (XYZ) that maps Motoman flange (+Z out) onto the URDF parent axes.

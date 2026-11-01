@@ -9,10 +9,19 @@ import { DEFAULT_TORCH_CALIBRATION } from "@/lib/tool0";
  */
 export default function WeldingTorch({
   arcOn = false,
+  vendorMesh = true,
 }: {
   arcOn?: boolean;
   tipLen?: number;
   vendorMesh?: boolean;
 }) {
-  return <WeldTorch3D calib={DEFAULT_TORCH_CALIBRATION} arcOn={arcOn} />;
+  return (
+    <WeldTorch3D
+      calib={{
+        ...DEFAULT_TORCH_CALIBRATION,
+        meshMode: vendorMesh ? "vendor" : "procedural",
+      }}
+      arcOn={arcOn}
+    />
+  );
 }

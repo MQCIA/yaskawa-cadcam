@@ -188,29 +188,27 @@ export default function TorchCalibrationPanel({
           <div className="mb-1 text-[10px] font-semibold uppercase text-slate-500">
             {t("torch.meshSection")}
           </div>
-          <div className="mb-1.5 flex gap-1">
-            <button
-              type="button"
-              onClick={() => patch({ meshMode: "procedural" })}
-              className={`flex-1 rounded border px-2 py-1.5 text-[11px] ${
-                calib.meshMode === "procedural"
-                  ? "border-[#e87722] bg-orange-50 text-[#e87722]"
-                  : "border-slate-300 bg-white"
-              }`}
-            >
-              {t("torch.meshProcedural")}
-            </button>
-            <button
-              type="button"
-              onClick={() => patch({ meshMode: "custom" })}
-              className={`flex-1 rounded border px-2 py-1.5 text-[11px] ${
-                calib.meshMode === "custom"
-                  ? "border-[#e87722] bg-orange-50 text-[#e87722]"
-                  : "border-slate-300 bg-white"
-              }`}
-            >
-              {t("torch.meshCustom")}
-            </button>
+          <div className="mb-1.5 flex flex-wrap gap-1">
+            {(
+              [
+                ["vendor", "torch.meshVendor"],
+                ["procedural", "torch.meshProcedural"],
+                ["custom", "torch.meshCustom"],
+              ] as const
+            ).map(([mode, labelKey]) => (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => patch({ meshMode: mode })}
+                className={`min-w-[30%] flex-1 rounded border px-2 py-1.5 text-[11px] ${
+                  calib.meshMode === mode
+                    ? "border-[#e87722] bg-orange-50 text-[#e87722]"
+                    : "border-slate-300 bg-white"
+                }`}
+              >
+                {t(labelKey)}
+              </button>
+            ))}
           </div>
           <label className="block">
             <span className="text-[10px] text-slate-500">{t("torch.uploadMesh")}</span>

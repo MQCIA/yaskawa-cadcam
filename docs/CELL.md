@@ -76,7 +76,9 @@ Full map: **[CELL_WELD_MAP.md](CELL_WELD_MAP.md)** · code: `backend/app/welding
 - Torch in viewer: `createPortal` onto URDF `tool0` / `flange` (MA2010
   `link_6_t` flange face at X≈0.100 m). Live TOOL 0 + mount calibration UI
   (`frontend/lib/tool0.ts`, `WeldTorch3D`, panel in Robot dock). Default TCP
-  `xyz=(-54.280, 1.052, 415.702) mm` RPY `(1.3119, -42.6215, -6.8387)°`.
+  `xyz=(-54.280, 1.052, 415.702) mm` RPY `(1.3119, -42.6215, -6.8387)°`
+  from `TOOL.CND`. Default mesh: **ESAB `rm62_36deg.stl`**
+  (`frontend/public/models/torch_esab/`, alignment in `lib/torchMesh.ts`).
 
 Large binaries (`CMOS.BIN`, `ALL.PRM`, …) stay under `reference/` (gitignored).
 
