@@ -147,7 +147,13 @@
       <child link="base"/>
     </joint>
 
-    <!-- ROS-Industrial 'tool0' frame: all-zeros tool frame -->
+    <!--
+      Flange / tool0 notes (MA2010 ROS-Industrial export):
+        joint_6_t axis = (-1, 0, 0); tool0 at (+0.100, 0, 0) on link_6_t with
+        identity RPY → URDF +X is the flange approach (Motoman TOOL +Z).
+        Viewer maps Motoman TOOL 0 (TOOL.CND: xyz mm -54.280,1.052,415.702
+        RPY deg 1.3119,-42.6215,-6.8387) onto this frame via R_y(+π/2).
+    -->
     <link name="tool0"/>
     <joint name="joint_6_t-tool0" type="fixed">
       <origin xyz="0.100 0 0" rpy="0 0 0"/>

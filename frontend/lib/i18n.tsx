@@ -36,6 +36,7 @@ const pl: Dict = {
   // Plan actions
   "plan.importPart": "Importuj część",
   "plan.loadDemo": "Załaduj demo",
+  "plan.loadHardDemo": "Demo trudne (90° + rura)",
   "plan.identifyWelds": "Wykryj spoiny",
   "plan.weldSettings": "Ustawienia spoiny",
   "plan.plan": "Planuj",
@@ -56,6 +57,19 @@ const pl: Dict = {
   "left.workspace": "Stanowisko",
   "left.welds": "Spoiny",
   "left.program": "Program",
+
+  // Mobile bottom navigation
+  "mobile.scene": "Scena 3D",
+  "mobile.cad": "CAD i Spoiny",
+  "mobile.robot": "Robot i Jog",
+  "mobile.jbi": "Kod .JBI",
+  "mobile.jbiEmpty": "Brak programu — załaduj demo lub zaimportuj CAD.",
+  "mobile.jbiDownload": "Pobierz .JBI",
+  "mobile.argf": "Motoweld ARGF",
+  "mobile.wev": "WEV# (weave)",
+  "mobile.stStation": "Stacja ST{n}",
+  "mobile.railBs1": "Tor BS1",
+  "arcnc.jbi": "7. Kod .JBI",
 
   // Workspace
   "workspace.cell": "Komórka",
@@ -118,6 +132,23 @@ const pl: Dict = {
   "robot.statusIdle": "OK",
   "robot.help":
     "Przesuwaj S/L/U/R/B/T, żeby ręcznie ruszać AR2010 (jak panel Robot w Verbotics Weld). Odtwórz przełącza na IK ścieżki. Baza / Zero zerują osie.",
+
+  // Torch / TOOL 0 calibration
+  "torch.panelTitle": "Palnik (TOOL 0) — Lokalizacja i Model 3D",
+  "torch.panelHelp":
+    "TCP z dumpa DX200 (TOOL.CND: −54.28, 1.05, 415.70 mm · RPY 1.31/−42.62/−6.84°). Domyślny mesh: ESAB rm62_36deg.stl. Mocowanie względem tool0.",
+  "torch.tcpSection": "TCP TOOL 0 (mm / °)",
+  "torch.mountSection": "Kalibracja mocowania na kołnierzu",
+  "torch.flangePreset": "Oś wyjściowa kołnierza URDF",
+  "torch.meshSection": "Model 3D palnika",
+  "torch.meshVendor": "ESAB rm62 (oryginalny)",
+  "torch.meshProcedural": "Proceduralny",
+  "torch.meshCustom": "Własny STL/GLB",
+  "torch.uploadMesh": "Wgraj plik .stl / .glb",
+  "torch.customScale": "Skala siatki",
+  "torch.showAxes": "Pokaż osie XYZ (kołnierz + TCP)",
+  "torch.resetTcp": "Przywróć TCP z dumpa",
+  "torch.resetAll": "Reset całej kalibracji",
 
   // Axis help
   "axis.S": "Obrót podstawy",
@@ -193,6 +224,7 @@ const en: Dict = {
 
   "plan.importPart": "Import Part",
   "plan.loadDemo": "Load Demo",
+  "plan.loadHardDemo": "Hard demo (90° + pipe)",
   "plan.identifyWelds": "Identify Welds",
   "plan.weldSettings": "Weld Settings",
   "plan.plan": "Plan",
@@ -210,6 +242,19 @@ const en: Dict = {
   "left.workspace": "Workspace",
   "left.welds": "Welds",
   "left.program": "Program",
+
+  // Mobile bottom navigation
+  "mobile.scene": "3D Scene",
+  "mobile.cad": "CAD & Welds",
+  "mobile.robot": "Robot & Jog",
+  "mobile.jbi": ".JBI Code",
+  "mobile.jbiEmpty": "No program — load demo or import CAD.",
+  "mobile.jbiDownload": "Download .JBI",
+  "mobile.argf": "Motoweld ARGF",
+  "mobile.wev": "WEV# (weave)",
+  "mobile.stStation": "Station ST{n}",
+  "mobile.railBs1": "Track BS1",
+  "arcnc.jbi": "7. .JBI Code",
 
   "workspace.cell": "Cell",
   "workspace.robot": "Robot",
@@ -266,6 +311,23 @@ const en: Dict = {
   "robot.statusIdle": "Valid",
   "robot.help":
     "Move S/L/U/R/B/T to jog the AR2010 by hand (like Verbotics Weld’s Robot panel). Play switches to path IK. Home / Zero reset the axes.",
+
+  // Torch / TOOL 0 calibration
+  "torch.panelTitle": "Torch (TOOL 0) — Location & 3D Model",
+  "torch.panelHelp":
+    "TCP from DX200 TOOL.CND (−54.28, 1.05, 415.70 mm · RPY 1.31/−42.62/−6.84°). Default mesh: ESAB rm62_36deg.stl. Mount relative to tool0.",
+  "torch.tcpSection": "TCP TOOL 0 (mm / °)",
+  "torch.mountSection": "Flange mount calibration",
+  "torch.flangePreset": "URDF flange outgoing axis",
+  "torch.meshSection": "Torch 3D model",
+  "torch.meshVendor": "ESAB rm62 (original)",
+  "torch.meshProcedural": "Procedural",
+  "torch.meshCustom": "Custom STL/GLB",
+  "torch.uploadMesh": "Upload .stl / .glb",
+  "torch.customScale": "Mesh scale",
+  "torch.showAxes": "Show XYZ axes (flange + TCP)",
+  "torch.resetTcp": "Restore dump TCP",
+  "torch.resetAll": "Reset all calibration",
 
   "axis.S": "Base rotation",
   "axis.L": "Lower arm",

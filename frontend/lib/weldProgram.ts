@@ -11,7 +11,8 @@
 // real hardware use.
 
 export type Vec3 = [number, number, number];
-export type MoveType = "MOVJ" | "MOVL";
+/** INFORM: MOVC = circular weld; MOVS = TouchSense search (123123.JBI). */
+export type MoveType = "MOVJ" | "MOVL" | "MOVC" | "MOVS";
 
 export type Waypoint = {
   id: string;
@@ -22,6 +23,11 @@ export type Waypoint = {
   // ArcNC-style stages: sense = TouchSense search, travel = air move between seams
   kind: "approach" | "sense" | "weld" | "travel" | "retract";
   tag?: "ARCON" | "ARCOF" | "TOUCH";
+  /**
+   * Optional per-point TURN EC#(ec1,ec2) pulses — enables ST3 circumferential
+   * welding (1-DEFRO-5.JBI: fixed C#, rotating axis-2).
+   */
+  ec?: [number, number];
 };
 
 export type WeldScheduleRow = {
@@ -34,10 +40,24 @@ export type WeldScheduleRow = {
   process: string;
 };
 
+/** Optional solid for demo fixtures (pipe / tube) — rendered in WeldScene. */
+export type WeldPipe = {
+  /** Outer radius (m). */
+  radius: number;
+  /** Length along local axis (m). */
+  length: number;
+  /** Centre in world (m). */
+  center: Vec3;
+  /** Euler XYZ radians for the cylinder (Three.js default is Y-up). */
+  rotation: Vec3;
+};
+
 export type WeldProgram = {
   name: string;
   mount: Vec3;
   plates: { size: Vec3; center: Vec3 }[];
+  /** Optional pipe / tube solids (hard demo). */
+  pipes?: WeldPipe[];
   seam: Vec3[];
   torchFrames: { pos: Vec3; dir: Vec3 }[];
   waypoints: Waypoint[];
@@ -54,15 +74,55 @@ export type WeldProgram = {
   };
 };
 
-// Mirror of backend welding schedules — Motoweld-E cell (travel V≈5–8).
+/**
+ * Motoweld schedules mined from the DX200 dump (see docs/CELL_WELD_MAP.md).
+ * ``job`` = MACRO1 MJ#(0) ARGFn = Motoweld PROG-NR.
+ * A/V come from the shared ARCSRT.CND template (200 A / 20.0 V); wire ≈ Motoweld
+ * WELDER.DAT curve at 200 A. Travel speeds match live jobs for that ARGF.
+ */
 export const LORCH_S8_SCHEDULES: WeldScheduleRow[] = [
-  { condition: 1, job: 8, currentA: 180, voltageV: 22.0, wireMmin: 6.5, travelCmMin: 5.0, process: "Motoweld" },
-  { condition: 2, job: 8, currentA: 220, voltageV: 24.0, wireMmin: 8.0, travelCmMin: 6.7, process: "Motoweld" },
-  { condition: 3, job: 4, currentA: 140, voltageV: 19.0, wireMmin: 5.0, travelCmMin: 7.5, process: "Motoweld" },
+  { condition: 1, job: 8, currentA: 200, voltageV: 20.0, wireMmin: 7.2, travelCmMin: 5.0, process: "Motoweld" },
+  { condition: 2, job: 5, currentA: 200, voltageV: 20.0, wireMmin: 7.2, travelCmMin: 4.2, process: "Motoweld" },
+  { condition: 3, job: 4, currentA: 200, voltageV: 20.0, wireMmin: 7.2, travelCmMin: 5.0, process: "Motoweld" },
+  { condition: 4, job: 1, currentA: 200, voltageV: 20.0, wireMmin: 7.2, travelCmMin: 5.0, process: "Motoweld" },
 ];
+
+/** Alias — Motoweld PROG-NR / ARGF tables (not Lorch ASF#). */
+export const MOTOWELD_SCHEDULES = LORCH_S8_SCHEDULES;
+
+/** Weave files WEV#(n) from WEAV.CND (amp L/R mm, angle L/R °, frequency Hz). */
+export type WeaveFileRow = {
+  wevNo: number;
+  mode: number;
+  ampLmm: number;
+  ampRmm: number;
+  angleLdeg: number;
+  angleRdeg: number;
+  frequencyHz: number;
+  label: string;
+};
+
+export const WEAVE_FILES: WeaveFileRow[] = [
+  { wevNo: 1, mode: 0, ampLmm: 2.0, ampRmm: 2.0, angleLdeg: 70, angleRdeg: 70, frequencyHz: 2.0, label: "WEV#(1) sym 2 mm / 70° / 2 Hz" },
+  { wevNo: 15, mode: 1, ampLmm: 3.0, ampRmm: 3.0, angleLdeg: 45, angleRdeg: 45, frequencyHz: 3.0, label: "WEV#(15) sym 3 mm / 45° / 3 Hz" },
+  { wevNo: 16, mode: 1, ampLmm: 2.0, ampRmm: 2.0, angleLdeg: 45, angleRdeg: 0, frequencyHz: 2.0, label: "WEV#(16) 2 mm / 45°·0° / 2 Hz" },
+  { wevNo: 21, mode: 0, ampLmm: 4.0, ampRmm: 0.0, angleLdeg: 0, angleRdeg: 0, frequencyHz: 2.0, label: "WEV#(21) 4 mm L / 2 Hz (default)" },
+];
+
+export const DEFAULT_WEAVE_NO = 21;
+
+/** TouchSense search defaults from 123123.JBI. */
+export const TOUCH_SENSE = {
+  opcode: "MOVS" as const,
+  searchSpeedCmMin: 11.0,
+  stationVj: 0.78,
+  referenceJob: "123123.JBI",
+};
 
 // Mount point on work-station 1's positioner faceplate (world coords, metres).
 export const DEMO_MOUNT: Vec3 = [1.6, 0.98, -1.2];
+/** Hard demo (90° fillet + pipe) on station 2 — forces rail travel to +Z. */
+export const DEMO_HARD_MOUNT: Vec3 = [1.6, 0.98, 1.2];
 
 const add = (a: Vec3, b: Vec3): Vec3 => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
 const dist = (a: Vec3, b: Vec3) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
@@ -222,7 +282,8 @@ export function buildDemoProgram(mount: Vec3 = DEMO_MOUNT, condition = 1): WeldP
 
   const weldLabel = `V=${sch.travelCmMin} cm/min`;
   const airLabel = "VJ=50%";
-  const senseLabel = "V=5 cm/min";
+  // TouchSense search speed from 123123.JBI: MOVS … V=11.0
+  const senseLabel = `V=${TOUCH_SENSE.searchSpeedCmMin} cm/min`;
 
   const waypoints: Waypoint[] = [];
   let n = 1;
@@ -237,7 +298,7 @@ export function buildDemoProgram(mount: Vec3 = DEMO_MOUNT, condition = 1): WeldP
   waypoints.push({
     id: pad(n++),
     pos: sense1,
-    move: "MOVL",
+    move: "MOVS",
     speedLabel: senseLabel,
     arc: false,
     kind: "sense",
@@ -246,7 +307,7 @@ export function buildDemoProgram(mount: Vec3 = DEMO_MOUNT, condition = 1): WeldP
   waypoints.push({
     id: pad(n++),
     pos: sense2,
-    move: "MOVL",
+    move: "MOVS",
     speedLabel: senseLabel,
     arc: false,
     kind: "sense",
@@ -304,6 +365,227 @@ export function buildDemoProgram(mount: Vec3 = DEMO_MOUNT, condition = 1): WeldP
   return refreshMeta(rebuildDurations(draft));
 }
 
+/**
+ * Harder offline demo on station 2:
+ *  1) Vertical 90° fillet (torch climbs a corner)
+ *  2) Air travel
+ *  3) Circumferential pipe-to-plate weld (MOVC ring)
+ */
+export function buildHardDemoProgram(
+  mount: Vec3 = DEMO_HARD_MOUNT,
+  condition = 1,
+): WeldProgram {
+  const sch =
+    LORCH_S8_SCHEDULES.find((s) => s.condition === condition) ?? LORCH_S8_SCHEDULES[0];
+
+  // --- Fixture: floor + vertical wall at 90°, plus Ø114 pipe on the floor ---
+  const platesLocal: { size: Vec3; center: Vec3 }[] = [
+    { size: [0.55, 0.02, 0.5], center: [0, 0.01, 0] },
+    { size: [0.55, 0.36, 0.02], center: [0, 0.19, -0.24] },
+  ];
+  const plates = platesLocal.map((p) => ({ size: p.size, center: add(mount, p.center) }));
+
+  const pipeRadius = 0.057;
+  const pipeLen = 0.36;
+  const pipeLocalCenter: Vec3 = [0.08, 0.02 + pipeRadius, 0.05];
+  const pipes: WeldPipe[] = [
+    {
+      radius: pipeRadius,
+      length: pipeLen,
+      center: add(mount, pipeLocalCenter),
+      // Cylinder default axis = Y; rotate to lie along +X on the floor plate.
+      rotation: [0, 0, Math.PI / 2],
+    },
+  ];
+
+  // Vertical 90° fillet seam (climbs the wall).
+  const vStart = add(mount, [-0.2, 0.03, -0.23]);
+  const vEnd = add(mount, [-0.2, 0.34, -0.23]);
+  const Nv = 10;
+  const seamV: Vec3[] = [];
+  for (let i = 0; i <= Nv; i++) {
+    const t = i / Nv;
+    seamV.push([
+      vStart[0] + (vEnd[0] - vStart[0]) * t,
+      vStart[1] + (vEnd[1] - vStart[1]) * t,
+      vStart[2] + (vEnd[2] - vStart[2]) * t,
+    ]);
+  }
+  const torchDirV = norm([0, 0, 1]); // into the corner / wall
+
+  // Circumferential seam on the pipe OD at the wall-side end (pipe-to-plate).
+  const ringCenter = add(mount, [
+    pipeLocalCenter[0] - pipeLen / 2 + 0.01,
+    pipeLocalCenter[1],
+    pipeLocalCenter[2],
+  ]);
+  const Nr = 16;
+  const seamR: Vec3[] = [];
+  for (let i = 0; i <= Nr; i++) {
+    const a = (i / Nr) * Math.PI * 2;
+    // Ring in YZ plane (pipe axis = X).
+    seamR.push([
+      ringCenter[0],
+      ringCenter[1] + Math.cos(a) * pipeRadius,
+      ringCenter[2] + Math.sin(a) * pipeRadius,
+    ]);
+  }
+
+  const seam = [...seamV, ...seamR];
+  const torchFrames = [
+    ...seamV.map((pos) => ({ pos, dir: torchDirV })),
+    ...seamR.map((pos) => {
+      // Radial outward from pipe axis (in YZ).
+      const dir = norm([
+        0,
+        pos[1] - ringCenter[1],
+        pos[2] - ringCenter[2],
+      ]);
+      // Slight push toward −X (into the wall joint).
+      return { pos, dir: norm([dir[0] - 0.35, dir[1], dir[2]]) };
+    }),
+  ];
+
+  const weldLabel = `V=${sch.travelCmMin} cm/min`;
+  const airLabel = "VJ=50%";
+  const senseLabel = `V=${TOUCH_SENSE.searchSpeedCmMin} cm/min`;
+
+  const approach = add(vStart, [0.05, 0.1, 0.12]);
+  const sense1 = add(vStart, [0.03, 0.05, 0.04]);
+  const sense2 = add(vStart, [0.0, 0.08, 0.04]);
+  const midTravel = add(mount, [0.05, 0.45, -0.05]);
+  const ringApproach = add(seamR[0], [0.08, 0.06, 0.06]);
+  const retract = add(seamR[Math.floor(Nr / 4)], [0.1, 0.12, 0.08]);
+
+  const waypoints: Waypoint[] = [];
+  let n = 1;
+  waypoints.push({
+    id: pad(n++),
+    pos: approach,
+    move: "MOVJ",
+    speedLabel: airLabel,
+    arc: false,
+    kind: "approach",
+  });
+  waypoints.push({
+    id: pad(n++),
+    pos: sense1,
+    move: "MOVS",
+    speedLabel: senseLabel,
+    arc: false,
+    kind: "sense",
+    tag: "TOUCH",
+  });
+  waypoints.push({
+    id: pad(n++),
+    pos: sense2,
+    move: "MOVS",
+    speedLabel: senseLabel,
+    arc: false,
+    kind: "sense",
+    tag: "TOUCH",
+  });
+  waypoints.push({
+    id: pad(n++),
+    pos: seamV[0],
+    move: "MOVL",
+    speedLabel: "V=15 cm/min",
+    arc: true,
+    kind: "weld",
+    tag: "ARCON",
+  });
+  for (let i = 1; i < seamV.length - 1; i++) {
+    waypoints.push({
+      id: pad(n++),
+      pos: seamV[i],
+      move: "MOVL",
+      speedLabel: weldLabel,
+      arc: true,
+      kind: "weld",
+    });
+  }
+  waypoints.push({
+    id: pad(n++),
+    pos: seamV[seamV.length - 1],
+    move: "MOVL",
+    speedLabel: weldLabel,
+    arc: true,
+    kind: "weld",
+    tag: "ARCOF",
+  });
+  waypoints.push({
+    id: pad(n++),
+    pos: midTravel,
+    move: "MOVJ",
+    speedLabel: airLabel,
+    arc: false,
+    kind: "travel",
+  });
+  waypoints.push({
+    id: pad(n++),
+    pos: ringApproach,
+    move: "MOVJ",
+    speedLabel: airLabel,
+    arc: false,
+    kind: "travel",
+  });
+  waypoints.push({
+    id: pad(n++),
+    pos: seamR[0],
+    move: "MOVC",
+    speedLabel: "V=15 cm/min",
+    arc: true,
+    kind: "weld",
+    tag: "ARCON",
+  });
+  for (let i = 1; i < seamR.length - 1; i++) {
+    waypoints.push({
+      id: pad(n++),
+      pos: seamR[i],
+      move: "MOVC",
+      speedLabel: weldLabel,
+      arc: true,
+      kind: "weld",
+    });
+  }
+  waypoints.push({
+    id: pad(n++),
+    pos: seamR[seamR.length - 1],
+    move: "MOVC",
+    speedLabel: weldLabel,
+    arc: true,
+    kind: "weld",
+    tag: "ARCOF",
+  });
+  waypoints.push({
+    id: pad(n++),
+    pos: retract,
+    move: "MOVJ",
+    speedLabel: airLabel,
+    arc: false,
+    kind: "retract",
+  });
+
+  let weldLen = 0;
+  for (let i = 0; i < seamV.length - 1; i++) weldLen += dist(seamV[i], seamV[i + 1]);
+  for (let i = 0; i < seamR.length - 1; i++) weldLen += dist(seamR[i], seamR[i + 1]);
+
+  const draft: WeldProgram = {
+    name: "DEMO_HARD_90_PIPE",
+    mount,
+    plates,
+    pipes,
+    seam,
+    torchFrames,
+    waypoints,
+    segDurations: [],
+    cycleSec: 0,
+    weldLenMm: weldLen * 1000,
+    schedule: sch,
+  };
+  return refreshMeta(rebuildDurations(draft));
+}
+
 /** Insert TouchSense search points before the first weld if missing. */
 export function ensureTouchSense(prog: WeldProgram): WeldProgram {
   if (hasTouchSense(prog)) return refreshMeta(prog);
@@ -315,12 +597,12 @@ export function ensureTouchSense(prog: WeldProgram): WeldProgram {
   const sense1 = add(seamStart, [0, 0.04, 0.02]);
   const sense2 = add(seamStart, [0.03, 0.04, 0.0]);
   const insertAt = Math.max(1, firstWeld);
-  const senseLabel = "V=5 cm/min";
+  const senseLabel = `V=${TOUCH_SENSE.searchSpeedCmMin} cm/min`;
   const extra: Waypoint[] = [
     {
       id: "TMP1",
       pos: sense1,
-      move: "MOVL",
+      move: "MOVS",
       speedLabel: senseLabel,
       arc: false,
       kind: "sense",
@@ -329,7 +611,7 @@ export function ensureTouchSense(prog: WeldProgram): WeldProgram {
     {
       id: "TMP2",
       pos: sense2,
-      move: "MOVL",
+      move: "MOVS",
       speedLabel: senseLabel,
       arc: false,
       kind: "sense",
@@ -516,9 +798,12 @@ export function generateJbi(
     userFrame?: number;
     stationPulsesPerDeg?: number;
     stationDeg?: number | number[];
+    /** Per-point EC#(ec1,ec2) pulses (overrides stationDeg). ST3 circumferential. */
+    ecPulses?: Array<[number, number] | number[]>;
     weaveNo?: number;
     jointAnglesDeg?: number[][];
     baseParkPulse?: number;
+    group2?: string;
   },
 ): string {
   const pts = prog.waypoints;
@@ -526,11 +811,20 @@ export function generateJbi(
   const pulsesPerDeg = opts?.stationPulsesPerDeg ?? CELL_PULSE.stationPulsesPerDeg;
   const basePark = opts?.baseParkPulse ?? CELL_PULSE.baseParkPulse;
   const weaveNo = opts?.weaveNo ?? 21;
+  const group2 = (opts?.group2 ?? "ST1").toUpperCase().replace(/\s+/g, "");
   const usePulse =
     Array.isArray(opts?.jointAnglesDeg) && opts!.jointAnglesDeg!.length === npos;
   const stationDeg = pts.map((_, i) => {
     if (Array.isArray(opts?.stationDeg)) return opts!.stationDeg![i] ?? opts!.stationDeg![0] ?? 0;
     return opts?.stationDeg ?? 0;
+  });
+  const ecPairs: [number, number][] = pts.map((p, i) => {
+    if (opts?.ecPulses && opts.ecPulses[i]) {
+      const e = opts.ecPulses[i];
+      return [Math.round(e[0]), Math.round(e[1] ?? 0)];
+    }
+    if (p.ec) return [Math.round(p.ec[0]), Math.round(p.ec[1])];
+    return [Math.round(stationDeg[i] * pulsesPerDeg), 0];
   });
   const lines: string[] = [];
   const sch = prog.schedule;
@@ -542,8 +836,9 @@ export function generateJbi(
   } else {
     lines.push("' Offline RECTAN review — supply IK joints for PULSE C#");
   }
-  lines.push("' Cell: MA2010 + RECT-X (BS1) + TURN (ST1); TOOL0 TCP Z≈415.7 mm");
+  lines.push("' Cell: MA2010 + RECT-X (BS1) + TURN (ST1–ST4); TOOL0 TCP Z≈415.7 mm");
   lines.push(`' Station pulses/deg~${pulsesPerDeg.toFixed(4)}; BC park=${basePark}`);
+  lines.push("' MOVC = circular weld (≥3 pts); per-point EC = ST3 circumferential");
   lines.push("//POS");
   lines.push(`///NPOS ${npos},${npos},${npos},0,0,0`);
   lines.push("///TOOL 0");
@@ -577,8 +872,8 @@ export function generateJbi(
     lines.push("///POSTYPE PULSE");
     lines.push("///PULSE");
   }
-  stationDeg.forEach((ang, i) => {
-    lines.push(`EC${String(i).padStart(5, "0")}=${Math.round(ang * pulsesPerDeg)},0`);
+  ecPairs.forEach(([e1, e2], i) => {
+    lines.push(`EC${String(i).padStart(5, "0")}=${e1},${e2}`);
   });
 
   lines.push("//INST");
@@ -591,7 +886,7 @@ export function generateJbi(
   lines.push(`///DATE ${stamp}`);
   lines.push("///ATTR SC,RW");
   lines.push("///GROUP1 RB1,BS1");
-  lines.push("///GROUP2 ST1");
+  lines.push(`///GROUP2 ${group2}`);
   lines.push("NOP");
 
   pts.forEach((p, i) => {
@@ -599,31 +894,46 @@ export function generateJbi(
     const bc = `BC${String(i).padStart(5, "0")}`;
     const ec = `EC${String(i).padStart(5, "0")}`;
     const parsed = parseSpeed(p.speedLabel, p.kind === "weld" ? sch.travelCmMin : 80);
-    const useJoint = p.move === "MOVJ" || p.kind === "approach" || p.kind === "retract" || p.kind === "travel";
+    const useJoint =
+      p.move === "MOVJ" ||
+      p.kind === "approach" ||
+      p.kind === "retract" ||
+      p.kind === "travel";
 
     if (p.tag === "ARCON") {
       lines.push("TIMER T=0.50");
       lines.push(`MACRO1 MJ#(0) ARGF${sch.job}`);
       lines.push(
-        `' Motoweld cond ${sch.condition}: ${sch.currentA}A / ${sch.voltageV.toFixed(1)}V / wire ${sch.wireMmin.toFixed(
-          1,
-        )} m/min / ${sch.process}`,
+        `' Motoweld PROG-NR/ARGF${sch.job} (UI cond ${sch.condition}): ` +
+          `${sch.currentA}A / ${sch.voltageV.toFixed(1)}V / wire ${sch.wireMmin.toFixed(1)} m/min ` +
+          `— ARCSRT template; validate WPS`,
       );
       lines.push("ARCON");
       lines.push(`WVON WEV#(${weaveNo})`);
     }
 
-    if (useJoint && p.kind !== "weld" && p.kind !== "sense") {
+    if (p.kind === "sense" || p.move === "MOVS") {
+      // 123123.JBI: MOVS C# BC# V=11.0  +MOVJ EC# VJ=0.78
+      const v =
+        parsed.kind === "V" ? parsed.value : TOUCH_SENSE.searchSpeedCmMin;
+      lines.push(
+        `MOVS ${c} ${bc} V=${f1(v)}  +MOVJ ${ec} VJ=${f1(TOUCH_SENSE.stationVj)}`,
+      );
+      lines.push(`' TouchSense search (${TOUCH_SENSE.referenceJob} pattern)`);
+    } else if (useJoint && p.kind !== "weld") {
       const vj = parsed.kind === "VJ" ? parsed.value : 80;
       lines.push(`MOVJ ${c} ${bc} VJ=${f1(vj)} DEC=20  +MOVJ ${ec} VJ=${f1(vj)}`);
     } else {
-      const v = p.kind === "weld" || p.kind === "sense" ? (parsed.kind === "V" ? parsed.value : sch.travelCmMin) : 5.0;
-      lines.push(`MOVL ${c} ${bc} V=${f1(v)} DEC=20  +MOVJ ${ec} VJ=80.00`);
+      const v =
+        p.kind === "weld"
+          ? parsed.kind === "V"
+            ? parsed.value
+            : sch.travelCmMin
+          : 5.0;
+      const op = p.move === "MOVC" ? "MOVC" : "MOVL";
+      lines.push(`${op} ${c} ${bc} V=${f1(v)} DEC=20  +MOVJ ${ec} VJ=80.00`);
     }
 
-    if (p.tag === "TOUCH") {
-      lines.push("' TouchSense search (CAD↔reality offset)");
-    }
     if (p.tag === "ARCOF") {
       lines.push("ARCOF");
       lines.push("WVOF");

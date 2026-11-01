@@ -51,6 +51,21 @@ MACRO1 MJ#(0) ARGFn
 
 No `ARCON ASF#(...)` on this cell — conditions come from `ARCSRT.CND` / macros.
 
+## Motoweld ARGF / WEAV / TouchSense (M3)
+
+Full map: **[CELL_WELD_MAP.md](CELL_WELD_MAP.md)** · code: `backend/app/welding_config.py`.
+
+| Topic | Dump fact |
+|-------|-----------|
+| `MACRO1 MJ#(0) ARGFn` | Motoweld **PROG-NR = n** (`MACRO.DAT` MACRO1 1, tag `PROG-NR:`) |
+| `ARCSRT.CND` | All 1000 EN blocks identical → **200 A / 20.0 V / 100 %** |
+| Live ARGF | **1, 4, 5, 8** (also 6, 10) — travel V≈4.2–7.5 in jobs |
+| `WEV#(1)` | 2 mm / 70° / 2 Hz |
+| `WEV#(15)` | 3 mm / 45° / 3 Hz |
+| `WEV#(16)` | 2 mm / 45°·0° / 2 Hz |
+| `WEV#(21)` | 4 mm L / 2 Hz — **default** production weave |
+| TouchSense | `123123.JBI`: `MOVS C# BC# V=11.0  +MOVJ EC# VJ=0.78` |
+
 ## App integration
 
 - Default robot model: **MA2010** (`ROBOT_MODEL=MA2010`)
@@ -58,12 +73,18 @@ No `ARCON ASF#(...)` on this cell — conditions come from `ARCSRT.CND` / macros
 - Default JBI profile: **`ma2010_cell`**
 - Pass IK `joint_angles_deg` into `generate_jbi` / `/api/generate-jbi` → full **PULSE** C#
 - Without joints: C# stays RECTAN; BC/EC still use pulse units
-- Torch length in viewer ≈ **416 mm** from TOOL 0
+- Torch in viewer: `createPortal` onto URDF `tool0` / `flange` (MA2010
+  `link_6_t` flange face at X≈0.100 m). Live TOOL 0 + mount calibration UI
+  (`frontend/lib/tool0.ts`, `WeldTorch3D`, panel in Robot dock). Default TCP
+  `xyz=(-54.280, 1.052, 415.702) mm` RPY `(1.3119, -42.6215, -6.8387)°`
+  from `TOOL.CND`. Default mesh: **ESAB `rm62_36deg.stl`**
+  (`frontend/public/models/torch_esab/`, alignment in `lib/torchMesh.ts`).
 
 Large binaries (`CMOS.BIN`, `ALL.PRM`, …) stay under `reference/` (gitignored).
 
 ## Agent index
 
+- **Weld / ARGF / WEAV map:** [CELL_WELD_MAP.md](CELL_WELD_MAP.md)
 - **Per-file dump catalog:** [CELL_DUMP_CATALOG.md](CELL_DUMP_CATALOG.md)
 - **Machine scan JSON:** [_dump_scan.json](_dump_scan.json)
 - **Cursor skill:** `.cursor/skills/dx200-cell-dump/` (lookup + concept gaps)

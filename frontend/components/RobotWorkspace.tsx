@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, Html } from "@react-three/drei";
 import YaskawaManipulator from "./YaskawaManipulator";
@@ -17,6 +17,11 @@ import {
   type PositionerModel,
 } from "@/lib/models";
 import type { WeldProgram } from "@/lib/weldProgram";
+import {
+  DEFAULT_TORCH_CALIBRATION,
+  type TorchCalibration,
+} from "@/lib/tool0";
+import { TSL_CARRIAGE_TOP_Y } from "@/lib/trackMesh";
 
 export type SeamSegment = {
   start: [number, number, number];
@@ -25,8 +30,8 @@ export type SeamSegment = {
 
 export type StationState = { tilt: number; rotate: number };
 
-// Height of the rail carriage top the robot base mounts on.
-const CARRIAGE_TOP_Y = 0.26;
+// Height of the rail carriage top the robot base mounts on (TSL-600 STL).
+const CARRIAGE_TOP_Y = TSL_CARRIAGE_TOP_Y;
 // Height of the positioner rotation axis (matches H1000dPositioner.axisHeight).
 const AXLE_Y = 0.95;
 // X position of the trailing power-source dolly on the carriage (matches RobotTrack).
@@ -62,11 +67,18 @@ function Seam({ seg }: { seg: SeamSegment }) {
     (z0 + z1) / 2,
   ];
   const len = Math.hypot(x1 - x0, y1 - y0, z1 - z0);
+  // Visual marker stays compact; invisible hit sphere is finger-sized (~4–6 cm).
+  const visualR = Math.max(0.012, Math.min(0.03, len * 0.05));
+  const hitR = Math.max(0.055, visualR * 2.5);
   return (
     <group position={mid}>
       <mesh>
-        <sphereGeometry args={[Math.max(0.01, len * 0.05), 8, 8]} />
+        <sphereGeometry args={[visualR, 12, 12]} />
         <meshStandardMaterial color="red" emissive="red" emissiveIntensity={0.6} />
+      </mesh>
+      <mesh visible={false}>
+        <sphereGeometry args={[hitR, 8, 8]} />
+        <meshBasicMaterial />
       </mesh>
     </group>
   );
@@ -107,6 +119,7 @@ function SelectedRobot({
   manualJog,
   partPivot,
   partRotZ,
+  torchCalib,
 }: {
   modelId: string;
   joints: Joints;
@@ -116,6 +129,7 @@ function SelectedRobot({
   manualJog: boolean;
   partPivot?: [number, number, number];
   partRotZ?: number;
+  torchCalib: TorchCalibration;
 }) {
   const model = ROBOT_MODELS.find((m) => m.id === modelId) ?? ROBOT_MODELS[0];
   if (model.kind === "urdf" && model.url) {
@@ -132,6 +146,7 @@ function SelectedRobot({
         manual={manualJog}
         partPivot={partPivot}
         partRotZ={partRotZ}
+        torchCalib={torchCalib}
       />
     );
   }
@@ -187,6 +202,7 @@ export default function RobotWorkspace({
   program = null,
   simT = 0,
   manualJog = false,
+  torchCalib = DEFAULT_TORCH_CALIBRATION,
 }: {
   modelId: string;
   joints: Joints;
@@ -197,6 +213,7 @@ export default function RobotWorkspace({
   program?: WeldProgram | null;
   simT?: number;
   manualJog?: boolean;
+  torchCalib?: TorchCalibration;
 }) {
   const positioner = positionerId
     ? POSITIONER_MODELS.find((p) => p.id === positionerId)
@@ -218,13 +235,28 @@ export default function RobotWorkspace({
   // can intermittently collapse to 0×0 height in the Verbotics-style layout.
   // Skip <Environment> (HDR fetch) — it flakes on restricted networks and
   // leaves a blank viewer; local lights are enough for the cell.
+  // Cap DPR on phones/tablets to limit GPU heat and WebGL context loss on MA2010 STL.
+  const [dpr, setDpr] = useState<[number, number]>([1, 2]);
+  useEffect(() => {
+    const coarse =
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(pointer: coarse)").matches;
+    setDpr(coarse ? [1, 1.5] : [1, 2]);
+  }, []);
+
   return (
-    <div className="absolute inset-0 h-full w-full">
+    <div className="absolute inset-0 h-full w-full touch-none overscroll-none">
     <Canvas
+      className="touch-none"
       camera={{ position: [4.5, 3, 4.5], fov: 45 }}
       gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
-      dpr={[1, 1.75]}
-      style={{ width: "100%", height: "100%", display: "block" }}
+      dpr={dpr}
+      style={{
+        width: "100%",
+        height: "100%",
+        display: "block",
+        touchAction: "none",
+      }}
       onCreated={({ gl }) => {
         gl.setClearColor("#ffffff", 1);
       }}
@@ -249,6 +281,7 @@ export default function RobotWorkspace({
             manualJog={manualJog}
             partPivot={partPivot}
             partRotZ={partRotZ}
+            torchCalib={torchCalib}
           />
         </Suspense>
         {/* Lorch S8 power source on the trailing dolly — rides with the robot */}

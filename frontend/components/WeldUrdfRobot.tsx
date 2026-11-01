@@ -1,16 +1,21 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { useLoader, useFrame } from "@react-three/fiber";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { createPortal, useLoader, useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { STLLoader } from "three/examples/jsm/loaders/STLLoader.js";
 import URDFLoader, { type URDFRobot } from "urdf-loader";
-import WeldingTorch from "./WeldingTorch";
+import WeldTorch3D from "./WeldTorch3D";
 import { sampleProgram, type Vec3, type WeldProgram } from "@/lib/weldProgram";
 import { AXES, type Joints } from "./AxisSliders";
+import {
+  DEFAULT_TORCH_CALIBRATION,
+  flangePresetEuler,
+  tcpMetres,
+  tcpRpyRad,
+  type TorchCalibration,
+} from "@/lib/tool0";
 
-// Base -> tip revolute chain of the Motoman AR2010 URDF.
-// Order matches the S/L/U/R/B/T jog axes so manual jog maps 1:1.
 const CHAIN = [
   "joint_1_s",
   "joint_2_l",
@@ -19,7 +24,10 @@ const CHAIN = [
   "joint_5_b",
   "joint_6_t",
 ];
-const TORCH_LEN = 0.416; // TOOL 0 tip Z ≈ 415.7 mm from production TOOL.CND
+
+/** MA2010 URDF: flange face / tool0 translation on link_6_t (metres). */
+const MA2010_TOOL0_ORIGIN: [number, number, number] = [0.1, 0, 0];
+
 const deg2rad = (d: number) => (d * Math.PI) / 180;
 
 type URDFJointLike = THREE.Object3D & {
@@ -29,10 +37,19 @@ type URDFJointLike = THREE.Object3D & {
   setJointValue: (v: number) => boolean;
 };
 
+type URDFRobotLike = URDFRobot & {
+  links: Record<string, THREE.Object3D>;
+  frames?: Record<string, THREE.Object3D>;
+  joints: Record<string, URDFJointLike>;
+  setJointValue: (name: string, v: number) => boolean;
+};
+
 /**
- * Real Yaskawa MOTOMAN-AR2010 (URDF + STL) with a welding torch on the flange,
- * driven by a browser-side CCD inverse-kinematics solver so the torch tip tracks
- * the weld path. This makes the animated welding robot the actual AR2010 model.
+ * MA2010 / AR2010 URDF with torch portaled onto the wrist flange.
+ *
+ * MA2010 `link_6_t.stl` flange disc sits at X∈[0.087, 0.100] — matching
+ * `joint_6_t-tool0` xyz=(0.100,0,0). Empty `tool0` links are still created by
+ * urdf-loader; if missing we synthesise the same transform on `link_6_t`.
  */
 export default function WeldUrdfRobot({
   url,
@@ -44,6 +61,7 @@ export default function WeldUrdfRobot({
   manual = false,
   partPivot,
   partRotZ = 0,
+  torchCalib = DEFAULT_TORCH_CALIBRATION,
 }: {
   url: string;
   color?: number;
@@ -51,29 +69,29 @@ export default function WeldUrdfRobot({
   simT: number;
   base: [number, number, number];
   joints: Joints;
-  // When true (or when no program is loaded) the robot follows the jog sliders
-  // instead of the inverse-kinematics weld path.
   manual?: boolean;
-  // Pivot + rotation of the workpiece on the positioner, so the IK target
-  // tracks the seam when the table is rotated (matches WeldScene wrapping).
   partPivot?: Vec3;
   partRotZ?: number;
+  torchCalib?: TorchCalibration;
 }) {
   const robot = useLoader(
     URDFLoader as unknown as new () => THREE.Loader,
     url,
     (loader) => {
       const l = loader as unknown as InstanceType<typeof URDFLoader>;
-      // Visual CAD only — never load the simplified collision hulls.
       l.parseVisual = true;
       l.parseCollision = false;
-      l.loadMeshCb = (path, manager, material, done) => {
+      l.loadMeshCb = (path, manager, _material, done) => {
         new STLLoader(manager).load(
           path,
           (geo) => {
             const mesh = new THREE.Mesh(
               geo,
-              new THREE.MeshStandardMaterial({ color, metalness: 0.25, roughness: 0.6 }),
+              new THREE.MeshStandardMaterial({
+                color,
+                metalness: 0.25,
+                roughness: 0.6,
+              }),
             );
             mesh.castShadow = true;
             mesh.receiveShadow = true;
@@ -84,44 +102,101 @@ export default function WeldUrdfRobot({
         );
       };
     },
-  ) as unknown as URDFRobot;
+  ) as unknown as URDFRobotLike;
 
   const tcpRef = useRef<THREE.Object3D | null>(null);
-  const mountRef = useRef<URDFJointLike | null>(null);
   const chainRef = useRef<URDFJointLike[]>([]);
-  const torchRef = useRef<THREE.Group>(null);
+  const [flangeNode, setFlangeNode] = useState<THREE.Object3D | null>(null);
+  const flangeRef = useRef<THREE.Object3D | null>(null);
+  const syntheticRef = useRef<THREE.Group | null>(null);
+
   const simRef = useRef(simT);
   const progRef = useRef(program);
   const jointsRef = useRef(joints);
   const manualRef = useRef(manual);
   const pivotRef = useRef(partPivot);
   const rotZRef = useRef(partRotZ);
+  const calibRef = useRef(torchCalib);
   simRef.current = simT;
   progRef.current = program;
   jointsRef.current = joints;
   manualRef.current = manual;
   pivotRef.current = partPivot;
   rotZRef.current = partRotZ;
+  calibRef.current = torchCalib;
 
-  // Attach an end-effector marker (torch tip) to the flange for IK.
   useEffect(() => {
-    const joints = (robot as unknown as { joints: Record<string, URDFJointLike> }).joints;
-    chainRef.current = CHAIN.map((n) => joints[n]).filter(Boolean);
-    const mount = joints["joint_6_t"] ?? null;
-    mountRef.current = mount;
-    if (mount) {
-      const tcp = new THREE.Object3D();
-      const ax = (mount.axis?.clone?.() ?? new THREE.Vector3(0, 0, 1)).normalize();
-      tcp.position.copy(ax.multiplyScalar(TORCH_LEN));
-      mount.add(tcp);
-      tcpRef.current = tcp;
+    chainRef.current = CHAIN.map((n) => robot.joints[n]).filter(Boolean);
+  }, [robot]);
+
+  // Resolve / synthesise the flange parent for createPortal.
+  useLayoutEffect(() => {
+    const links = robot.links ?? {};
+    const frames = robot.frames ?? {};
+    const link6: THREE.Object3D | null = links.link_6_t ?? frames.link_6_t ?? null;
+    const rosFlange: THREE.Object3D | null = links.flange ?? frames.flange ?? null;
+    let tool0: THREE.Object3D | null = links.tool0 ?? frames.tool0 ?? null;
+
+    // Prefer ROS-I flange when present (AR2010).
+    if (rosFlange) {
+      flangeRef.current = rosFlange;
+      setFlangeNode(rosFlange);
+      return () => {
+        flangeRef.current = null;
+        setFlangeNode(null);
+      };
     }
+
+    // Ensure tool0 exists under link_6_t with the URDF joint_6_t-tool0 pose.
+    if (!tool0 && link6) {
+      const syn = new THREE.Group();
+      syn.name = "tool0_synthetic";
+      syn.position.set(...MA2010_TOOL0_ORIGIN);
+      link6.add(syn);
+      syntheticRef.current = syn;
+      tool0 = syn;
+    } else if (tool0 && link6 && tool0.parent !== link6) {
+      // Loader created tool0 but parenting failed — re-attach.
+      tool0.position.set(...MA2010_TOOL0_ORIGIN);
+      link6.add(tool0);
+    }
+
+    const parent = tool0 ?? link6;
+    flangeRef.current = parent;
+    setFlangeNode(parent);
     return () => {
-      if (mountRef.current && tcpRef.current) mountRef.current.remove(tcpRef.current);
+      if (syntheticRef.current?.parent) {
+        syntheticRef.current.parent.remove(syntheticRef.current);
+      }
+      syntheticRef.current = null;
+      flangeRef.current = null;
+      setFlangeNode(null);
     };
   }, [robot]);
 
-  // Scratch objects (avoid per-frame allocation).
+  // Motoman→URDF mount + user calibration.
+  const mountEuler = useMemo(() => {
+    const preset = flangePresetEuler(torchCalib.flangePreset);
+    return [
+      preset[0] + deg2rad(torchCalib.mountRxDeg),
+      preset[1] + deg2rad(torchCalib.mountRyDeg),
+      preset[2] + deg2rad(torchCalib.mountRzDeg),
+    ] as [number, number, number];
+  }, [torchCalib]);
+
+  const mountPos = useMemo(
+    () =>
+      [
+        torchCalib.mountXmm / 1000,
+        torchCalib.mountYmm / 1000,
+        torchCalib.mountZmm / 1000,
+      ] as [number, number, number],
+    [torchCalib],
+  );
+
+  const [tcpRx, tcpRy, tcpRz] = tcpRpyRad(torchCalib);
+  const tcpPos = tcpMetres(torchCalib);
+
   const target = useRef(new THREE.Vector3()).current;
   const desiredDir = useRef(new THREE.Vector3()).current;
   const toolDir = useRef(new THREE.Vector3()).current;
@@ -131,13 +206,7 @@ export default function WeldUrdfRobot({
   const ve = useRef(new THREE.Vector3()).current;
   const vt = useRef(new THREE.Vector3()).current;
   const cr = useRef(new THREE.Vector3()).current;
-  const mWorld = useRef(new THREE.Vector3()).current;
-  const approachW = useRef(new THREE.Vector3()).current;
-  const q = useRef(new THREE.Quaternion()).current;
-  const xAxis = useRef(new THREE.Vector3(1, 0, 0)).current;
-  const desired = useRef(new THREE.Matrix4()).current;
-  const parentInv = useRef(new THREE.Matrix4()).current;
-  const scaleOne = useRef(new THREE.Vector3(1, 1, 1)).current;
+  const qWorld = useRef(new THREE.Quaternion()).current;
 
   function applyJoint(j: URDFJointLike, delta: number) {
     let next = (j.angle ?? 0) + delta;
@@ -149,49 +218,36 @@ export default function WeldUrdfRobot({
     robot.updateMatrixWorld(true);
   }
 
-  // Place the torch visual on the flange, aligned to the tool axis.
-  function placeTorch() {
-    const mount = mountRef.current;
-    if (!mount || !torchRef.current) return;
-    mount.updateWorldMatrix(true, false);
-    mount.getWorldPosition(mWorld);
-    approachW.copy(mount.axis).transformDirection(mount.matrixWorld).normalize();
-    q.setFromUnitVectors(xAxis, approachW);
-    desired.compose(mWorld, q, scaleOne);
-    const parent = torchRef.current.parent;
-    if (parent) {
-      parent.updateWorldMatrix(true, false);
-      parentInv.copy(parent.matrixWorld).invert();
-      desired.premultiply(parentInv);
+  function readToolDir(out: THREE.Vector3) {
+    // Approach = Motoman +Z ≡ URDF tool0 +X. Ignore TOOL 0 RPY here — that
+    // only tilts the wire for mesh/export; using it in CCD made the arm dive.
+    const fl = flangeRef.current;
+    if (!fl) {
+      out.set(0, -1, 0);
+      return out;
     }
-    torchRef.current.matrixAutoUpdate = false;
-    torchRef.current.matrix.copy(desired);
+    fl.getWorldQuaternion(qWorld);
+    return out.set(1, 0, 0).applyQuaternion(qWorld).normalize();
   }
 
   useFrame(() => {
     const chain = chainRef.current;
     const tcp = tcpRef.current;
-    const mount = mountRef.current;
-    if (!chain.length || !tcp || !mount) return;
+    if (!chain.length || !tcp) return;
 
     const prog = progRef.current;
     const ikActive = !!prog && !manualRef.current;
 
-    // Manual jog: drive each axis straight from the S/L/U/R/B/T sliders.
     if (!ikActive) {
       const jm = jointsRef.current;
       for (let k = 0; k < CHAIN.length; k++) {
         const axis = AXES[k];
         if (!axis) continue;
         const rad = deg2rad(jm[axis] ?? 0);
-        // Prefer the robot-level API (same as UrdfModel) — more reliable than
-        // calling setJointValue on a joint handle that may be stale.
-        const robotJoints = (robot as unknown as { setJointValue?: (n: string, v: number) => boolean }).setJointValue;
-        if (robotJoints) robotJoints.call(robot, CHAIN[k], rad);
+        if (robot.setJointValue) robot.setJointValue(CHAIN[k], rad);
         else if (chain[k]) chain[k].setJointValue(rad);
       }
       robot.updateMatrixWorld(true);
-      placeTorch();
       return;
     }
 
@@ -201,11 +257,9 @@ export default function WeldUrdfRobot({
       desiredDir.set(s.dir[0], s.dir[1], s.dir[2]).normalize();
     } else {
       target.set(base[0] + 1.2, 0.95, base[2]);
-      desiredDir.set(0, -1, 0); // default: torch pointing straight down
+      desiredDir.set(0, -1, 0);
     }
 
-    // Rotate target + approach with the positioner so the torch tracks the seam
-    // (and stays at a fixed work angle) when the table turns about world Z.
     const pivot = pivotRef.current;
     const rz = rotZRef.current ?? 0;
     if (s && pivot && Math.abs(rz) > 1e-6) {
@@ -213,24 +267,24 @@ export default function WeldUrdfRobot({
       const sn = Math.sin(rz);
       const dx = target.x - pivot[0];
       const dy = target.y - pivot[1];
-      target.set(pivot[0] + dx * c - dy * sn, pivot[1] + dx * sn + dy * c, target.z);
+      target.set(
+        pivot[0] + dx * c - dy * sn,
+        pivot[1] + dx * sn + dy * c,
+        target.z,
+      );
       const ddx = desiredDir.x;
       const ddy = desiredDir.y;
-      desiredDir.set(ddx * c - ddy * sn, ddx * sn + ddy * c, desiredDir.z).normalize();
+      desiredDir
+        .set(ddx * c - ddy * sn, ddx * sn + ddy * c, desiredDir.z)
+        .normalize();
     }
 
-    // Freeze torch roll (T / joint_6) so the torch does not spin about its own
-    // axis while travelling — orientation stays fixed unless the user overrides.
     if (chain.length >= 6) {
       chain[5].setJointValue(0);
       robot.updateMatrixWorld(true);
     }
 
-    // CCD: position (arm) + orientation (wrist) interleaved so the tip stays on
-    // the seam AND the torch axis stays locked to desiredDir (perpendicular /
-    // constant work angle along the path).
-    for (let it = 0; it < 10; it++) {
-      // --- position pass (skip frozen T) ---
+    for (let it = 0; it < 14; it++) {
       for (let k = chain.length - 1; k >= 0; k--) {
         if (k === 5) continue;
         const j = chain[k];
@@ -247,45 +301,61 @@ export default function WeldUrdfRobot({
         let ang = Math.acos(THREE.MathUtils.clamp(ve.dot(vt), -1, 1));
         cr.crossVectors(ve, vt);
         if (cr.dot(A) < 0) ang = -ang;
-        applyJoint(j, ang);
-      }
-
-      // --- orientation pass (U / R / B) to align tool axis with desiredDir ---
-      for (let k = Math.min(4, chain.length - 1); k >= 2; k--) {
-        const j = chain[k];
-        j.getWorldPosition(P);
-        A.copy(j.axis).transformDirection(j.matrixWorld).normalize();
-        toolDir.copy(mount.axis).transformDirection(mount.matrixWorld).normalize();
-        ve.copy(toolDir).addScaledVector(A, -toolDir.dot(A));
-        vt.copy(desiredDir).addScaledVector(A, -desiredDir.dot(A));
-        if (ve.lengthSq() < 1e-8 || vt.lengthSq() < 1e-8) continue;
-        ve.normalize();
-        vt.normalize();
-        let ang = Math.acos(THREE.MathUtils.clamp(ve.dot(vt), -1, 1));
-        cr.crossVectors(ve, vt);
-        if (cr.dot(A) < 0) ang = -ang;
-        applyJoint(j, ang * 0.85);
+        // Slight damping keeps CCD stable with the ~0.42 m TOOL 0 lever.
+        applyJoint(j, ang * 0.9);
       }
 
       tcp.getWorldPosition(E);
-      toolDir.copy(mount.axis).transformDirection(mount.matrixWorld).normalize();
-      if (E.distanceTo(target) < 0.004 && toolDir.dot(desiredDir) > 0.995) break;
-    }
+      const posErr = E.distanceTo(target);
 
-    placeTorch();
+      // Soft wrist bend (B only) once the tip is on the seam. Full U/R/B
+      // orientation CCD fights the longer TOOL 0 offset and dives into the floor.
+      if (posErr < 0.025 && chain.length > 4) {
+        const j = chain[4];
+        j.getWorldPosition(P);
+        A.copy(j.axis).transformDirection(j.matrixWorld).normalize();
+        readToolDir(toolDir);
+        ve.copy(toolDir).addScaledVector(A, -toolDir.dot(A));
+        vt.copy(desiredDir).addScaledVector(A, -desiredDir.dot(A));
+        if (ve.lengthSq() > 1e-8 && vt.lengthSq() > 1e-8) {
+          ve.normalize();
+          vt.normalize();
+          let ang = Math.acos(THREE.MathUtils.clamp(ve.dot(vt), -1, 1));
+          cr.crossVectors(ve, vt);
+          if (cr.dot(A) < 0) ang = -ang;
+          applyJoint(j, ang * 0.2);
+          tcp.getWorldPosition(E);
+        }
+      }
+
+      if (E.distanceTo(target) < 0.004) break;
+    }
   });
 
   const arcOn = program ? sampleProgram(program, simT).arcOn : false;
 
+  const torchPortal =
+    flangeNode &&
+    createPortal(
+      <group position={mountPos} rotation={mountEuler}>
+        <WeldTorch3D calib={torchCalib} arcOn={arcOn} />
+        <group
+          ref={(node) => {
+            tcpRef.current = node;
+          }}
+          position={tcpPos}
+          rotation={[tcpRx, tcpRy, tcpRz]}
+        />
+      </group>,
+      flangeNode,
+    );
+
   return (
     <group>
-      {/* URDF is Z-up in metres; rotate -90° about X to stand upright. */}
       <group rotation={[-Math.PI / 2, 0, 0]}>
         <primitive object={robot} />
       </group>
-      <group ref={torchRef}>
-        <WeldingTorch arcOn={arcOn} tipLen={TORCH_LEN} />
-      </group>
+      {torchPortal}
     </group>
   );
 }
