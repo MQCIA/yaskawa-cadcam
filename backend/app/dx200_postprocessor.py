@@ -46,6 +46,9 @@ class WeldSegment:
     weld_speed: float = 5.0  # V= travel (matches cell jobs ~5.0–7.5)
     arc_file: int = 1
     weave_no: int = 21  # WEV#(21) from WEAV.CND — default production weave
+    # INFORM move for weld samples: MOVL (line) or MOVC (circle, ≥3 pts).
+    # Matches production 12.JBI / 123.JBI pipe arcs.
+    move_type: str = "MOVL"
 
 
 @dataclass
@@ -105,21 +108,97 @@ def _station_pulse(deg: float, pulses_per_deg: float) -> int:
     return int(round(deg * pulses_per_deg))
 
 
+def _ec_from_point(p: dict, fallback: tuple[int, int]) -> tuple[int, int]:
+    """Read per-point EC pair from ``ec`` / ``ec1``+``ec2`` keys."""
+    raw = p.get("ec")
+    if isinstance(raw, (list, tuple)) and len(raw) >= 2:
+        return int(raw[0]), int(raw[1])
+    if "ec1" in p or "ec2" in p:
+        return int(p.get("ec1", fallback[0])), int(p.get("ec2", fallback[1]))
+    return fallback
+
+
+def _resolve_ec_pairs(
+    cartesian_points: list[dict],
+    station_deg: list[float] | None,
+    cfg: PostprocessorConfig,
+    ec_pulses: list[tuple[int, int]] | list[list[int]] | None,
+) -> list[tuple[int, int]]:
+    """Build EC# pairs — explicit pulses beat station_deg (ST3 2-axis pattern).
+
+    Production ``1-DEFRO-5.JBI`` keeps C# fixed while EC axis-2 rotates
+    (``EC00004=-2638,-94527`` → ``EC00005=-2638,-726117``). Pass those pairs
+    via ``ec_pulses`` or each point's ``ec`` field.
+    """
+    n = len(cartesian_points)
+    if ec_pulses is not None:
+        if len(ec_pulses) != n:
+            raise ValueError(
+                f"ec_pulses length {len(ec_pulses)} != number of points {n}"
+            )
+        return [(int(a), int(b)) for a, b in ec_pulses]
+
+    station_deg = station_deg or [0.0] * n
+    if len(station_deg) != n:
+        raise ValueError("station_deg length must match number of points")
+    pairs: list[tuple[int, int]] = []
+    for i, p in enumerate(cartesian_points):
+        base = station_deg_to_ec(
+            station_deg[i], pulses_per_degree=cfg.station_pulses_per_deg
+        )
+        pairs.append(_ec_from_point(p, base))
+    return pairs
+
+
+def _move_opcode_for_point(
+    point: dict,
+    index: int,
+    weld_segments: list[WeldSegment],
+    *,
+    in_weld: bool,
+) -> str:
+    """Choose MOVJ / MOVL / MOVC for one INST line.
+
+    Default air / linear weld is ``MOVL``. ``MOVC`` only when the point or its
+    weld segment opts in (CAD arc / pipe pattern). Explicit ``move_type`` wins.
+    """
+    explicit = str(
+        point.get("move_type") or point.get("move") or ""
+    ).upper()
+    if explicit in ("MOVJ", "MOVL", "MOVC"):
+        return explicit
+    if in_weld:
+        for s in weld_segments:
+            if s.start_index <= index <= s.end_index:
+                mt = str(getattr(s, "move_type", "MOVL") or "MOVL").upper()
+                return mt if mt in ("MOVL", "MOVC") else "MOVL"
+    return "MOVL"
+
+
 def generate_jbi(
     cartesian_points: list[dict],
     weld_segments: list[WeldSegment] | None = None,
     config: PostprocessorConfig | None = None,
     station_deg: list[float] | None = None,
     joint_angles_deg: list[list[float]] | None = None,
+    *,
+    ec_pulses: list[tuple[int, int]] | list[list[int]] | None = None,
 ) -> str:
     """Generate a DX200 ``.JBI`` job from Cartesian TCP points.
 
     Pass ``joint_angles_deg`` (one [S,L,U,R,B,T] per point) to emit production
     ``///POSTYPE PULSE`` C# values using ``pulse_config`` scaling.
+
+    ``ec_pulses`` — optional per-point ``(ec1, ec2)`` for TURN ST1–ST4 /
+    circumferential welding (``1-DEFRO-5.JBI`` ST3 axis-2). When omitted, EC
+    comes from ``station_deg`` or each point's ``ec`` field.
+
+    Points / weld segments with ``move_type="MOVC"`` emit INFORM ``MOVC``
+    (pipe arcs in ``12.JBI`` / ``123.JBI``; ≥3 points per arc).
     """
     cfg = config or PostprocessorConfig()
     weld_segments = weld_segments or []
-    if station_deg is not None:
+    if station_deg is not None or ec_pulses is not None:
         cfg.use_station_axis = True
     elif cfg.profile == "ma2010_cell":
         cfg.use_station_axis = True
@@ -127,9 +206,16 @@ def generate_jbi(
 
     if cfg.profile == "ma2010_cell":
         return _generate_ma2010_cell(
-            cartesian_points, weld_segments, cfg, station_deg, joint_angles_deg
+            cartesian_points,
+            weld_segments,
+            cfg,
+            station_deg,
+            joint_angles_deg,
+            ec_pulses=ec_pulses,
         )
-    return _generate_cartesian_review(cartesian_points, weld_segments, cfg, station_deg)
+    return _generate_cartesian_review(
+        cartesian_points, weld_segments, cfg, station_deg, ec_pulses=ec_pulses
+    )
 
 
 def _generate_ma2010_cell(
@@ -138,8 +224,10 @@ def _generate_ma2010_cell(
     cfg: PostprocessorConfig,
     station_deg: list[float] | None,
     joint_angles_deg: list[list[float]] | None,
+    *,
+    ec_pulses: list[tuple[int, int]] | list[list[int]] | None = None,
 ) -> str:
-    """INST layout matching ``000.JBI`` from the production MA2010 cell."""
+    """INST layout matching ``000.JBI`` / ``12.JBI`` from the production cell."""
     npos = len(cartesian_points)
     station_deg = station_deg or [0.0] * npos
     use_pulse = (
@@ -149,6 +237,7 @@ def _generate_ma2010_cell(
     )
     arc_on_at: dict[int, WeldSegment] = {s.start_index: s for s in weld_segments}
     arc_off_at: set[int] = {s.end_index for s in weld_segments}
+    ec_pairs = _resolve_ec_pairs(cartesian_points, station_deg, cfg, ec_pulses)
     lines: list[str] = []
 
     lines.append("/JOB")
@@ -164,6 +253,10 @@ def _generate_ma2010_cell(
     lines.append(
         f"' Station pulses/deg~{cfg.station_pulses_per_deg:.4f}; "
         f"BC park={cfg.base_park_pulse}"
+    )
+    lines.append(
+        "' MOVC = circular weld (≥3 pts, 12/123.JBI); "
+        "per-point EC enables ST3 circumferential (1-DEFRO-5.JBI)"
     )
     lines.append("//POS")
     lines.append(f"///NPOS {npos},{npos},{npos},0,0,0")
@@ -194,8 +287,7 @@ def _generate_ma2010_cell(
     if not use_pulse:
         lines.append("///POSTYPE PULSE")
         lines.append("///PULSE")
-    for i, ang in enumerate(station_deg):
-        e1, e2 = station_deg_to_ec(ang, pulses_per_degree=cfg.station_pulses_per_deg)
+    for i, (e1, e2) in enumerate(ec_pairs):
         lines.append(f"EC{i:05d}={e1},{e2}")
 
     lines.append("//INST")
@@ -211,6 +303,10 @@ def _generate_ma2010_cell(
         bc = f"BC{i:05d}"
         ec = f"EC{i:05d}"
         use_joint = cfg.joint_approach and i == 0 and i not in arc_on_at
+        in_weld = any(s.start_index <= i <= s.end_index for s in weld_segments)
+        opcode = _move_opcode_for_point(
+            cartesian_points[i], i, weld_segments, in_weld=in_weld
+        )
 
         if i in arc_on_at:
             seg = arc_on_at[i]
@@ -220,32 +316,35 @@ def _generate_ma2010_cell(
             lines.append("ARCON")
             lines.append(f"WVON WEV#({seg.weave_no})")
             weave_on = True
+            weld_op = str(seg.move_type or opcode or "MOVL").upper()
+            if weld_op not in ("MOVL", "MOVC"):
+                weld_op = "MOVL"
             lines.append(
-                f"MOVL {c} {bc} V={_fmt1(seg.weld_speed)} DEC=20  "
+                f"{weld_op} {c} {bc} V={_fmt1(seg.weld_speed)} DEC=20  "
                 f"+MOVJ {ec} VJ={_fmt(cfg.joint_speed_pct, 2)}"
             )
-        elif use_joint:
+        elif use_joint or opcode == "MOVJ":
             lines.append(
                 f"MOVJ {c} {bc} VJ={_fmt(cfg.joint_speed_pct, 2)} DEC=20  "
                 f"+MOVJ {ec} VJ={_fmt(cfg.joint_speed_pct, 2)}"
             )
-        else:
-            in_weld = any(s.start_index < i <= s.end_index for s in weld_segments)
+        elif in_weld:
             speed = cfg.weld_speed
-            if in_weld:
-                for s in weld_segments:
-                    if s.start_index < i <= s.end_index:
-                        speed = s.weld_speed
-                        break
-                lines.append(
-                    f"MOVL {c} {bc} V={_fmt1(speed)} DEC=20  "
-                    f"+MOVJ {ec} VJ={_fmt(cfg.joint_speed_pct, 2)}"
-                )
-            else:
-                lines.append(
-                    f"MOVJ {c} {bc} VJ={_fmt(cfg.joint_speed_pct, 2)} DEC=20  "
-                    f"+MOVJ {ec} VJ={_fmt(cfg.joint_speed_pct, 2)}"
-                )
+            for s in weld_segments:
+                if s.start_index < i <= s.end_index:
+                    speed = s.weld_speed
+                    break
+            op = opcode if opcode in ("MOVL", "MOVC") else "MOVL"
+            lines.append(
+                f"{op} {c} {bc} V={_fmt1(speed)} DEC=20  "
+                f"+MOVJ {ec} VJ={_fmt(cfg.joint_speed_pct, 2)}"
+            )
+        else:
+            # Air move without explicit MOVJ — production uses MOVJ between seams.
+            lines.append(
+                f"MOVJ {c} {bc} VJ={_fmt(cfg.joint_speed_pct, 2)} DEC=20  "
+                f"+MOVJ {ec} VJ={_fmt(cfg.joint_speed_pct, 2)}"
+            )
 
         if i in arc_off_at:
             lines.append("ARCOF")
@@ -262,6 +361,8 @@ def _generate_cartesian_review(
     weld_segments: list[WeldSegment],
     cfg: PostprocessorConfig,
     station_deg: list[float] | None,
+    *,
+    ec_pulses: list[tuple[int, int]] | list[list[int]] | None = None,
 ) -> str:
     """DROP01-inspired USER/RECTAN single-group layout."""
     npos = len(cartesian_points)
@@ -288,11 +389,17 @@ def _generate_cartesian_review(
             f"{_fmt(rx)},{_fmt(ry)},{_fmt(rz)}"
         )
 
-    if cfg.use_station_axis and station_deg is not None:
+    if cfg.use_station_axis:
         lines.append("///POSTYPE PULSE")
         lines.append("///PULSE")
-        for i, ang in enumerate(station_deg):
-            lines.append(f"EC{i:05d}={_station_pulse(ang, cfg.station_pulses_per_deg)}")
+        if ec_pulses is not None:
+            for i, (e1, e2) in enumerate(ec_pulses):
+                lines.append(f"EC{i:05d}={int(e1)},{int(e2)}")
+        elif station_deg is not None:
+            for i, ang in enumerate(station_deg):
+                lines.append(
+                    f"EC{i:05d}={_station_pulse(ang, cfg.station_pulses_per_deg)}"
+                )
 
     lines.append("//INST")
     lines.append(f"///DATE {datetime.now().strftime('%Y/%m/%d %H:%M')}")
@@ -308,22 +415,32 @@ def _generate_cartesian_review(
         use_joint = cfg.joint_approach and i == 0 and i not in arc_on_at
         tag = f"C{i:05d}"
         ec = f" EC{i:05d}" if cfg.use_station_axis else ""
+        in_weld = any(s.start_index <= i <= s.end_index for s in weld_segments)
+        opcode = _move_opcode_for_point(
+            cartesian_points[i], i, weld_segments, in_weld=in_weld
+        )
         if use_joint:
             lines.append(f"MOVJ {tag}{ec} VJ={_fmt(cfg.joint_speed_pct, 1)}")
         elif i in arc_on_at:
             seg = arc_on_at[i]
-            lines.append(f"MOVL {tag}{ec} V={_fmt(seg.weld_speed, 1)}")
+            weld_op = str(seg.move_type or opcode or "MOVL").upper()
+            if weld_op not in ("MOVL", "MOVC"):
+                weld_op = "MOVL"
+            lines.append(f"{weld_op} {tag}{ec} V={_fmt(seg.weld_speed, 1)}")
             lines.append(_weld_comment(seg.arc_file))
             lines.append("ARCON")
         else:
             speed = cfg.move_speed
-            in_weld = any(s.start_index < i <= s.end_index for s in weld_segments)
             if in_weld:
                 for s in weld_segments:
                     if s.start_index < i <= s.end_index:
                         speed = s.weld_speed
                         break
-            lines.append(f"MOVL {tag}{ec} V={_fmt(speed, 1)}")
+            if opcode == "MOVJ":
+                lines.append(f"MOVJ {tag}{ec} VJ={_fmt(cfg.joint_speed_pct, 1)}")
+            else:
+                op = opcode if opcode in ("MOVL", "MOVC") else "MOVL"
+                lines.append(f"{op} {tag}{ec} V={_fmt(speed, 1)}")
         if i in arc_off_at:
             lines.append("ARCOF")
 

@@ -11,8 +11,8 @@
 // real hardware use.
 
 export type Vec3 = [number, number, number];
-/** INFORM moves. MOVS = TouchSense search (123123.JBI). */
-export type MoveType = "MOVJ" | "MOVL" | "MOVS";
+/** INFORM: MOVC = circular weld; MOVS = TouchSense search (123123.JBI). */
+export type MoveType = "MOVJ" | "MOVL" | "MOVC" | "MOVS";
 
 export type Waypoint = {
   id: string;
@@ -23,6 +23,11 @@ export type Waypoint = {
   // ArcNC-style stages: sense = TouchSense search, travel = air move between seams
   kind: "approach" | "sense" | "weld" | "travel" | "retract";
   tag?: "ARCON" | "ARCOF" | "TOUCH";
+  /**
+   * Optional per-point TURN EC#(ec1,ec2) pulses — enables ST3 circumferential
+   * welding (1-DEFRO-5.JBI: fixed C#, rotating axis-2).
+   */
+  ec?: [number, number];
 };
 
 export type WeldScheduleRow = {
@@ -556,9 +561,12 @@ export function generateJbi(
     userFrame?: number;
     stationPulsesPerDeg?: number;
     stationDeg?: number | number[];
+    /** Per-point EC#(ec1,ec2) pulses (overrides stationDeg). ST3 circumferential. */
+    ecPulses?: Array<[number, number] | number[]>;
     weaveNo?: number;
     jointAnglesDeg?: number[][];
     baseParkPulse?: number;
+    group2?: string;
   },
 ): string {
   const pts = prog.waypoints;
@@ -566,11 +574,20 @@ export function generateJbi(
   const pulsesPerDeg = opts?.stationPulsesPerDeg ?? CELL_PULSE.stationPulsesPerDeg;
   const basePark = opts?.baseParkPulse ?? CELL_PULSE.baseParkPulse;
   const weaveNo = opts?.weaveNo ?? 21;
+  const group2 = (opts?.group2 ?? "ST1").toUpperCase().replace(/\s+/g, "");
   const usePulse =
     Array.isArray(opts?.jointAnglesDeg) && opts!.jointAnglesDeg!.length === npos;
   const stationDeg = pts.map((_, i) => {
     if (Array.isArray(opts?.stationDeg)) return opts!.stationDeg![i] ?? opts!.stationDeg![0] ?? 0;
     return opts?.stationDeg ?? 0;
+  });
+  const ecPairs: [number, number][] = pts.map((p, i) => {
+    if (opts?.ecPulses && opts.ecPulses[i]) {
+      const e = opts.ecPulses[i];
+      return [Math.round(e[0]), Math.round(e[1] ?? 0)];
+    }
+    if (p.ec) return [Math.round(p.ec[0]), Math.round(p.ec[1])];
+    return [Math.round(stationDeg[i] * pulsesPerDeg), 0];
   });
   const lines: string[] = [];
   const sch = prog.schedule;
@@ -582,8 +599,9 @@ export function generateJbi(
   } else {
     lines.push("' Offline RECTAN review — supply IK joints for PULSE C#");
   }
-  lines.push("' Cell: MA2010 + RECT-X (BS1) + TURN (ST1); TOOL0 TCP Z≈415.7 mm");
+  lines.push("' Cell: MA2010 + RECT-X (BS1) + TURN (ST1–ST4); TOOL0 TCP Z≈415.7 mm");
   lines.push(`' Station pulses/deg~${pulsesPerDeg.toFixed(4)}; BC park=${basePark}`);
+  lines.push("' MOVC = circular weld (≥3 pts); per-point EC = ST3 circumferential");
   lines.push("//POS");
   lines.push(`///NPOS ${npos},${npos},${npos},0,0,0`);
   lines.push("///TOOL 0");
@@ -617,8 +635,8 @@ export function generateJbi(
     lines.push("///POSTYPE PULSE");
     lines.push("///PULSE");
   }
-  stationDeg.forEach((ang, i) => {
-    lines.push(`EC${String(i).padStart(5, "0")}=${Math.round(ang * pulsesPerDeg)},0`);
+  ecPairs.forEach(([e1, e2], i) => {
+    lines.push(`EC${String(i).padStart(5, "0")}=${e1},${e2}`);
   });
 
   lines.push("//INST");
@@ -631,7 +649,7 @@ export function generateJbi(
   lines.push(`///DATE ${stamp}`);
   lines.push("///ATTR SC,RW");
   lines.push("///GROUP1 RB1,BS1");
-  lines.push("///GROUP2 ST1");
+  lines.push(`///GROUP2 ${group2}`);
   lines.push("NOP");
 
   pts.forEach((p, i) => {
@@ -639,7 +657,11 @@ export function generateJbi(
     const bc = `BC${String(i).padStart(5, "0")}`;
     const ec = `EC${String(i).padStart(5, "0")}`;
     const parsed = parseSpeed(p.speedLabel, p.kind === "weld" ? sch.travelCmMin : 80);
-    const useJoint = p.move === "MOVJ" || p.kind === "approach" || p.kind === "retract" || p.kind === "travel";
+    const useJoint =
+      p.move === "MOVJ" ||
+      p.kind === "approach" ||
+      p.kind === "retract" ||
+      p.kind === "travel";
 
     if (p.tag === "ARCON") {
       lines.push("TIMER T=0.50");
@@ -671,7 +693,8 @@ export function generateJbi(
             ? parsed.value
             : sch.travelCmMin
           : 5.0;
-      lines.push(`MOVL ${c} ${bc} V=${f1(v)} DEC=20  +MOVJ ${ec} VJ=80.00`);
+      const op = p.move === "MOVC" ? "MOVC" : "MOVL";
+      lines.push(`${op} ${c} ${bc} V=${f1(v)} DEC=20  +MOVJ ${ec} VJ=80.00`);
     }
 
     if (p.tag === "ARCOF") {

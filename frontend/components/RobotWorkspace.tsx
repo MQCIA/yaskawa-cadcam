@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, Html } from "@react-three/drei";
 import YaskawaManipulator from "./YaskawaManipulator";
@@ -62,11 +62,18 @@ function Seam({ seg }: { seg: SeamSegment }) {
     (z0 + z1) / 2,
   ];
   const len = Math.hypot(x1 - x0, y1 - y0, z1 - z0);
+  // Visual marker stays compact; invisible hit sphere is finger-sized (~4–6 cm).
+  const visualR = Math.max(0.012, Math.min(0.03, len * 0.05));
+  const hitR = Math.max(0.055, visualR * 2.5);
   return (
     <group position={mid}>
       <mesh>
-        <sphereGeometry args={[Math.max(0.01, len * 0.05), 8, 8]} />
+        <sphereGeometry args={[visualR, 12, 12]} />
         <meshStandardMaterial color="red" emissive="red" emissiveIntensity={0.6} />
+      </mesh>
+      <mesh visible={false}>
+        <sphereGeometry args={[hitR, 8, 8]} />
+        <meshBasicMaterial />
       </mesh>
     </group>
   );
@@ -218,13 +225,28 @@ export default function RobotWorkspace({
   // can intermittently collapse to 0×0 height in the Verbotics-style layout.
   // Skip <Environment> (HDR fetch) — it flakes on restricted networks and
   // leaves a blank viewer; local lights are enough for the cell.
+  // Cap DPR on phones/tablets to limit GPU heat and WebGL context loss on MA2010 STL.
+  const [dpr, setDpr] = useState<[number, number]>([1, 2]);
+  useEffect(() => {
+    const coarse =
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(pointer: coarse)").matches;
+    setDpr(coarse ? [1, 1.5] : [1, 2]);
+  }, []);
+
   return (
-    <div className="absolute inset-0 h-full w-full">
+    <div className="absolute inset-0 h-full w-full touch-none overscroll-none">
     <Canvas
+      className="touch-none"
       camera={{ position: [4.5, 3, 4.5], fov: 45 }}
       gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
-      dpr={[1, 1.75]}
-      style={{ width: "100%", height: "100%", display: "block" }}
+      dpr={dpr}
+      style={{
+        width: "100%",
+        height: "100%",
+        display: "block",
+        touchAction: "none",
+      }}
       onCreated={({ gl }) => {
         gl.setClearColor("#ffffff", 1);
       }}
