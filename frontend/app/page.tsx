@@ -39,13 +39,14 @@ const PLAYBACK_BASE_SEC = 12;
 
 type LeftTab = "workspace" | "welds" | "program";
 type Ribbon = "plan" | "settings" | "view";
+type MobileTab = "scene" | "cad" | "robot" | "jbi";
 
 const btnPrimary =
   "rounded bg-[#e87722] px-3 py-1.5 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40";
 const btnGhost =
   "rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40";
 const btnRibbon =
-  "flex cursor-pointer flex-col items-center gap-0.5 rounded px-3 py-1.5 text-[11px] text-slate-700 transition hover:bg-orange-50 disabled:opacity-40";
+  "flex cursor-pointer flex-col items-center gap-0.5 rounded px-2 py-1 text-[10px] leading-tight text-slate-700 transition hover:bg-orange-50 disabled:opacity-40 sm:px-3 sm:py-1.5 sm:text-[11px]";
 
 export default function Home() {
   const { t } = useI18n();
@@ -73,6 +74,8 @@ export default function Home() {
   const [ribbon, setRibbon] = useState<Ribbon>("plan");
   const [leftTab, setLeftTab] = useState<LeftTab>("workspace");
   const [selectedStation, setSelectedStation] = useState<0 | 1 | null>(null);
+  const [mobileTab, setMobileTab] = useState<MobileTab>("scene");
+  const [weaveNo, setWeaveNo] = useState(21);
 
   const rafRef = useRef<number | undefined>(undefined);
   const lastRef = useRef<number | undefined>(undefined);
@@ -197,6 +200,7 @@ export default function Home() {
     const text = generateJbi(program, {
       stationDeg: stationAngle,
       jointAnglesDeg,
+      weaveNo,
     });
     const blob = new Blob([text], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
@@ -278,6 +282,18 @@ export default function Home() {
     ? `${curWp.move} ${curWp.id}  ${curWp.speedLabel}${curWp.tag ? "  " + curWp.tag : ""}`
     : "—";
 
+  const jbiPreview = useMemo(() => {
+    if (!program) return "";
+    const stIdx = selectedStation ?? 0;
+    return generateJbi(program, {
+      stationDeg: stations[stIdx]?.rotate ?? 0,
+      weaveNo,
+    });
+  }, [program, selectedStation, stations, weaveNo]);
+
+  const activeSchedule =
+    LORCH_S8_SCHEDULES.find((s) => s.condition === weldCondition) ?? LORCH_S8_SCHEDULES[0];
+
   const robotStatus = manualJog
     ? { ok: true, label: t("robot.statusManual") }
     : program
@@ -312,39 +328,61 @@ export default function Home() {
     </button>
   );
 
+  const mobileNavBtn = (id: MobileTab, label: string, icon: string) => (
+    <button
+      key={id}
+      type="button"
+      onClick={() => setMobileTab(id)}
+      className={`flex min-h-[3.25rem] flex-1 flex-col items-center justify-center gap-0.5 px-1 text-[10px] font-semibold transition ${
+        mobileTab === id ? "text-[#e87722]" : "text-slate-500"
+      }`}
+    >
+      <span className="text-base leading-none">{icon}</span>
+      <span className="max-w-[4.5rem] truncate">{label}</span>
+    </button>
+  );
+
   return (
-    <main className="flex h-screen flex-col bg-[#f4f6f8] text-slate-800">
+    <main className="flex h-[100dvh] flex-col overflow-hidden bg-[#f4f6f8] text-slate-800">
       {/* Title bar */}
-      <header className="flex items-center justify-between border-b border-slate-200 bg-white px-3 py-1.5">
-        <div className="flex items-center gap-3">
-          <span className="flex h-6 w-6 items-center justify-center rounded bg-[#e87722] text-[11px] font-bold text-white">
+      <header className="flex shrink-0 items-center justify-between gap-2 border-b border-slate-200 bg-white px-2 py-1.5 sm:px-3">
+        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-[#e87722] text-[11px] font-bold text-white">
             VW
           </span>
-          <div>
-            <div className="text-sm font-semibold leading-tight">
+          <div className="min-w-0">
+            <div className="truncate text-sm font-semibold leading-tight">
               {t("app.title")}
-              <span className="ml-2 text-[10px] font-normal text-slate-500">
+              <span className="ml-2 hidden text-[10px] font-normal text-slate-500 sm:inline">
                 {t("app.styleHint")}
               </span>
             </div>
-            <div className="text-[10px] text-slate-500">{t("app.subtitle")}</div>
+            <div className="hidden text-[10px] text-slate-500 sm:block">{t("app.subtitle")}</div>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
           <LanguageToggle />
-          <button onClick={loadDemo} className={btnGhost}>{t("header.newProject")}</button>
-          <button onClick={downloadJbi} disabled={!program} className={btnPrimary}>{t("header.generateCode")}</button>
+          <button onClick={loadDemo} className={`${btnGhost} hidden !px-2 !py-1 text-xs sm:inline-flex`}>
+            {t("header.newProject")}
+          </button>
+          <button
+            onClick={downloadJbi}
+            disabled={!program}
+            className={`${btnPrimary} !px-2 !py-1 text-xs sm:!px-3 sm:!py-1.5 sm:text-sm`}
+          >
+            {t("header.generateCode")}
+          </button>
         </div>
       </header>
 
       {/* Ribbon */}
-      <div className="border-b border-slate-200 bg-white">
+      <div className="shrink-0 border-b border-slate-200 bg-white">
         <div className="flex gap-1 px-2 pt-1">
           {ribbonTab("plan", t("ribbon.plan"))}
           {ribbonTab("settings", t("ribbon.settings"))}
           {ribbonTab("view", t("ribbon.view"))}
         </div>
-        <div className="flex flex-wrap items-center gap-1 px-2 py-2">
+        <div className="flex items-center gap-1 overflow-x-auto whitespace-nowrap no-scrollbar px-2 py-1.5 sm:py-2">
           {ribbon === "plan" && (
             <>
               <label className={btnRibbon}>
@@ -357,13 +395,14 @@ export default function Home() {
               </label>
               <button onClick={loadDemo} className={btnRibbon}>
                 <span className="text-base">🧱</span>{t("plan.loadDemo")}</button>
-              <div className="mx-1 h-8 w-px bg-slate-200" />
+              <div className="mx-1 hidden h-8 w-px shrink-0 bg-slate-200 sm:block" />
               <button onClick={identifyWelds} className={btnRibbon}>
                 <span className="text-base">🔍</span>{t("plan.identifyWelds")}</button>
               <button
                 onClick={() => {
                   setRibbon("settings");
                   setLeftTab("welds");
+                  setMobileTab("cad");
                 }}
                 className={btnRibbon}
               >
@@ -380,17 +419,25 @@ export default function Home() {
                 <span className="text-base">🔀</span>
                 {t("arcnc.optimizeSeq")}
               </button>
-              <div className="mx-1 h-8 w-px bg-slate-200" />
+              <div className="mx-1 hidden h-8 w-px shrink-0 bg-slate-200 sm:block" />
               <button
                 onClick={() => {
                   setLeftTab("program");
+                  setMobileTab("scene");
                   togglePlay();
                 }}
                 className={btnRibbon}
                 disabled={!program}
               >
                 <span className="text-base">▶</span>{t("plan.simulate")}</button>
-              <button onClick={downloadJbi} className={btnRibbon} disabled={!program}>
+              <button
+                onClick={() => {
+                  setMobileTab("jbi");
+                  void downloadJbi();
+                }}
+                className={btnRibbon}
+                disabled={!program}
+              >
                 <span className="text-base">💾</span>
                 {t("plan.generateCode")}
               </button>
@@ -398,7 +445,7 @@ export default function Home() {
           )}
           {ribbon === "settings" && (
             <>
-              <div className="flex items-center gap-2 px-2 text-xs text-slate-700">
+              <div className="flex shrink-0 items-center gap-2 px-2 text-xs text-slate-700">
                 <span>{t("settings.weldCondition")}</span>
                 <select
                   value={weldCondition}
@@ -407,13 +454,13 @@ export default function Home() {
                 >
                   {LORCH_S8_SCHEDULES.map((s) => (
                     <option key={s.condition} value={s.condition}>
-                      #{s.condition} — {s.currentA}A / {s.voltageV.toFixed(1)}V / {s.travelCmMin}{" "}
-                      cm/min
+                      #{s.condition} ARGF{s.job} — {s.currentA}A / {s.voltageV.toFixed(1)}V /{" "}
+                      {s.travelCmMin} cm/min
                     </option>
                   ))}
                 </select>
               </div>
-              <div className="flex items-center gap-2 px-2 text-xs text-slate-700">
+              <div className="flex shrink-0 items-center gap-2 px-2 text-xs text-slate-700">
                 <span>{t("settings.robot")}</span>
                 <select
                   value={modelId}
@@ -427,7 +474,7 @@ export default function Home() {
                   ))}
                 </select>
               </div>
-              <div className="flex items-center gap-2 px-2 text-xs text-slate-700">
+              <div className="flex shrink-0 items-center gap-2 px-2 text-xs text-slate-700">
                 <span>{t("settings.positioner")}</span>
                 <select
                   value={positionerId ?? ""}
@@ -450,13 +497,13 @@ export default function Home() {
         </div>
       </div>
 
-      <div className="bg-amber-50 px-3 py-0.5 text-[11px] text-amber-800">
+      <div className="hidden shrink-0 bg-amber-50 px-3 py-0.5 text-[11px] text-amber-800 sm:block">
         {t("app.warning")}
       </div>
 
-      {/* ArcNC-style workflow strip */}
-      <div className="flex flex-wrap items-center gap-1 border-b border-slate-200 bg-white px-3 py-1.5 text-[11px]">
-        <span className="mr-2 font-semibold uppercase tracking-wide text-slate-500">
+      {/* ArcNC-style workflow strip — horizontal scroll on phones */}
+      <div className="flex shrink-0 items-center gap-1 overflow-x-auto whitespace-nowrap no-scrollbar border-b border-slate-200 bg-white px-2 py-1.5 text-[11px] sm:px-3">
+        <span className="mr-1 shrink-0 font-semibold uppercase tracking-wide text-slate-500 sm:mr-2">
           {t("arcnc.workflow")}
         </span>
         {[
@@ -466,10 +513,11 @@ export default function Home() {
           ["arcnc.sense", !!program?.meta?.touchSense],
           ["arcnc.sim", simT > 0 || simPlaying],
           ["arcnc.export", !!program],
+          ["arcnc.jbi", !!program],
         ].map(([key, done], i) => (
           <span
             key={String(key)}
-            className={`rounded-full border px-2.5 py-0.5 font-medium ${
+            className={`inline-flex shrink-0 rounded-full border px-2 py-0.5 font-medium sm:px-2.5 ${
               done
                 ? "border-emerald-300 bg-emerald-50 text-emerald-800"
                 : "border-slate-200 bg-slate-50 text-slate-500"
@@ -481,10 +529,14 @@ export default function Home() {
         ))}
       </div>
 
-      {/* Main 3-column layout */}
+      {/* Main layout: stacked mobile panels / 3-column desktop */}
       <div className="flex min-h-0 flex-1">
-        {/* LEFT DOCK */}
-        <aside className="flex w-72 shrink-0 flex-col border-r border-slate-200 bg-white">
+        {/* LEFT DOCK — CAD / Welds (mobile tab + always on lg) */}
+        <aside
+          className={`${
+            mobileTab === "cad" ? "flex" : "hidden"
+          } w-full min-w-0 flex-col border-r border-slate-200 bg-white lg:flex lg:w-72 lg:shrink-0`}
+        >
           <div className="flex border-b border-slate-200">
             {leftTabBtn("workspace", t("left.workspace"))}
             {leftTabBtn("welds", t("left.welds"))}
@@ -503,14 +555,16 @@ export default function Home() {
                   {activeModel?.label ?? modelId}
                 </button>
                 <div className="flex items-center gap-2 px-2 py-1 text-slate-700">
-                  <span className="text-slate-500">●</span>{t("workspace.rail")}<input
+                  <span className="text-slate-500">●</span>
+                  <span className="shrink-0">{t("mobile.railBs1")}</span>
+                  <input
                     type="range"
                     min={-1.6}
                     max={1.6}
                     step={0.01}
                     value={railTravel}
                     onChange={(e) => setRailTravel(Number(e.target.value))}
-                    className="ml-auto w-24 accent-[#e87722]"
+                    className="touch-range touch-pan-y ml-auto min-w-0 flex-1 accent-[#e87722]"
                   />
                   <span className="w-12 text-right font-mono text-[10px]">
                     {railTravel.toFixed(2)}m
@@ -520,11 +574,12 @@ export default function Home() {
                   <button
                     key={i}
                     onClick={() => setSelectedStation(i as 0 | 1)}
-                    className={`flex w-full items-center gap-2 rounded px-2 py-1 text-left hover:bg-slate-100 ${
+                    className={`flex w-full items-center gap-2 rounded px-2 py-2 text-left hover:bg-slate-100 ${
                       selectedStation === i ? "bg-slate-100 text-[#e87722]" : ""
                     }`}
                   >
-                    <span className="text-slate-500">●</span> {t("workspace.table", { n: i + 1 })} —{" "}
+                    <span className="text-slate-500">●</span>{" "}
+                    {t("mobile.stStation", { n: i + 1 })} —{" "}
                     {activePositioner?.label ?? t("workspace.positioner")}
                   </button>
                 ))}
@@ -562,14 +617,33 @@ export default function Home() {
                     <select
                       value={weldCondition}
                       onChange={(e) => changeCondition(Number(e.target.value))}
-                      className="mt-0.5 w-full rounded bg-slate-100 px-2 py-1 text-xs"
+                      className="mt-0.5 w-full rounded bg-slate-100 px-2 py-2 text-xs"
                     >
                       {LORCH_S8_SCHEDULES.map((s) => (
                         <option key={s.condition} value={s.condition}>
-                          #{s.condition} {s.process} · {s.currentA}A
+                          #{s.condition} {s.process} · ARGF{s.job} · {s.currentA}A
                         </option>
                       ))}
                     </select>
+                    <div className="mt-2 grid grid-cols-2 gap-2">
+                      <label className="block text-[10px] text-slate-500">
+                        {t("mobile.argf")}
+                        <div className="mt-0.5 rounded border border-slate-200 bg-white px-2 py-2 font-mono text-xs text-slate-800">
+                          ARGF{activeSchedule.job}
+                        </div>
+                      </label>
+                      <label className="block text-[10px] text-slate-500">
+                        {t("mobile.wev")}
+                        <input
+                          type="number"
+                          min={1}
+                          max={99}
+                          value={weaveNo}
+                          onChange={(e) => setWeaveNo(Math.max(1, Number(e.target.value) || 1))}
+                          className="mt-0.5 w-full rounded border border-slate-200 bg-white px-2 py-2 font-mono text-xs text-slate-800"
+                        />
+                      </label>
+                    </div>
                   </div>
                 ) : (
                   <p className="px-1 text-xs text-slate-500">{t("welds.empty")}</p>
@@ -632,7 +706,7 @@ export default function Home() {
                       onChange={(e) =>
                         setStation(selectedStation, { tilt: Number(e.target.value) })
                       }
-                      className="flex-1 accent-[#e87722]"
+                      className="touch-range touch-pan-y flex-1 accent-[#e87722]"
                     />
                     <span className="w-10 text-right font-mono">
                       {stations[selectedStation].tilt.toFixed(0)}°
@@ -651,7 +725,7 @@ export default function Home() {
                       onChange={(e) =>
                         setStation(selectedStation, { rotate: Number(e.target.value) })
                       }
-                      className="flex-1 accent-[#e87722]"
+                      className="touch-range touch-pan-y flex-1 accent-[#e87722]"
                     />
                     <span className="w-10 text-right font-mono">
                       {stations[selectedStation].rotate.toFixed(0)}°
@@ -677,9 +751,13 @@ export default function Home() {
           </div>
         </aside>
 
-        {/* CENTER — Viewer + sim bar */}
-        <div className="relative flex min-w-0 flex-1 flex-col">
-          <div className="relative min-h-0 flex-1">
+        {/* CENTER — Viewer + sim bar (mobile scene tab + always on lg) */}
+        <div
+          className={`${
+            mobileTab === "scene" ? "flex" : "hidden"
+          } relative min-w-0 flex-1 flex-col lg:flex`}
+        >
+          <div className="relative min-h-0 flex-1 touch-none">
             <RobotWorkspace
               modelId={modelId}
               joints={joints}
@@ -693,7 +771,7 @@ export default function Home() {
             />
 
             {program && sample && (
-              <div className="pointer-events-none absolute left-3 top-3 rounded border border-slate-200 bg-white/90 px-2.5 py-1.5 font-mono text-[11px] text-slate-700">
+              <div className="pointer-events-none absolute left-2 top-2 rounded border border-slate-200 bg-white/90 px-2 py-1 font-mono text-[10px] text-slate-700 sm:left-3 sm:top-3 sm:px-2.5 sm:py-1.5 sm:text-[11px]">
                 <div className="mb-0.5 font-sans text-[10px] font-semibold uppercase text-slate-500">
                   {program.name}
                 </div>
@@ -709,9 +787,56 @@ export default function Home() {
                 </div>
               </div>
             )}
+
+            {/* Floating mini player on phones — sits above bottom nav */}
+            <div className="pointer-events-auto absolute inset-x-2 bottom-2 z-10 rounded-lg border border-slate-200 bg-white/95 p-2 shadow-sm backdrop-blur lg:hidden">
+              <div className="mb-1 truncate px-0.5 font-mono text-[10px] text-slate-500">
+                {instruction}
+              </div>
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => stepTo(-1)}
+                  disabled={!program}
+                  className={`${btnGhost} !min-h-10 !px-2 !py-1`}
+                  title={t("sim.prev")}
+                >
+                  ⏮
+                </button>
+                <button
+                  onClick={togglePlay}
+                  disabled={!program}
+                  className={`${btnPrimary} !min-h-10 !px-3 !py-1 text-xs`}
+                >
+                  {simPlaying ? t("sim.pause") : simT >= 1 ? t("sim.replay") : t("sim.play")}
+                </button>
+                <button
+                  onClick={() => stepTo(1)}
+                  disabled={!program}
+                  className={`${btnGhost} !min-h-10 !px-2 !py-1`}
+                  title={t("sim.next")}
+                >
+                  ⏭
+                </button>
+                <input
+                  type="range"
+                  min={0}
+                  max={1}
+                  step={0.001}
+                  value={simT}
+                  disabled={!program}
+                  onChange={(e) => {
+                    setSimPlaying(false);
+                    setManualJog(false);
+                    setSimT(Number(e.target.value));
+                  }}
+                  className="touch-range touch-pan-y min-w-0 flex-1 accent-[#e87722]"
+                />
+              </div>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2 border-t border-slate-200 bg-white px-3 py-1.5">
+          {/* Desktop / tablet landscape sim bar */}
+          <div className="hidden items-center gap-2 border-t border-slate-200 bg-white px-3 py-1.5 lg:flex">
             <button
               onClick={() => stepTo(-1)}
               disabled={!program}
@@ -771,13 +896,17 @@ export default function Home() {
                 setManualJog(false);
                 setSimT(Number(e.target.value));
               }}
-              className="w-40 accent-[#e87722]"
+              className="touch-range touch-pan-y w-40 accent-[#e87722]"
             />
           </div>
         </div>
 
-        {/* RIGHT DOCK — Robot (ALWAYS visible) */}
-        <aside className="flex w-80 shrink-0 flex-col border-l border-slate-200 bg-white">
+        {/* RIGHT DOCK — Robot (mobile tab + always on lg) */}
+        <aside
+          className={`${
+            mobileTab === "robot" ? "flex" : "hidden"
+          } w-full min-w-0 flex-col border-l border-slate-200 bg-white lg:flex lg:w-80 lg:shrink-0`}
+        >
           <div className="border-b border-slate-200 px-3 py-2">
             <div className="text-xs font-semibold uppercase tracking-wide text-slate-700">{t("robot.title")}</div>
             <div className="text-[10px] text-slate-500">
@@ -864,12 +993,82 @@ export default function Home() {
               </div>
             )}
 
+            <div className="mb-1 mt-4 text-[10px] font-semibold uppercase text-slate-500">
+              {t("mobile.railBs1")} · ST1–ST4
+            </div>
+            <div className="mb-2 flex flex-wrap gap-1">
+              {[1, 2, 3, 4].map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  onClick={() => {
+                    if (n <= 2) setSelectedStation((n - 1) as 0 | 1);
+                    setMobileTab("cad");
+                    setLeftTab("workspace");
+                  }}
+                  className={`rounded border px-2.5 py-2 text-xs font-semibold ${
+                    selectedStation === n - 1
+                      ? "border-[#e87722] bg-orange-50 text-[#e87722]"
+                      : "border-slate-200 text-slate-600"
+                  }`}
+                >
+                  ST{n}
+                </button>
+              ))}
+            </div>
+
             <p className="mt-2 text-[10px] leading-snug text-slate-500">
               {t("robot.help")}
             </p>
           </div>
         </aside>
+
+        {/* JBI CODE — mobile-only panel */}
+        <aside
+          className={`${
+            mobileTab === "jbi" ? "flex" : "hidden"
+          } w-full min-w-0 flex-col bg-white lg:hidden`}
+        >
+          <div className="flex items-center justify-between gap-2 border-b border-slate-200 px-3 py-2">
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-wide text-slate-700">
+                {t("mobile.jbi")}
+              </div>
+              <div className="text-[10px] text-slate-500">
+                INFORM · ARGF{activeSchedule.job} · WEV#({weaveNo})
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => void downloadJbi()}
+              disabled={!program}
+              className={`${btnPrimary} !px-3 !py-2 text-xs`}
+            >
+              {t("mobile.jbiDownload")}
+            </button>
+          </div>
+          <div className="min-h-0 flex-1 overflow-auto p-2">
+            {program ? (
+              <pre className="overflow-x-auto whitespace-pre rounded border border-slate-200 bg-[#0f172a] p-3 font-mono text-[11px] leading-relaxed text-emerald-300">
+                {jbiPreview}
+              </pre>
+            ) : (
+              <p className="px-1 text-xs text-slate-500">{t("mobile.jbiEmpty")}</p>
+            )}
+          </div>
+        </aside>
       </div>
+
+      {/* Bottom navigation — phones / tablets below lg */}
+      <nav
+        className="flex shrink-0 border-t border-slate-200 bg-white pb-[env(safe-area-inset-bottom)] lg:hidden"
+        aria-label="Mobile"
+      >
+        {mobileNavBtn("scene", t("mobile.scene"), "◈")}
+        {mobileNavBtn("cad", t("mobile.cad"), "◫")}
+        {mobileNavBtn("robot", t("mobile.robot"), "⚙")}
+        {mobileNavBtn("jbi", t("mobile.jbi"), "{ }")}
+      </nav>
     </main>
   );
 }

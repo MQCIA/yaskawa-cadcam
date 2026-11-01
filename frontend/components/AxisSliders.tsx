@@ -64,10 +64,11 @@ export default function AxisSliders({
               <button
                 type="button"
                 title={`−${step}°`}
+                aria-label={`−${step}° ${axis}`}
                 onClick={() => nudge(axis, -1)}
-                className="flex h-7 w-7 shrink-0 items-center justify-center rounded border border-slate-300 text-sm text-slate-700 hover:bg-slate-100"
+                className="flex h-11 min-w-[2.75rem] shrink-0 items-center justify-center rounded border border-slate-300 px-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-100 active:bg-slate-200"
               >
-                −
+                −{step}°
               </button>
               <input
                 type="range"
@@ -76,15 +77,16 @@ export default function AxisSliders({
                 step={0.5}
                 value={joints[axis]}
                 onChange={(e) => setAxis(axis, Number(e.target.value))}
-                className="flex-1 accent-[#e87722]"
+                className="touch-range touch-pan-y flex-1 accent-[#e87722]"
               />
               <button
                 type="button"
                 title={`+${step}°`}
+                aria-label={`+${step}° ${axis}`}
                 onClick={() => nudge(axis, 1)}
-                className="flex h-7 w-7 shrink-0 items-center justify-center rounded border border-slate-300 text-sm text-slate-700 hover:bg-slate-100"
+                className="flex h-11 min-w-[2.75rem] shrink-0 items-center justify-center rounded border border-slate-300 px-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-100 active:bg-slate-200"
               >
-                +
+                +{step}°
               </button>
               <input
                 type="number"
@@ -93,7 +95,7 @@ export default function AxisSliders({
                 step={0.5}
                 value={Number(joints[axis].toFixed(1))}
                 onChange={(e) => setAxis(axis, Number(e.target.value))}
-                className="w-16 rounded border border-slate-300 bg-white px-1 py-1 text-right font-mono text-xs text-slate-800"
+                className="h-11 w-16 rounded border border-slate-300 bg-white px-1 text-right font-mono text-xs text-slate-800"
               />
             </div>
           </div>
@@ -103,7 +105,7 @@ export default function AxisSliders({
         <button
           type="button"
           onClick={() => onChange(defaultJoints())}
-          className="mt-1 w-full rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+          className="mt-1 w-full rounded border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 hover:bg-slate-50"
         >
           {t("axis.home")}
         </button>
