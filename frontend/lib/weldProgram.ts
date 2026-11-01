@@ -11,7 +11,8 @@
 // real hardware use.
 
 export type Vec3 = [number, number, number];
-export type MoveType = "MOVJ" | "MOVL";
+/** INFORM: MOVC = circular weld; MOVS = TouchSense search (123123.JBI). */
+export type MoveType = "MOVJ" | "MOVL" | "MOVC" | "MOVS";
 
 export type Waypoint = {
   id: string;
@@ -22,6 +23,11 @@ export type Waypoint = {
   // ArcNC-style stages: sense = TouchSense search, travel = air move between seams
   kind: "approach" | "sense" | "weld" | "travel" | "retract";
   tag?: "ARCON" | "ARCOF" | "TOUCH";
+  /**
+   * Optional per-point TURN EC#(ec1,ec2) pulses — enables ST3 circumferential
+   * welding (1-DEFRO-5.JBI: fixed C#, rotating axis-2).
+   */
+  ec?: [number, number];
 };
 
 export type WeldScheduleRow = {
@@ -54,12 +60,50 @@ export type WeldProgram = {
   };
 };
 
-// Mirror of backend welding schedules — Motoweld-E cell (travel V≈5–8).
+/**
+ * Motoweld schedules mined from the DX200 dump (see docs/CELL_WELD_MAP.md).
+ * ``job`` = MACRO1 MJ#(0) ARGFn = Motoweld PROG-NR.
+ * A/V come from the shared ARCSRT.CND template (200 A / 20.0 V); wire ≈ Motoweld
+ * WELDER.DAT curve at 200 A. Travel speeds match live jobs for that ARGF.
+ */
 export const LORCH_S8_SCHEDULES: WeldScheduleRow[] = [
-  { condition: 1, job: 8, currentA: 180, voltageV: 22.0, wireMmin: 6.5, travelCmMin: 5.0, process: "Motoweld" },
-  { condition: 2, job: 8, currentA: 220, voltageV: 24.0, wireMmin: 8.0, travelCmMin: 6.7, process: "Motoweld" },
-  { condition: 3, job: 4, currentA: 140, voltageV: 19.0, wireMmin: 5.0, travelCmMin: 7.5, process: "Motoweld" },
+  { condition: 1, job: 8, currentA: 200, voltageV: 20.0, wireMmin: 7.2, travelCmMin: 5.0, process: "Motoweld" },
+  { condition: 2, job: 5, currentA: 200, voltageV: 20.0, wireMmin: 7.2, travelCmMin: 4.2, process: "Motoweld" },
+  { condition: 3, job: 4, currentA: 200, voltageV: 20.0, wireMmin: 7.2, travelCmMin: 5.0, process: "Motoweld" },
+  { condition: 4, job: 1, currentA: 200, voltageV: 20.0, wireMmin: 7.2, travelCmMin: 5.0, process: "Motoweld" },
 ];
+
+/** Alias — Motoweld PROG-NR / ARGF tables (not Lorch ASF#). */
+export const MOTOWELD_SCHEDULES = LORCH_S8_SCHEDULES;
+
+/** Weave files WEV#(n) from WEAV.CND (amp L/R mm, angle L/R °, frequency Hz). */
+export type WeaveFileRow = {
+  wevNo: number;
+  mode: number;
+  ampLmm: number;
+  ampRmm: number;
+  angleLdeg: number;
+  angleRdeg: number;
+  frequencyHz: number;
+  label: string;
+};
+
+export const WEAVE_FILES: WeaveFileRow[] = [
+  { wevNo: 1, mode: 0, ampLmm: 2.0, ampRmm: 2.0, angleLdeg: 70, angleRdeg: 70, frequencyHz: 2.0, label: "WEV#(1) sym 2 mm / 70° / 2 Hz" },
+  { wevNo: 15, mode: 1, ampLmm: 3.0, ampRmm: 3.0, angleLdeg: 45, angleRdeg: 45, frequencyHz: 3.0, label: "WEV#(15) sym 3 mm / 45° / 3 Hz" },
+  { wevNo: 16, mode: 1, ampLmm: 2.0, ampRmm: 2.0, angleLdeg: 45, angleRdeg: 0, frequencyHz: 2.0, label: "WEV#(16) 2 mm / 45°·0° / 2 Hz" },
+  { wevNo: 21, mode: 0, ampLmm: 4.0, ampRmm: 0.0, angleLdeg: 0, angleRdeg: 0, frequencyHz: 2.0, label: "WEV#(21) 4 mm L / 2 Hz (default)" },
+];
+
+export const DEFAULT_WEAVE_NO = 21;
+
+/** TouchSense search defaults from 123123.JBI. */
+export const TOUCH_SENSE = {
+  opcode: "MOVS" as const,
+  searchSpeedCmMin: 11.0,
+  stationVj: 0.78,
+  referenceJob: "123123.JBI",
+};
 
 // Mount point on work-station 1's positioner faceplate (world coords, metres).
 export const DEMO_MOUNT: Vec3 = [1.6, 0.98, -1.2];
@@ -222,7 +266,8 @@ export function buildDemoProgram(mount: Vec3 = DEMO_MOUNT, condition = 1): WeldP
 
   const weldLabel = `V=${sch.travelCmMin} cm/min`;
   const airLabel = "VJ=50%";
-  const senseLabel = "V=5 cm/min";
+  // TouchSense search speed from 123123.JBI: MOVS … V=11.0
+  const senseLabel = `V=${TOUCH_SENSE.searchSpeedCmMin} cm/min`;
 
   const waypoints: Waypoint[] = [];
   let n = 1;
@@ -237,7 +282,7 @@ export function buildDemoProgram(mount: Vec3 = DEMO_MOUNT, condition = 1): WeldP
   waypoints.push({
     id: pad(n++),
     pos: sense1,
-    move: "MOVL",
+    move: "MOVS",
     speedLabel: senseLabel,
     arc: false,
     kind: "sense",
@@ -246,7 +291,7 @@ export function buildDemoProgram(mount: Vec3 = DEMO_MOUNT, condition = 1): WeldP
   waypoints.push({
     id: pad(n++),
     pos: sense2,
-    move: "MOVL",
+    move: "MOVS",
     speedLabel: senseLabel,
     arc: false,
     kind: "sense",
@@ -315,12 +360,12 @@ export function ensureTouchSense(prog: WeldProgram): WeldProgram {
   const sense1 = add(seamStart, [0, 0.04, 0.02]);
   const sense2 = add(seamStart, [0.03, 0.04, 0.0]);
   const insertAt = Math.max(1, firstWeld);
-  const senseLabel = "V=5 cm/min";
+  const senseLabel = `V=${TOUCH_SENSE.searchSpeedCmMin} cm/min`;
   const extra: Waypoint[] = [
     {
       id: "TMP1",
       pos: sense1,
-      move: "MOVL",
+      move: "MOVS",
       speedLabel: senseLabel,
       arc: false,
       kind: "sense",
@@ -329,7 +374,7 @@ export function ensureTouchSense(prog: WeldProgram): WeldProgram {
     {
       id: "TMP2",
       pos: sense2,
-      move: "MOVL",
+      move: "MOVS",
       speedLabel: senseLabel,
       arc: false,
       kind: "sense",
@@ -516,9 +561,12 @@ export function generateJbi(
     userFrame?: number;
     stationPulsesPerDeg?: number;
     stationDeg?: number | number[];
+    /** Per-point EC#(ec1,ec2) pulses (overrides stationDeg). ST3 circumferential. */
+    ecPulses?: Array<[number, number] | number[]>;
     weaveNo?: number;
     jointAnglesDeg?: number[][];
     baseParkPulse?: number;
+    group2?: string;
   },
 ): string {
   const pts = prog.waypoints;
@@ -526,11 +574,20 @@ export function generateJbi(
   const pulsesPerDeg = opts?.stationPulsesPerDeg ?? CELL_PULSE.stationPulsesPerDeg;
   const basePark = opts?.baseParkPulse ?? CELL_PULSE.baseParkPulse;
   const weaveNo = opts?.weaveNo ?? 21;
+  const group2 = (opts?.group2 ?? "ST1").toUpperCase().replace(/\s+/g, "");
   const usePulse =
     Array.isArray(opts?.jointAnglesDeg) && opts!.jointAnglesDeg!.length === npos;
   const stationDeg = pts.map((_, i) => {
     if (Array.isArray(opts?.stationDeg)) return opts!.stationDeg![i] ?? opts!.stationDeg![0] ?? 0;
     return opts?.stationDeg ?? 0;
+  });
+  const ecPairs: [number, number][] = pts.map((p, i) => {
+    if (opts?.ecPulses && opts.ecPulses[i]) {
+      const e = opts.ecPulses[i];
+      return [Math.round(e[0]), Math.round(e[1] ?? 0)];
+    }
+    if (p.ec) return [Math.round(p.ec[0]), Math.round(p.ec[1])];
+    return [Math.round(stationDeg[i] * pulsesPerDeg), 0];
   });
   const lines: string[] = [];
   const sch = prog.schedule;
@@ -542,8 +599,9 @@ export function generateJbi(
   } else {
     lines.push("' Offline RECTAN review — supply IK joints for PULSE C#");
   }
-  lines.push("' Cell: MA2010 + RECT-X (BS1) + TURN (ST1); TOOL0 TCP Z≈415.7 mm");
+  lines.push("' Cell: MA2010 + RECT-X (BS1) + TURN (ST1–ST4); TOOL0 TCP Z≈415.7 mm");
   lines.push(`' Station pulses/deg~${pulsesPerDeg.toFixed(4)}; BC park=${basePark}`);
+  lines.push("' MOVC = circular weld (≥3 pts); per-point EC = ST3 circumferential");
   lines.push("//POS");
   lines.push(`///NPOS ${npos},${npos},${npos},0,0,0`);
   lines.push("///TOOL 0");
@@ -577,8 +635,8 @@ export function generateJbi(
     lines.push("///POSTYPE PULSE");
     lines.push("///PULSE");
   }
-  stationDeg.forEach((ang, i) => {
-    lines.push(`EC${String(i).padStart(5, "0")}=${Math.round(ang * pulsesPerDeg)},0`);
+  ecPairs.forEach(([e1, e2], i) => {
+    lines.push(`EC${String(i).padStart(5, "0")}=${e1},${e2}`);
   });
 
   lines.push("//INST");
@@ -591,7 +649,7 @@ export function generateJbi(
   lines.push(`///DATE ${stamp}`);
   lines.push("///ATTR SC,RW");
   lines.push("///GROUP1 RB1,BS1");
-  lines.push("///GROUP2 ST1");
+  lines.push(`///GROUP2 ${group2}`);
   lines.push("NOP");
 
   pts.forEach((p, i) => {
@@ -599,31 +657,46 @@ export function generateJbi(
     const bc = `BC${String(i).padStart(5, "0")}`;
     const ec = `EC${String(i).padStart(5, "0")}`;
     const parsed = parseSpeed(p.speedLabel, p.kind === "weld" ? sch.travelCmMin : 80);
-    const useJoint = p.move === "MOVJ" || p.kind === "approach" || p.kind === "retract" || p.kind === "travel";
+    const useJoint =
+      p.move === "MOVJ" ||
+      p.kind === "approach" ||
+      p.kind === "retract" ||
+      p.kind === "travel";
 
     if (p.tag === "ARCON") {
       lines.push("TIMER T=0.50");
       lines.push(`MACRO1 MJ#(0) ARGF${sch.job}`);
       lines.push(
-        `' Motoweld cond ${sch.condition}: ${sch.currentA}A / ${sch.voltageV.toFixed(1)}V / wire ${sch.wireMmin.toFixed(
-          1,
-        )} m/min / ${sch.process}`,
+        `' Motoweld PROG-NR/ARGF${sch.job} (UI cond ${sch.condition}): ` +
+          `${sch.currentA}A / ${sch.voltageV.toFixed(1)}V / wire ${sch.wireMmin.toFixed(1)} m/min ` +
+          `— ARCSRT template; validate WPS`,
       );
       lines.push("ARCON");
       lines.push(`WVON WEV#(${weaveNo})`);
     }
 
-    if (useJoint && p.kind !== "weld" && p.kind !== "sense") {
+    if (p.kind === "sense" || p.move === "MOVS") {
+      // 123123.JBI: MOVS C# BC# V=11.0  +MOVJ EC# VJ=0.78
+      const v =
+        parsed.kind === "V" ? parsed.value : TOUCH_SENSE.searchSpeedCmMin;
+      lines.push(
+        `MOVS ${c} ${bc} V=${f1(v)}  +MOVJ ${ec} VJ=${f1(TOUCH_SENSE.stationVj)}`,
+      );
+      lines.push(`' TouchSense search (${TOUCH_SENSE.referenceJob} pattern)`);
+    } else if (useJoint && p.kind !== "weld") {
       const vj = parsed.kind === "VJ" ? parsed.value : 80;
       lines.push(`MOVJ ${c} ${bc} VJ=${f1(vj)} DEC=20  +MOVJ ${ec} VJ=${f1(vj)}`);
     } else {
-      const v = p.kind === "weld" || p.kind === "sense" ? (parsed.kind === "V" ? parsed.value : sch.travelCmMin) : 5.0;
-      lines.push(`MOVL ${c} ${bc} V=${f1(v)} DEC=20  +MOVJ ${ec} VJ=80.00`);
+      const v =
+        p.kind === "weld"
+          ? parsed.kind === "V"
+            ? parsed.value
+            : sch.travelCmMin
+          : 5.0;
+      const op = p.move === "MOVC" ? "MOVC" : "MOVL";
+      lines.push(`${op} ${c} ${bc} V=${f1(v)} DEC=20  +MOVJ ${ec} VJ=80.00`);
     }
 
-    if (p.tag === "TOUCH") {
-      lines.push("' TouchSense search (CAD↔reality offset)");
-    }
     if (p.tag === "ARCOF") {
       lines.push("ARCOF");
       lines.push("WVOF");

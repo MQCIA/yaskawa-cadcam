@@ -18,7 +18,12 @@ from .kinematics_engine import forward_kinematics, get_robot, solve_ik_path
 from .dx200_postprocessor import PostprocessorConfig, WeldSegment, generate_jbi
 from .path_planning import plan_from_seams
 from .robot_config import ACTIVE_MODEL, ACTIVE_POSITIONER, AXIS_NAMES, MODELS
-from .welding_config import ACTIVE_POWER_SOURCE, LORCH_S8_SCHEDULES
+from .welding_config import (
+    ACTIVE_POWER_SOURCE,
+    LORCH_S8_SCHEDULES,
+    TOUCH_SENSE,
+    WEAVE_FILES,
+)
 
 app = FastAPI(
     title="Yaskawa CAD/CAM prototype API",
@@ -143,12 +148,44 @@ def cell_config():
         "power_source": {
             "name": ACTIVE_POWER_SOURCE.name,
             "interface": ACTIVE_POWER_SOURCE.interface,
+            "default_argf": ACTIVE_POWER_SOURCE.default_argf,
+            "default_weave": ACTIVE_POWER_SOURCE.default_weave,
             "schedules": [
-                {"condition_no": s.condition_no, "lorch_job": s.lorch_job,
-                 "current_a": s.current_a, "voltage_v": s.voltage_v,
-                 "wire_speed": s.wire_speed, "process": s.process, "gas": s.gas}
+                {
+                    "condition_no": s.condition_no,
+                    "lorch_job": s.lorch_job,
+                    "argf": s.lorch_job,
+                    "current_a": s.current_a,
+                    "voltage_v": s.voltage_v,
+                    "wire_speed": s.wire_speed,
+                    "travel_speed": s.travel_speed,
+                    "default_weave": s.default_weave,
+                    "arcsrt_en": s.arcsrt_en,
+                    "process": s.process,
+                    "gas": s.gas,
+                    "note": s.note,
+                }
                 for s in LORCH_S8_SCHEDULES.values()
             ],
+            "weaves": [
+                {
+                    "wev_no": w.wev_no,
+                    "mode": w.mode,
+                    "amp_l_mm": w.amp_l_mm,
+                    "amp_r_mm": w.amp_r_mm,
+                    "angle_l_deg": w.angle_l_deg,
+                    "angle_r_deg": w.angle_r_deg,
+                    "frequency_hz": w.frequency_hz,
+                    "used_in_jobs": w.used_in_jobs,
+                }
+                for w in WEAVE_FILES.values()
+            ],
+            "touch_sense": {
+                "opcode": TOUCH_SENSE.opcode,
+                "search_speed_cm_min": TOUCH_SENSE.search_speed_cm_min,
+                "station_vj": TOUCH_SENSE.station_vj,
+                "reference_job": TOUCH_SENSE.reference_job,
+            },
         },
         "warning": "Validate pulse jobs in MotoSim before loading the DX200.",
     }
