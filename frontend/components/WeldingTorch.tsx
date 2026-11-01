@@ -1,89 +1,120 @@
 "use client";
 
-import { Suspense } from "react";
-import { useLoader } from "@react-three/fiber";
-import { STLLoader } from "three/examples/jsm/loaders/STLLoader.js";
-import { withBase } from "@/lib/models";
+import { useMemo } from "react";
+import * as THREE from "three";
+import {
+  TOOL0_XYZ_M,
+  TOOL0_RPY_DEG,
+  TORCH_MOUNT_DIA_M,
+  TORCH_MOUNT_LEN_M,
+  TORCH_STICK_OUT_M,
+} from "@/lib/tool0";
+
+const deg2rad = (d: number) => (d * Math.PI) / 180;
 
 /**
- * MIG/MAG welding torch. Prefer the ESAB-style STL (mm → m) from the Verbotics
- * cell dump; fall back to a procedural torch along local +X (tip at tipLen).
+ * Procedural MIG torch in the Motoman flange / TOOL frame:
+ *   origin = flange face centre
+ *   +Z     = out of flange (before TOOL RPY)
+ *   TCP    = TOOL 0 xyz from the DX200 dump
+ *
+ * Parent this group under URDF `tool0` / `link_6_t` after applying the
+ * Motoman→URDF rotation R_y(+π/2) on the parent mount (see WeldUrdfRobot).
  */
 export default function WeldingTorch({
   arcOn = false,
-  tipLen = 0.3,
-  vendorMesh = true,
+  showTcpGizmo = true,
 }: {
   arcOn?: boolean;
-  tipLen?: number;
-  vendorMesh?: boolean;
+  showTcpGizmo?: boolean;
 }) {
+  const geo = useMemo(() => {
+    const tcp = new THREE.Vector3(...TOOL0_XYZ_M);
+    const rpy = new THREE.Euler(
+      deg2rad(TOOL0_RPY_DEG[0]),
+      deg2rad(TOOL0_RPY_DEG[1]),
+      deg2rad(TOOL0_RPY_DEG[2]),
+      "XYZ",
+    );
+    const qTool = new THREE.Quaternion().setFromEuler(rpy);
+    // Motoman tool +Z after RPY = wire / approach axis.
+    const wireDir = new THREE.Vector3(0, 0, 1).applyQuaternion(qTool).normalize();
+    const nozzle = tcp.clone().addScaledVector(wireDir, -TORCH_STICK_OUT_M);
+    const mountEnd = new THREE.Vector3(0, 0, TORCH_MOUNT_LEN_M);
+    const neckVec = nozzle.clone().sub(mountEnd);
+    const neckLen = Math.max(0.05, neckVec.length());
+    const neckDir = neckVec.normalize();
+    const yUp = new THREE.Vector3(0, 1, 0);
+    const neckQuat = new THREE.Quaternion().setFromUnitVectors(yUp, neckDir);
+    const wireQuat = new THREE.Quaternion().setFromUnitVectors(yUp, wireDir);
+    const neckMid = mountEnd.clone().addScaledVector(neckDir, neckLen / 2);
+    const wireMid = tcp.clone().addScaledVector(wireDir, -TORCH_STICK_OUT_M / 2);
+    return { wireDir, nozzle, neckQuat, wireQuat, neckLen, neckMid, wireMid, tcp };
+  }, []);
+
+  const mountR = TORCH_MOUNT_DIA_M / 2;
+
   return (
     <group>
-      {vendorMesh ? (
-        <Suspense fallback={<ProceduralTorch tipLen={tipLen} />}>
-          <EsabTorchMesh tipLen={tipLen} />
-        </Suspense>
-      ) : (
-        <ProceduralTorch tipLen={tipLen} />
-      )}
-      {arcOn && <ArcGlow tipLen={tipLen} />}
-    </group>
-  );
-}
+      {/* a) Anti-collision mount at flange — cylinder along +Z */}
+      <mesh
+        position={[0, 0, TORCH_MOUNT_LEN_M / 2]}
+        rotation={[Math.PI / 2, 0, 0]}
+        castShadow
+      >
+        <cylinderGeometry args={[mountR, mountR * 1.05, TORCH_MOUNT_LEN_M, 24]} />
+        <meshStandardMaterial color={0x1a1f26} metalness={0.35} roughness={0.55} />
+      </mesh>
+      <mesh position={[0, 0, 0.004]} rotation={[Math.PI / 2, 0, 0]} castShadow>
+        <cylinderGeometry args={[mountR * 1.15, mountR * 1.15, 0.008, 24]} />
+        <meshStandardMaterial color={0x2a3038} metalness={0.5} roughness={0.4} />
+      </mesh>
 
-function EsabTorchMesh({ tipLen }: { tipLen: number }) {
-  const geo = useLoader(STLLoader, withBase("/models/torch_esab/rm62_36deg.stl"));
-  // Mesh is mm with tip roughly along +Z (~352 mm). Convert to metres, map Z→+X.
-  const mm = 0.001;
-  const nativeTipM = 0.352;
-  const s = tipLen / nativeTipM;
-  return (
-    <group rotation={[0, 0, -Math.PI / 2]} scale={s}>
-      <mesh geometry={geo} scale={[mm, mm, mm]} castShadow>
-        <meshStandardMaterial color={0x3a4553} metalness={0.45} roughness={0.45} />
+      {/* b) Swan-neck tube — mount end → nozzle (~42.6° toward −X) */}
+      <mesh position={geo.neckMid.toArray()} quaternion={geo.neckQuat} castShadow>
+        <cylinderGeometry args={[0.01, 0.011, geo.neckLen, 16]} />
+        <meshStandardMaterial color={0x3a4553} metalness={0.55} roughness={0.4} />
       </mesh>
-    </group>
-  );
-}
 
-function ProceduralTorch({ tipLen }: { tipLen: number }) {
-  return (
-    <group>
-      <mesh position={[-0.08, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
-        <cylinderGeometry args={[0.025, 0.025, 0.16, 16]} />
-        <meshStandardMaterial color={0x111418} roughness={0.9} />
+      {/* c) Copper gas nozzle */}
+      <mesh position={geo.nozzle.toArray()} quaternion={geo.wireQuat} castShadow>
+        <cylinderGeometry args={[0.009, 0.013, 0.028, 16]} />
+        <meshStandardMaterial color={0xb87333} metalness={0.75} roughness={0.35} />
       </mesh>
-      <mesh position={[tipLen * 0.35, 0, 0]} rotation={[0, 0, Math.PI / 2]} castShadow>
-        <cylinderGeometry args={[0.032, 0.036, tipLen * 0.55, 20]} />
-        <meshStandardMaterial color={0x1f2937} metalness={0.4} roughness={0.5} />
-      </mesh>
-      <mesh position={[tipLen * 0.72, 0, 0]} rotation={[0, 0, Math.PI / 2]} castShadow>
-        <cylinderGeometry args={[0.018, 0.02, tipLen * 0.32, 16]} />
-        <meshStandardMaterial color={0x9aa4b2} metalness={0.6} roughness={0.35} />
-      </mesh>
-      <mesh position={[tipLen * 0.9, 0, 0]} rotation={[0, 0, -Math.PI / 2]} castShadow>
-        <cylinderGeometry args={[0.026, 0.03, tipLen * 0.2, 20]} />
-        <meshStandardMaterial color={0xb87333} metalness={0.7} roughness={0.4} />
-      </mesh>
-    </group>
-  );
-}
 
-function ArcGlow({ tipLen }: { tipLen: number }) {
-  return (
-    <group position={[tipLen, 0, 0]}>
-      <mesh>
-        <sphereGeometry args={[0.03, 16, 16]} />
-        <meshStandardMaterial color="#fff2b0" emissive="#ff8a00" emissiveIntensity={2} />
+      {/* Stick-out wire — tip exactly at TOOL 0 TCP */}
+      <mesh position={geo.wireMid.toArray()} quaternion={geo.wireQuat}>
+        <cylinderGeometry args={[0.0012, 0.0012, TORCH_STICK_OUT_M, 8]} />
+        <meshStandardMaterial color={0xd0d5db} metalness={0.8} roughness={0.25} />
       </mesh>
-      <pointLight color="#ff9a3c" intensity={3} distance={0.8} />
-      {[0.05, 0.08, 0.11].map((d, i) => (
-        <mesh key={i} position={[0, -d, (i - 1) * 0.03]}>
-          <sphereGeometry args={[0.006, 8, 8]} />
-          <meshStandardMaterial color="#ffd27f" emissive="#ff7a1a" emissiveIntensity={1.5} />
+
+      {/* TCP gizmo */}
+      {showTcpGizmo && (
+        <mesh position={geo.tcp.toArray()}>
+          <sphereGeometry args={[0.0035, 12, 12]} />
+          <meshStandardMaterial
+            color="#ff7a1a"
+            emissive="#ff6a00"
+            emissiveIntensity={0.9}
+          />
         </mesh>
-      ))}
+      )}
+
+      {arcOn && (
+        <group position={geo.tcp.toArray()}>
+          <mesh>
+            <sphereGeometry args={[0.012, 12, 12]} />
+            <meshStandardMaterial
+              color="#fff2b0"
+              emissive="#ff8a00"
+              emissiveIntensity={2}
+              transparent
+              opacity={0.85}
+            />
+          </mesh>
+          <pointLight color="#ff9a3c" intensity={2.5} distance={0.55} />
+        </group>
+      )}
     </group>
   );
 }
