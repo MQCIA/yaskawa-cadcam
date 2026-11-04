@@ -57,6 +57,9 @@ STATION_PULSES_PER_DEGREE: float = 91771.0 / 90.0  # ≈ 1019.6889
 BASE_PARK_PULSE: int = 878036  # jobs/000.JBI BC#
 BASE_SOFTLIMIT_PULSE: int = 1_082_000  # RC1G[8] travel hint
 STATION_IDLE_PULSE: int = -1746  # jobs/000.JBI EC# first component at weld
+# Home bookend C00000 (see robot_config.CELL_HOME_PULSES) — kept here for
+# pulse-only callers; degrees via joint_pulses_to_deg.
+CELL_HOME_PULSES: tuple[int, ...] = (-281, -101163, -84214, 3730, -80188, -1936)
 
 ENCODER_RESOLUTION: int = 4096  # SV1G
 

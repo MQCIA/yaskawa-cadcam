@@ -10,7 +10,12 @@ import pytest
 import trimesh
 from shapely.geometry import Polygon
 
-from app.kinematics_engine import forward_kinematics, solve_ik_path, get_robot
+from app.kinematics_engine import (
+    forward_kinematics,
+    forward_kinematics_frames,
+    solve_ik_path,
+    get_robot,
+)
 from app.dx200_postprocessor import (
     generate_jbi,
     WeldSegment,
@@ -19,7 +24,15 @@ from app.dx200_postprocessor import (
 )
 from app.cad_analysis import detect_seams
 from app.path_planning import plan_from_seams
-from app.robot_config import ACTIVE_MODEL, ACTIVE_POSITIONER, MODELS
+from app.pulse_config import joint_pulses_to_deg
+from app.robot_config import (
+    ACTIVE_MODEL,
+    ACTIVE_POSITIONER,
+    CELL_HOME_PULSES,
+    MODELS,
+    TOOL0_LENGTH_MM,
+    TOOL0_XYZ_MM,
+)
 from app.welding_config import (
     ACTIVE_POWER_SOURCE,
     ARCSRT_TEMPLATE,
@@ -190,7 +203,8 @@ def test_full_pipeline(lbracket):
     seams = detect_seams(lbracket, angle_tol_deg=25, target_angle_deg=90)
     planned = plan_from_seams(seams["segments"], samples_per_seam=5, arc_file=2)
     assert len(planned.points) > 0
-    ik = solve_ik_path(planned.points)
+    # Planner poses are Motoman tip / wire frames (no TOOL.CND RPY).
+    ik = solve_ik_path(planned.points, frame="tool0")
     assert ik["all_reachable"]
     jbi = generate_jbi(
         planned.points,
@@ -388,3 +402,68 @@ def test_touchsense_movs_pattern_from_123123():
     assert TOUCH_SENSE.station_vj == 0.78
     macro = (CELL / "MACRO.DAT").read_text(encoding="latin-1", errors="replace")
     assert "//MACRO1 1" in macro and "PROG-NR:" in macro
+
+
+def test_tool0_frame_chain_consistency():
+    """FE↔BE contract: flange→tool0→tcp_0 length is dump TOOL 0, JBI uses ///TOOL 0.
+
+    Golden poses from ``docs/CELL_POSES.md`` (home C00000 + ``000.JBI`` bookends).
+    Euclidean ‖tcp_0 − tool0‖ must equal
+    √((-54.280)² + 1.052² + 415.702²) ≈ 419.232 mm for every S..T pose.
+    """
+    expected_len_mm = float(np.linalg.norm(np.asarray(TOOL0_XYZ_MM, dtype=float)))
+    assert TOOL0_LENGTH_MM == pytest.approx(expected_len_mm, abs=1e-9)
+    assert expected_len_mm == pytest.approx(419.231, abs=0.002)
+
+    home_deg = joint_pulses_to_deg(list(CELL_HOME_PULSES))
+    # Slight rounding from user brief (−0.21, −53.03, −52.87, +3.63, −81.80, −4.26).
+    assert home_deg[0] == pytest.approx(-0.21, abs=0.01)
+    assert home_deg[1] == pytest.approx(-53.03, abs=0.01)
+    assert home_deg[4] == pytest.approx(-81.80, abs=0.01)
+
+    # HOME_TRACK fixture + selected 000.JBI points (docs/CELL_POSES.md).
+    golden_pulses = [
+        list(CELL_HOME_PULSES),
+        [95902, -19559, -65353, -68228, -62443, 70439],  # 000 C00000 approach
+        [96643, 1036, -73382, -77097, -56952, 78162],  # 000 C00002
+        [144285, 13854, -56584, 51164, -49608, 19486],  # 000 C00005
+        [116865, -4881, -33684, -3254, -73880, -61311],  # 000 C00019
+        [0, 0, 0, 0, 0, 0],
+        [10.0, -20.0, 15.0, 5.0, 30.0, 0.0],  # deg directly below
+    ]
+    # Last entry is already degrees — handle separately.
+    poses_deg = [joint_pulses_to_deg(p) for p in golden_pulses[:-1]]
+    poses_deg.append(list(golden_pulses[-1]))
+
+    for q in poses_deg:
+        frames = forward_kinematics_frames(q)
+        for key in ("flange", "tool0", "tcp_0"):
+            assert set(frames[key]) >= {"x", "y", "z", "rx", "ry", "rz"}
+        t0 = np.array([frames["tool0"][k] for k in "xyz"], dtype=float)
+        tcp = np.array([frames["tcp_0"][k] for k in "xyz"], dtype=float)
+        dist_mm = float(np.linalg.norm(tcp - t0) * 1000.0)
+        assert dist_mm == pytest.approx(expected_len_mm, abs=1e-6), (
+            f"tool0→tcp_0 length {dist_mm:.6f} mm ≠ {expected_len_mm:.6f} at q={q}"
+        )
+        # Origins of flange and tool0 coincide (static rotation only).
+        fl = np.array([frames["flange"][k] for k in "xyz"], dtype=float)
+        assert np.linalg.norm(fl - t0) == pytest.approx(0.0, abs=1e-9)
+
+    # Generated .JBI always declares ///TOOL 0.
+    pts = [
+        {"x": 0.8, "y": 0.0, "z": 0.5, "rx": 180.0, "ry": 0.0, "rz": 0.0},
+        {"x": 0.9, "y": 0.1, "z": 0.5, "rx": 180.0, "ry": 0.0, "rz": 0.0},
+    ]
+    jbi = generate_jbi(
+        pts,
+        [WeldSegment(0, 1)],
+        PostprocessorConfig(),
+        station_deg=[0.0, 0.0],
+        joint_angles_deg=[home_deg, home_deg],
+    )
+    assert "///TOOL 0" in jbi
+    assert f"C00000={','.join(str(p) for p in CELL_HOME_PULSES)}" in jbi
+
+    home_job = (CELL / "HOME_TRACK.JBI").read_text(encoding="utf-8", errors="replace")
+    assert "///TOOL 0" in home_job
+    assert "C00000=-281,-101163,-84214,3730,-80188,-1936" in home_job
