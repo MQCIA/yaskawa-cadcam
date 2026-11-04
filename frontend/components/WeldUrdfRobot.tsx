@@ -15,6 +15,7 @@ import {
   tool0ToTcp0Quaternion,
   type TorchCalibration,
 } from "@/lib/tool0";
+import { publishTorchWorldPose } from "@/lib/torchPoseBridge";
 
 const CHAIN = [
   "joint_1_s",
@@ -275,6 +276,16 @@ export default function WeldUrdfRobot({
     const prog = progRef.current;
     const ikActive = !!prog && !manualRef.current;
 
+    const publishTip = () => {
+      tcp.updateWorldMatrix(true, false);
+      tcp.getWorldPosition(E);
+      readToolDir(toolDir);
+      publishTorchWorldPose(
+        [E.x, E.y, E.z],
+        [toolDir.x, toolDir.y, toolDir.z],
+      );
+    };
+
     if (!ikActive) {
       const jm = jointsRef.current;
       for (let k = 0; k < CHAIN.length; k++) {
@@ -285,6 +296,7 @@ export default function WeldUrdfRobot({
         else if (chain[k]) chain[k].setJointValue(rad);
       }
       robot.updateMatrixWorld(true);
+      publishTip();
       return;
     }
 
@@ -364,6 +376,7 @@ export default function WeldUrdfRobot({
 
       if (E.distanceTo(target) < 0.004) break;
     }
+    publishTip();
   });
 
   const arcOn = program ? sampleProgram(program, simT).arcOn : false;

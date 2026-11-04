@@ -22,7 +22,7 @@ import TorchCalibrationPanel from "@/components/TorchCalibrationPanel";
 import Dx200MotorosChecklist from "@/components/Dx200MotorosChecklist";
 import { useI18n, LanguageToggle } from "@/lib/i18n";
 import type { SeamSegment } from "@/components/RobotWorkspace";
-import { analyzeCad, calculateIk, forwardKinematics } from "@/lib/api";
+import { analyzeCad, calculateIk } from "@/lib/api";
 import { ROBOT_MODELS, POSITIONER_MODELS } from "@/lib/models";
 import {
   DEFAULT_TORCH_CALIBRATION,
@@ -30,7 +30,7 @@ import {
   saveTorchCalibration,
   type TorchCalibration,
 } from "@/lib/tool0";
-import { TSL_CARRIAGE_TOP_Y } from "@/lib/trackMesh";
+import { readTorchWorldPose } from "@/lib/torchPoseBridge";
 import {
   buildDemoProgram,
   buildHardDemoProgram,
@@ -50,7 +50,6 @@ import {
   duplicateWaypoint,
   setWaypointKind,
   setWaypointPosition,
-  motomanRpyToWireDir,
   rotateDirIntoProgramFrame,
   type IdleInsertKind,
   type Vec3,
@@ -94,7 +93,10 @@ function mountStationIndex(mount: Vec3): number {
   return best;
 }
 
-/** Inverse of WeldScene part-table transform (world TCP → program XYZ). */
+/**
+ * Inverse of WeldUrdfRobot / WeldScene table transform:
+ * world XY is rotated about the station axle; world Z = program Z.
+ */
 function worldToProgramFrame(
   world: Vec3,
   mount: Vec3,
@@ -102,13 +104,16 @@ function worldToProgramFrame(
 ): Vec3 {
   const si = mountStationIndex(mount);
   const pivot: Vec3 = [STATION_POS_XZ[si][0], AXLE_Y, STATION_POS_XZ[si][1]];
-  const partRotZ = (-tableRotateDeg * Math.PI) / 180;
+  const rz = (-tableRotateDeg * Math.PI) / 180;
+  const c = Math.cos(-rz);
+  const s = Math.sin(-rz);
   const dx = world[0] - pivot[0];
   const dy = world[1] - pivot[1];
-  const dz = world[2] - pivot[2];
-  const c = Math.cos(-partRotZ);
-  const s = Math.sin(-partRotZ);
-  return [pivot[0] + dx * c - dy * s, pivot[1] + dx * s + dy * c, pivot[2] + dz];
+  return [
+    pivot[0] + dx * c - dy * s,
+    pivot[1] + dx * s + dy * c,
+    world[2],
+  ];
 }
 
 type LeftTab = "workspace" | "welds" | "program";
@@ -191,35 +196,18 @@ export default function Home() {
     if (simT >= 1 && simPlaying) setSimPlaying(false);
   }, [simT, simPlaying]);
 
-  // Live TCP from joint jog (for teach + Robot dock readout).
+  // Live torch tip from the 3D scene (URDF tcp_0), not DH FK.
   useEffect(() => {
-    if (!manualJog) {
-      setLiveTcpMm(null);
-      return;
-    }
-    let cancelled = false;
-    const q = [joints.S, joints.L, joints.U, joints.R, joints.B, joints.T];
-    const timer = window.setTimeout(() => {
-      void forwardKinematics(q)
-        .then((fk) => {
-          if (cancelled) return;
-          const tcp = fk.tcp_0 ?? fk.tcp;
-          const world: Vec3 = [
-            tcp.x,
-            tcp.y + TSL_CARRIAGE_TOP_Y,
-            tcp.z + railTravel,
-          ];
-          setLiveTcpMm(world.map((v) => (v * 1000).toFixed(1)).join(", "));
-        })
-        .catch(() => {
-          if (!cancelled) setLiveTcpMm(null);
-        });
-    }, 120);
-    return () => {
-      cancelled = true;
-      window.clearTimeout(timer);
-    };
-  }, [manualJog, joints, railTravel]);
+    const id = window.setInterval(() => {
+      const tip = readTorchWorldPose(800);
+      if (!tip) {
+        setLiveTcpMm(null);
+        return;
+      }
+      setLiveTcpMm(tip.pos.map((v) => (v * 1000).toFixed(1)).join(", "));
+    }, 100);
+    return () => window.clearInterval(id);
+  }, []);
 
   const wpProgress = useMemo(() => {
     if (!program) return [] as number[];
@@ -339,35 +327,29 @@ export default function Home() {
     setStatus(t("status.wpDuplicated", { c: informCLabel(selectedWp + 1) }));
   }
 
-  /** Torch tip (Motoman tcp_0) + wire dir from joint jog → program frame. */
-  async function captureTorchTip(): Promise<{ pos: Vec3; dir: Vec3 } | null> {
+  /**
+   * Torch tip from the live URDF ``tcp_0`` in the scene (what you see),
+   * converted into program coordinates (inverse table rotation).
+   */
+  function captureTorchTip(): { pos: Vec3; dir: Vec3 } | null {
     if (!program) return null;
     setManualJog(true);
     setSimPlaying(false);
-    const q = [joints.S, joints.L, joints.U, joints.R, joints.B, joints.T];
-    try {
-      const fk = await forwardKinematics(q);
-      const tcp = fk.tcp_0 ?? fk.tcp;
-      const world: Vec3 = [
-        tcp.x,
-        tcp.y + TSL_CARRIAGE_TOP_Y,
-        tcp.z + railTravel,
-      ];
-      const stIdx = mountStationIndex(program.mount);
-      const tableRot = stations[stIdx]?.rotate ?? 0;
-      const pos = worldToProgramFrame(world, program.mount, tableRot);
-      const wireWorld = motomanRpyToWireDir(tcp.rx, tcp.ry, tcp.rz);
-      const dir = rotateDirIntoProgramFrame(wireWorld, tableRot);
-      return { pos, dir };
-    } catch (err) {
-      setStatus(t("status.fkFail", { err: (err as Error).message }));
+    const tip = readTorchWorldPose(800);
+    if (!tip) {
+      setStatus(t("status.torchPoseStale"));
       return null;
     }
+    const stIdx = mountStationIndex(program.mount);
+    const tableRot = stations[stIdx]?.rotate ?? 0;
+    const pos = worldToProgramFrame(tip.pos, program.mount, tableRot);
+    const dir = rotateDirIntoProgramFrame(tip.dir, tableRot);
+    return { pos, dir };
   }
 
-  async function teachReplaceSelected() {
+  function teachReplaceSelected() {
     if (!program || selectedWp == null) return;
-    const tip = await captureTorchTip();
+    const tip = captureTorchTip();
     if (!tip) return;
     const next = setWaypointPosition(program, selectedWp, tip.pos, {
       torchDir: tip.dir,
@@ -381,9 +363,9 @@ export default function Home() {
     );
   }
 
-  async function teachInsertAfter() {
+  function teachInsertAfter() {
     if (!program) return;
-    const tip = await captureTorchTip();
+    const tip = captureTorchTip();
     if (!tip) return;
     const after = selectedWp ?? program.waypoints.length - 1;
     const next = insertIdleWaypoint(program, after, insertKind, {
@@ -1185,7 +1167,7 @@ export default function Home() {
                         <button
                           type="button"
                           disabled={selectedWp == null}
-                          onClick={() => void teachReplaceSelected()}
+                          onClick={teachReplaceSelected}
                           className={`${btnPrimary} !px-1.5 !py-1.5 text-[10px]`}
                           title={t("program.teachReplaceHint")}
                         >
@@ -1193,7 +1175,7 @@ export default function Home() {
                         </button>
                         <button
                           type="button"
-                          onClick={() => void teachInsertAfter()}
+                          onClick={teachInsertAfter}
                           className={`${btnGhost} !px-1.5 !py-1.5 text-[10px]`}
                           title={t("program.teachInsertHint")}
                         >

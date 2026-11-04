@@ -106,14 +106,15 @@ const pl: Dict = {
   "program.teachReplaceHint": "Nadpisz C# aktualną końcówką palnika (tcp_0) + kierunkiem drutu",
   "program.teachInsertHint": "Wstaw punkt jałowy w tcp_0 (końcówka palnika)",
   "program.teachHelp":
-    "Jog osi → ustaw palnik → teach zapisuje końcówkę (TOOL 0 / tcp_0), nie flange. Wymaga FK.",
+    "Jog osi → ustaw palnik w widoku 3D → teach bierze końcówkę tcp_0 ze sceny (to, co widać).",
   "status.wpDeleted": "Usunięto {c}.",
   "status.wpInserted": "Wstawiono {kind} → {c}.",
   "status.wpDuplicated": "Zduplikowano → {c}.",
   "status.wpKindChanged": "{c} → {kind}.",
   "status.wpMinPoints": "Program musi mieć co najmniej 2 punkty.",
-  "status.wpTaught": "Nauczono {c} ← ({xyz}) mm.",
-  "status.wpTaughtInsert": "Dodano {kind} {c} z TCP robota.",
+  "status.wpTaught": "Nauczono {c} ← palnik ({xyz}) mm.",
+  "status.wpTaughtInsert": "Dodano {kind} {c} w pozycji palnika.",
+  "status.torchPoseStale": "Brak pozycji palnika ze sceny — włącz widok 3D i jog osi.",
   "status.fkFail": "FK niedostępne ({err}). Uruchom backend.",
 
   // Details
@@ -344,14 +345,15 @@ const en: Dict = {
   "program.teachReplaceHint": "Overwrite C# with current torch tip (tcp_0) + wire direction",
   "program.teachInsertHint": "Insert idle point at tcp_0 (torch tip)",
   "program.teachHelp":
-    "Joint-jog the torch, then teach saves the tip (TOOL 0 / tcp_0), not the flange. Needs FK.",
+    "Joint-jog the torch in the 3D view — teach samples the visible tcp_0 tip from the scene.",
   "status.wpDeleted": "Deleted {c}.",
   "status.wpInserted": "Inserted {kind} → {c}.",
   "status.wpDuplicated": "Duplicated → {c}.",
   "status.wpKindChanged": "{c} → {kind}.",
   "status.wpMinPoints": "Program needs at least 2 points.",
-  "status.wpTaught": "Taught {c} ← ({xyz}) mm.",
-  "status.wpTaughtInsert": "Added {kind} {c} from robot TCP.",
+  "status.wpTaught": "Taught {c} ← torch ({xyz}) mm.",
+  "status.wpTaughtInsert": "Added {kind} {c} at torch tip.",
+  "status.torchPoseStale": "No torch pose from the scene — show the 3D view and joint-jog.",
   "status.fkFail": "FK unavailable ({err}). Start the backend.",
 
   "details.title": "Details",
