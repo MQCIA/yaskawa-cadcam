@@ -407,7 +407,7 @@ export function insertIdleWaypoint(
   prog: WeldProgram,
   afterIndex: number,
   kind: IdleInsertKind = "clearance",
-  opts?: { liftMm?: number; pos?: Vec3 },
+  opts?: { liftMm?: number; pos?: Vec3; torchDir?: Vec3 },
 ): WeldProgram {
   const n = prog.waypoints.length;
   if (n === 0) return prog;
@@ -431,7 +431,16 @@ export function insertIdleWaypoint(
     wp,
     ...prog.waypoints.slice(insertAt),
   ];
-  return finalizeWaypoints(prog, waypoints);
+  let torchFrames = prog.torchFrames;
+  if (opts?.torchDir) {
+    const dir = norm(opts.torchDir);
+    torchFrames = [
+      ...torchFrames.slice(0, insertAt),
+      { pos, dir },
+      ...torchFrames.slice(insertAt),
+    ];
+  }
+  return finalizeWaypoints({ ...prog, torchFrames }, waypoints);
 }
 
 /** Insert a duplicate of the selected point offset slightly (manual tweak seed). */
@@ -446,17 +455,62 @@ export function duplicateWaypoint(
   return insertIdleWaypoint(prog, index, kind, { pos, liftMm: 0 });
 }
 
-/** Overwrite XYZ of an existing waypoint (metres). */
+/**
+ * Motoman ``tcp_0`` wire / stick-out axis (+Z of TOOL.CND) from FK RPY (deg).
+ * Matches backend ``SE3.RPY(..., order='xyz')`` = Rx·Ry·Rz.
+ */
+export function motomanRpyToWireDir(rx: number, ry: number, rz: number): Vec3 {
+  const d = Math.PI / 180;
+  const cx = Math.cos(rx * d);
+  const sx = Math.sin(rx * d);
+  const cy = Math.cos(ry * d);
+  const sy = Math.sin(ry * d);
+  const cz = Math.cos(rz * d);
+  const sz = Math.sin(rz * d);
+  // R = Rx·Ry·Rz; wire = R·[0,0,1] = third column [sy, −sx·cy, cx·cy].
+  void cz;
+  void sz;
+  return norm([sy, -sx * cy, cx * cy]);
+}
+
+/** Rotate a direction by −table Z rotation (world → program frame). */
+export function rotateDirIntoProgramFrame(dir: Vec3, tableRotateDeg: number): Vec3 {
+  const partRotZ = (-tableRotateDeg * Math.PI) / 180;
+  const c = Math.cos(-partRotZ);
+  const s = Math.sin(-partRotZ);
+  return norm([dir[0] * c - dir[1] * s, dir[0] * s + dir[1] * c, dir[2]]);
+}
+
+/** Overwrite XYZ of an existing waypoint (metres) — torch tip / Motoman ``tcp_0``. */
 export function setWaypointPosition(
   prog: WeldProgram,
   index: number,
   pos: Vec3,
+  opts?: { torchDir?: Vec3 },
 ): WeldProgram {
   if (index < 0 || index >= prog.waypoints.length) return prog;
   const waypoints = prog.waypoints.map((w, i) =>
     i === index ? { ...w, pos: [pos[0], pos[1], pos[2]] as Vec3 } : w,
   );
-  return finalizeWaypoints(prog, waypoints);
+  let torchFrames = prog.torchFrames;
+  if (opts?.torchDir) {
+    const dir = norm(opts.torchDir);
+    // Keep frame count in sync with seam when possible; also stamp nearest frame.
+    if (torchFrames.length === 0) {
+      torchFrames = [{ pos, dir }];
+    } else {
+      const fi = Math.max(
+        0,
+        Math.min(torchFrames.length - 1, Math.round(
+          (index / Math.max(1, waypoints.length - 1)) * (torchFrames.length - 1),
+        )),
+      );
+      torchFrames = torchFrames.map((f, i) =>
+        i === fi ? { pos, dir } : f,
+      );
+    }
+  }
+  return finalizeWaypoints({ ...prog, torchFrames }, waypoints);
 }
 
 /** Change kind / move type of an existing waypoint (e.g. weld → travel). */

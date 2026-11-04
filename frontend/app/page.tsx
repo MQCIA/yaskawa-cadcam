@@ -50,6 +50,8 @@ import {
   duplicateWaypoint,
   setWaypointKind,
   setWaypointPosition,
+  motomanRpyToWireDir,
+  rotateDirIntoProgramFrame,
   type IdleInsertKind,
   type Vec3,
   type Waypoint,
@@ -337,8 +339,8 @@ export default function Home() {
     setStatus(t("status.wpDuplicated", { c: informCLabel(selectedWp + 1) }));
   }
 
-  /** Live TCP from joint jog (robot base → world → program frame). */
-  async function captureRobotProgramPos(): Promise<Vec3 | null> {
+  /** Torch tip (Motoman tcp_0) + wire dir from joint jog → program frame. */
+  async function captureTorchTip(): Promise<{ pos: Vec3; dir: Vec3 } | null> {
     if (!program) return null;
     setManualJog(true);
     setSimPlaying(false);
@@ -353,7 +355,10 @@ export default function Home() {
       ];
       const stIdx = mountStationIndex(program.mount);
       const tableRot = stations[stIdx]?.rotate ?? 0;
-      return worldToProgramFrame(world, program.mount, tableRot);
+      const pos = worldToProgramFrame(world, program.mount, tableRot);
+      const wireWorld = motomanRpyToWireDir(tcp.rx, tcp.ry, tcp.rz);
+      const dir = rotateDirIntoProgramFrame(wireWorld, tableRot);
+      return { pos, dir };
     } catch (err) {
       setStatus(t("status.fkFail", { err: (err as Error).message }));
       return null;
@@ -362,25 +367,28 @@ export default function Home() {
 
   async function teachReplaceSelected() {
     if (!program || selectedWp == null) return;
-    const pos = await captureRobotProgramPos();
-    if (!pos) return;
-    const next = setWaypointPosition(program, selectedWp, pos);
+    const tip = await captureTorchTip();
+    if (!tip) return;
+    const next = setWaypointPosition(program, selectedWp, tip.pos, {
+      torchDir: tip.dir,
+    });
     setProgram(next);
     setStatus(
       t("status.wpTaught", {
         c: informCLabel(selectedWp),
-        xyz: pos.map((v) => (v * 1000).toFixed(1)).join(", "),
+        xyz: tip.pos.map((v) => (v * 1000).toFixed(1)).join(", "),
       }),
     );
   }
 
   async function teachInsertAfter() {
     if (!program) return;
-    const pos = await captureRobotProgramPos();
-    if (!pos) return;
+    const tip = await captureTorchTip();
+    if (!tip) return;
     const after = selectedWp ?? program.waypoints.length - 1;
     const next = insertIdleWaypoint(program, after, insertKind, {
-      pos,
+      pos: tip.pos,
+      torchDir: tip.dir,
       liftMm: 0,
     });
     setProgram(next);
