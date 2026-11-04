@@ -35,8 +35,16 @@ from spatialmath import SE3
 
 from .dx200_postprocessor import WeldSegment
 from .kinematics_engine import solve_ik_path, tool_file_se3
-from .pulse_config import CELL_HOME_PULSES, joint_pulses_to_deg
+from .pulse_config import CELL_HOME_PULSES, CELL_PULSE, joint_pulses_to_deg
 from .robot_config import ACTIVE_MODEL, TOOL0_XYZ_M
+from .travel_planning import (
+    SeamBlock,
+    ideal_bc_for_seam,
+    quantize_bc_zones,
+    resolve_seam_ec,
+    seam_midpoint,
+    stitch_seam_blocks,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -65,7 +73,7 @@ class SeamSpinResult:
 
 @dataclass
 class PlannedPath:
-    points: list[dict]  # ordered TCP poses {x,y,z,rx,ry,rz[,move_type]}
+    points: list[dict]  # ordered TCP poses {x,y,z,rx,ry,rz[,move_type,bc,ec,vj]}
     weld_segments: list[WeldSegment]  # index ranges to wrap with ARCON/ARCOF
     # Dense Cartesian samples + IK (animation / continuity); may be longer than
     # ``points`` when JBI keeps a sparse Start/End weld.
@@ -74,6 +82,7 @@ class PlannedPath:
     spin_angles_deg: list[float] = field(default_factory=list)
     spin_results: list[SeamSpinResult] = field(default_factory=list)
     max_joint_step_deg: float = 0.0
+    bc_zones: list[int] = field(default_factory=list)
 
 
 def _normalize(v: np.ndarray) -> np.ndarray:
@@ -580,6 +589,8 @@ def plan_from_seams(
     mesh=None,
     q_home_deg: list[float] | None = None,
     ik_frame: str = "tool0",
+    safe_travel: bool = True,
+    rail_axis: int = 0,
 ) -> PlannedPath:
     """Build a weld path from seam segments (each with 'start'/'end' 3D lists).
 
@@ -589,16 +600,18 @@ def plan_from_seams(
 
     With ``optimize_spin=True`` (default) the planner samples roll about the
     wire, rejects singular / colliding / unreachable spins, and densifies the
-    weld to ≤ ``dense_step_m`` for Cartesian→joint continuity. Sparse
-    ``points`` keep Approach + Start/…/End + Retract for ``.JBI``; full IK is
-    in ``dense_joint_angles_deg``.
+    weld to ≤ ``dense_step_m`` for Cartesian→joint continuity.
+
+    With ``safe_travel=True`` (default) inter-seam stitching adds:
+    * quantized BS1 ``BC#`` zones (carriage held during neighbouring welds),
+    * clearance ``MOVJ`` vias when retract→approach crosses the part / faces,
+    * 3-step EC safe-index when the positioner turns more than 5°.
     """
-    points: list[dict] = []
     dense_points: list[dict] = []
     dense_joints: list[list[float]] = []
-    weld_segments: list[WeldSegment] = []
     spin_angles: list[float] = []
     spin_results: list[SeamSpinResult] = []
+    blocks: list[SeamBlock] = []
 
     if q_home_deg is None:
         q_home_deg = joint_pulses_to_deg(list(CELL_HOME_PULSES))
@@ -606,7 +619,26 @@ def plan_from_seams(
     q_seed = list(q_home_deg)
     worst_step = 0.0
 
-    for seam in seams:
+    ppm = CELL_PULSE.base_pulses_per_mm
+    # When lead is uncalibrated, map the batch's rail extent into 02025 zones.
+    rail_span: tuple[float, float] | None = None
+    if seams and ppm is None:
+        mids = [float(seam_midpoint(s)[rail_axis]) for s in seams]
+        lo_m, hi_m = min(mids), max(mids)
+        # Keep a minimum span so a single-seam job still lands mid-zone.
+        if hi_m - lo_m < 0.15:
+            mid = 0.5 * (lo_m + hi_m)
+            lo_m, hi_m = mid - 0.25, mid + 0.25
+        rail_span = (lo_m, hi_m)
+    ideal_bcs = [
+        ideal_bc_for_seam(
+            s, rail_axis=rail_axis, pulses_per_mm=ppm, rail_span_m=rail_span
+        )
+        for s in seams
+    ]
+    bc_zones = quantize_bc_zones(ideal_bcs) if seams else []
+
+    for si, seam in enumerate(seams):
         is_arc = (
             str(seam.get("type", "")).lower() == "arc"
             or str(seam.get("move_type", "")).upper() == "MOVC"
@@ -683,31 +715,41 @@ def plan_from_seams(
         spin_angles.append(spin_res.spin_deg)
         spin_results.append(spin_res)
 
-        # Sparse JBI path: approach + coarse weld samples + retract.
+        # Sparse JBI path for this seam: approach + coarse weld + retract.
         rpy_s = (
             dense_poses[1]["rx"],
             dense_poses[1]["ry"],
             dense_poses[1]["rz"],
         )
         psi = spin_res.spin_deg
-        points.append(_pose_dict(approach, rpy_s, mt="MOVJ", spin_deg=psi))
-        weld_start_idx = len(points)
+        local: list[dict] = [_pose_dict(approach, rpy_s, mt="MOVJ", spin_deg=psi)]
+        weld_start = 1
         for p in coarse:
-            points.append(_pose_dict(p, rpy_s, mt=move_type, spin_deg=psi))
-        weld_end_idx = len(points) - 1
-        points.append(_pose_dict(retract, rpy_s, mt="MOVJ", spin_deg=psi))
+            local.append(_pose_dict(p, rpy_s, mt=move_type, spin_deg=psi))
+        weld_end = len(local) - 1
+        local.append(_pose_dict(retract, rpy_s, mt="MOVJ", spin_deg=psi))
 
-        weld_segments.append(
-            WeldSegment(
-                start_index=weld_start_idx,
-                end_index=weld_end_idx,
-                weld_speed=weld_speed,
-                arc_file=arc_file,
+        bc = int(seam.get("bc", bc_zones[si] if si < len(bc_zones) else ideal_bcs[si]))
+        ec = resolve_seam_ec(seam)
+        blocks.append(
+            SeamBlock(
+                points=local,
+                weld_start=weld_start,
+                weld_end=weld_end,
+                bisector=bis,
+                mid=seam_midpoint(seam),
+                spin_deg=float(psi),
+                dense_points=list(dense_poses),
+                dense_joints=list(joints),
+                bc=bc,
+                ec=ec,
                 move_type=move_type,
+                weld_speed=float(seam.get("weld_speed", weld_speed)),
+                arc_file=int(seam.get("arc_file", arc_file)),
+                weave_no=int(seam.get("weave_no", 21)),
             )
         )
 
-        # Append dense animation stream (per-seam contiguous).
         dense_points.extend(dense_poses)
         dense_joints.extend(joints)
         if len(joints) >= 2:
@@ -715,7 +757,47 @@ def plan_from_seams(
 
         if joints:
             q_seed = list(joints[-1])
-            q_ref = list(joints[-1])  # next seam prefers continuity with this one
+            q_ref = list(joints[-1])
+
+    if safe_travel and blocks:
+        part_pts: list[np.ndarray] = [b.mid for b in blocks]
+        for b in blocks:
+            part_pts.append(_pose_xyz(b.points[0]))
+            part_pts.append(_pose_xyz(b.points[-1]))
+        points, weld_meta = stitch_seam_blocks(
+            blocks, mesh=mesh, part_points=part_pts
+        )
+        weld_segments = [
+            WeldSegment(
+                start_index=ws,
+                end_index=we,
+                weld_speed=spd,
+                arc_file=af,
+                move_type=mt,
+                weave_no=wv,
+            )
+            for ws, we, spd, af, mt, wv in weld_meta
+        ]
+    else:
+        # Legacy concatenation without inter-seam vias.
+        from .travel_planning import annotate_seam_speeds
+
+        points = []
+        weld_segments = []
+        for block in blocks:
+            annotate_seam_speeds(block)
+            base = len(points)
+            points.extend(block.points)
+            weld_segments.append(
+                WeldSegment(
+                    start_index=base + block.weld_start,
+                    end_index=base + block.weld_end,
+                    weld_speed=block.weld_speed,
+                    arc_file=block.arc_file,
+                    move_type=block.move_type,
+                    weave_no=block.weave_no,
+                )
+            )
 
     return PlannedPath(
         points=points,
@@ -725,7 +807,12 @@ def plan_from_seams(
         spin_angles_deg=spin_angles,
         spin_results=spin_results,
         max_joint_step_deg=worst_step,
+        bc_zones=bc_zones,
     )
+
+
+def _pose_xyz(p: dict) -> np.ndarray:
+    return np.array([float(p["x"]), float(p["y"]), float(p["z"])], dtype=float)
 
 
 # Re-export for callers / tests that build stick-out geometry.
@@ -742,4 +829,6 @@ __all__ = [
     "DENSE_STEP_M_DEFAULT",
     "SPIN_STEP_DEG_DEFAULT",
     "TOOL0_XYZ_M",
+    "ideal_bc_for_seam",
+    "quantize_bc_zones",
 ]

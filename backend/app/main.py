@@ -58,6 +58,18 @@ class TcpPoint(BaseModel):
     rx: float = 0.0
     ry: float = 0.0
     rz: float = 0.0
+    # Optional INFORM tags from the travel / spin planner.
+    move_type: str | None = None
+    kind: str | None = None
+    bc: int | None = None
+    vj: float | None = None
+    ec_vj: float | None = None
+    v: float | None = None
+    dec: int | None = None
+    ec: list[int] | None = None
+    ec1: int | None = None
+    ec2: int | None = None
+    spin_deg: float | None = None
 
 
 class IkRequest(BaseModel):
@@ -91,6 +103,14 @@ class SeamIn(BaseModel):
     bisector: list[float] | None = None
     n1: list[float] | None = None
     n2: list[float] | None = None
+    weld_speed: float | None = None
+    arc_file: int | None = None
+    weave_no: int | None = None
+    bc: int | None = None
+    ec: list[int] | None = None
+    ec1: int | None = None
+    ec2: int | None = None
+    station_deg: float | None = None
 
 
 class PlanRequest(BaseModel):
@@ -103,6 +123,7 @@ class PlanRequest(BaseModel):
     spin_step_deg: float = 30.0
     dense_step_m: float = 0.025
     travel_angle_deg: float = 12.0
+    safe_travel: bool = True
 
 
 class JbiRequest(BaseModel):
@@ -236,7 +257,7 @@ def plan_path(req: PlanRequest):
     if not req.seams:
         raise HTTPException(400, "No seams supplied")
     planned = plan_from_seams(
-        [s.model_dump() for s in req.seams],
+        [s.model_dump(exclude_none=True) for s in req.seams],
         samples_per_seam=req.samples_per_seam,
         approach_height=req.approach_height,
         weld_speed=req.weld_speed,
@@ -245,6 +266,7 @@ def plan_path(req: PlanRequest):
         spin_step_deg=req.spin_step_deg,
         dense_step_m=req.dense_step_m,
         travel_angle_deg=req.travel_angle_deg,
+        safe_travel=req.safe_travel,
     )
     return {
         "points": planned.points,
@@ -255,6 +277,7 @@ def plan_path(req: PlanRequest):
                 "weld_speed": w.weld_speed,
                 "arc_file": w.arc_file,
                 "move_type": w.move_type,
+                "weave_no": w.weave_no,
             }
             for w in planned.weld_segments
         ],
@@ -273,6 +296,7 @@ def plan_path(req: PlanRequest):
             for s in planned.spin_results
         ],
         "max_joint_step_deg": planned.max_joint_step_deg,
+        "bc_zones": planned.bc_zones,
         "axis_names": AXIS_NAMES,
     }
 
@@ -315,7 +339,7 @@ def generate_job(req: JbiRequest):
         for s in req.weld_segments
     ]
     return generate_jbi(
-        [p.model_dump() for p in req.points],
+        [p.model_dump(exclude_none=True) for p in req.points],
         segments,
         cfg,
         station_deg=req.station_deg,
