@@ -90,6 +90,10 @@ export type WeldProgram = {
     denseJointAnglesDeg?: number[][];
     /** Max consecutive joint step (deg) on the dense weld samples. */
     maxJointStepDeg?: number;
+    /** Per-seam inspector overrides (spin / travel / approach / weave / V). */
+    seamEdits?: import("@/lib/trajectoryViz").SeamEdit[];
+    /** Active WEV# for visualisation (0 = no weave / no zigzag). */
+    activeWeaveNo?: number;
   };
 };
 

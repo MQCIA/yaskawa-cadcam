@@ -105,12 +105,26 @@ const pl: Dict = {
   "details.empty": "Wybierz element komórki lub załaduj część.",
 
   // Simulation bar
-  "sim.prev": "Poprzedni",
+  "sim.prev": "Poprzedni punkt",
   "sim.play": "Odtwórz",
   "sim.pause": "Pauza",
   "sim.replay": "Ponów",
-  "sim.next": "Następny",
+  "sim.next": "Następny punkt",
   "sim.reset": "Reset",
+  "sim.prevC": "Poprzedni {c}",
+  "sim.nextC": "Następny {c}",
+
+  // Seam inspector
+  "inspector.title": "Inspektor spoiny",
+  "inspector.reverse": "Odwróć kierunek spoiny (Start ↔ End)",
+  "inspector.spin": "Kąt obrotu palnika wokół drutu (Spin)",
+  "inspector.travel": "Kąt pochylenia (Travel Angle)",
+  "inspector.approach": "Approach / Retract Distance",
+  "inspector.weave": "Zakosowanie WEV#",
+  "inspector.weaveNone": "Brak",
+  "inspector.speed": "Prędkość spawania V",
+  "inspector.empty": "Wybierz spoinę na liście lub w scenie 3D.",
+  "status.seamUpdated": "Zaktualizowano {seam} (spin {spin}°).",
 
   // Robot dock
   "robot.title": "Robot",
@@ -220,6 +234,8 @@ const pl: Dict = {
   "welds.tagTouch": "TOUCH",
   "program.kind.sense": "TouchSense",
   "program.kind.travel": "Dojazd",
+  "program.kind.clearance": "Via / clearance",
+  "program.kind.index_safe": "EC safe-index",
 
 };
 
@@ -301,12 +317,25 @@ const en: Dict = {
   "details.modePath": "Path IK",
   "details.empty": "Select a cell item or load a part.",
 
-  "sim.prev": "Previous",
+  "sim.prev": "Previous point",
   "sim.play": "Play",
   "sim.pause": "Pause",
   "sim.replay": "Replay",
-  "sim.next": "Next",
+  "sim.next": "Next point",
   "sim.reset": "Reset",
+  "sim.prevC": "Previous {c}",
+  "sim.nextC": "Next {c}",
+
+  "inspector.title": "Seam inspector",
+  "inspector.reverse": "Reverse seam direction (Start ↔ End)",
+  "inspector.spin": "Torch spin about wire",
+  "inspector.travel": "Travel angle",
+  "inspector.approach": "Approach / Retract distance",
+  "inspector.weave": "Weave WEV#",
+  "inspector.weaveNone": "None",
+  "inspector.speed": "Weld speed V",
+  "inspector.empty": "Select a seam from the list or 3D scene.",
+  "status.seamUpdated": "Updated {seam} (spin {spin}°).",
 
   "robot.title": "Robot",
   "robot.jointJog": "joint jog",
@@ -412,6 +441,8 @@ const en: Dict = {
   "program.kind.approach": "Approach",
   "program.kind.weld": "Weld",
   "program.kind.retract": "Retract",
+  "program.kind.clearance": "Via / clearance",
+  "program.kind.index_safe": "EC safe-index",
 
 };
 

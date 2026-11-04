@@ -46,6 +46,17 @@ import {
   planMotions,
   type WeldProgram,
 } from "@/lib/weldProgram";
+import {
+  applySeamEdit,
+  buildTimelineMarkers,
+  buildTimelinePhases,
+  diagnoseWaypoints,
+  discoverSeams,
+  informCLabel,
+  type SeamEdit,
+} from "@/lib/trajectoryViz";
+import SeamInspector from "@/components/SeamInspector";
+import SimTimeline from "@/components/SimTimeline";
 
 const RobotWorkspace = dynamic(() => import("@/components/RobotWorkspace"), {
   ssr: false,
@@ -84,6 +95,8 @@ export default function Home() {
   const [simT, setSimT] = useState(0);
   const [simPlaying, setSimPlaying] = useState(false);
   const [simSpeed, setSimSpeed] = useState(1);
+  const [selectedWp, setSelectedWp] = useState<number | null>(null);
+  const [selectedSeamId, setSelectedSeamId] = useState<string | null>(null);
 
   // Verbotics-style: joint jog is always available; ON until the user plays a plan.
   const [manualJog, setManualJog] = useState(true);
@@ -145,11 +158,45 @@ export default function Home() {
     setRailTravel(Math.max(-1.6, Math.min(1.6, mountZ)));
     setStation(stationIdx, { rotate: 0, tilt: 0 });
     setSelectedStation(stationIdx);
+    setSelectedWp(0);
+    const seamsFound = discoverSeams(prog);
+    setSelectedSeamId(seamsFound[0]?.id ?? null);
+    if (seamsFound[0]?.weaveNo) setWeaveNo(seamsFound[0].weaveNo);
     setLeftTab("welds");
     setStatus(
       t("status.programReady", {
         mm: prog.weldLenMm.toFixed(0),
         sec: prog.cycleSec.toFixed(1),
+      }),
+    );
+  }
+
+  function selectWaypoint(index: number) {
+    if (!program) return;
+    setSelectedWp(index);
+    setManualJog(false);
+    setSimPlaying(false);
+    setSimT(wpProgress[index] ?? 0);
+    const seamsFound = discoverSeams(program);
+    const hit = seamsFound.find(
+      (s) => index >= s.approachIdx && index <= s.retractIdx,
+    );
+    if (hit) {
+      setSelectedSeamId(hit.id);
+      setLeftTab("welds");
+    }
+  }
+
+  function patchSeam(edit: SeamEdit, reverse = false) {
+    if (!program) return;
+    const next = applySeamEdit(program, edit, { reverse });
+    setProgram(next);
+    setSelectedSeamId(edit.id);
+    if (edit.weaveNo !== weaveNo) setWeaveNo(edit.weaveNo || DEFAULT_WEAVE_NO);
+    setStatus(
+      t("status.seamUpdated", {
+        seam: edit.label,
+        spin: edit.spinOffsetDeg.toFixed(0),
       }),
     );
   }
@@ -286,11 +333,20 @@ export default function Home() {
     setManualJog(false);
     const eps = 1e-4;
     if (dir === 1) {
-      const next = wpProgress.find((p) => p > simT + eps);
-      setSimT(next ?? 1);
+      const idx = wpProgress.findIndex((p) => p > simT + eps);
+      const nextT = idx >= 0 ? wpProgress[idx] : 1;
+      setSimT(nextT);
+      setSelectedWp(idx >= 0 ? idx : program.waypoints.length - 1);
     } else {
-      const prev = [...wpProgress].reverse().find((p) => p < simT - eps);
-      setSimT(prev ?? 0);
+      let idx = -1;
+      for (let i = wpProgress.length - 1; i >= 0; i--) {
+        if (wpProgress[i] < simT - eps) {
+          idx = i;
+          break;
+        }
+      }
+      setSimT(idx >= 0 ? wpProgress[idx] : 0);
+      setSelectedWp(Math.max(0, idx));
     }
   }
 
@@ -315,9 +371,39 @@ export default function Home() {
   const activePositioner = POSITIONER_MODELS.find((p) => p.id === positionerId);
   const sample = program ? sampleProgram(program, simT) : null;
   const curWp = program && sample ? program.waypoints[sample.wpIndex] : null;
+  const curC = sample ? informCLabel(sample.wpIndex) : "—";
   const instruction = curWp
-    ? `${curWp.move} ${curWp.id}  ${curWp.speedLabel}${curWp.tag ? "  " + curWp.tag : ""}`
+    ? `${curWp.move} ${curC}  ${curWp.speedLabel}${curWp.tag ? "  " + curWp.tag : ""}${
+        curWp.bc != null ? `  BC=${curWp.bc}` : ""
+      }`
     : "—";
+
+  const seamList = useMemo(
+    () => (program ? discoverSeams(program) : []),
+    [program],
+  );
+  const activeSeam =
+    seamList.find((s) => s.id === selectedSeamId) ?? seamList[0] ?? null;
+  const wpDiags = useMemo(
+    () => (program ? diagnoseWaypoints(program) : []),
+    [program],
+  );
+  const timelinePhases = useMemo(
+    () => (program ? buildTimelinePhases(program) : []),
+    [program],
+  );
+  const timelineMarkers = useMemo(
+    () => (program ? buildTimelineMarkers(program, wpDiags) : []),
+    [program, wpDiags],
+  );
+  const prevCLabel =
+    sample && sample.wpIndex > 0
+      ? informCLabel(sample.wpIndex - 1)
+      : informCLabel(0);
+  const nextCLabel =
+    program && sample
+      ? informCLabel(Math.min(program.waypoints.length - 1, sample.wpIndex + 1))
+      : informCLabel(0);
 
   const jbiPreview = useMemo(() => {
     if (!program) return "";
@@ -667,40 +753,67 @@ export default function Home() {
             {leftTab === "welds" && (
               <div className="space-y-2">
                 {program ? (
-                  <div className="rounded border border-slate-200 bg-slate-50 p-2">
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium">{t("welds.seam1")}</span>
-                      <span className="rounded bg-orange-50 px-1.5 py-0.5 text-[10px] text-orange-700">{t("welds.fillet")}</span>
-                    </div>
-                    <div className="mt-1 text-[11px] text-slate-500">
-                      {t("welds.length", { mm: program.weldLenMm.toFixed(0), n: program.waypoints.length })}
-                    </div>
-                    <label className="mt-2 block text-[10px] text-slate-500">{t("welds.process")}</label>
-                    <select
-                      value={weldCondition}
-                      onChange={(e) => changeCondition(Number(e.target.value))}
-                      className="mt-0.5 w-full rounded bg-slate-100 px-2 py-2 text-xs"
-                    >
-                      {LORCH_S8_SCHEDULES.map((s) => (
-                        <option key={s.condition} value={s.condition}>
-                          Motoweld ARGF{s.job} · {s.currentA}A / {s.voltageV.toFixed(1)}V · V=
-                          {s.travelCmMin}
-                        </option>
+                  <>
+                    <div className="space-y-1">
+                      {seamList.map((s) => (
+                        <button
+                          key={s.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedSeamId(s.id);
+                            selectWaypoint(s.weldStart);
+                          }}
+                          className={`flex w-full items-center justify-between rounded border px-2 py-1.5 text-left text-xs ${
+                            activeSeam?.id === s.id
+                              ? "border-[#e87722] bg-orange-50 text-[#e87722]"
+                              : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                          }`}
+                        >
+                          <span className="font-medium">{s.label}</span>
+                          <span className="rounded bg-orange-50 px-1.5 py-0.5 text-[10px] text-orange-700">
+                            {t("welds.fillet")}
+                          </span>
+                        </button>
                       ))}
-                    </select>
-                    <label className="mt-2 block text-[10px] text-slate-500">WEV# (WEAV.CND)</label>
-                    <select
-                      value={weaveNo}
-                      onChange={(e) => setWeaveNo(Number(e.target.value))}
-                      className="mt-0.5 w-full rounded bg-slate-100 px-2 py-1 text-xs"
-                    >
-                      {WEAVE_FILES.map((w) => (
-                        <option key={w.wevNo} value={w.wevNo}>
-                          {w.label}
-                        </option>
-                      ))}
-                    </select>
-                    <div className="mt-2 grid grid-cols-2 gap-2">
+                    </div>
+                    <div className="text-[11px] text-slate-500">
+                      {t("welds.length", {
+                        mm: program.weldLenMm.toFixed(0),
+                        n: program.waypoints.length,
+                      })}
+                    </div>
+                    <SeamInspector
+                      seam={activeSeam}
+                      onChange={(next) => patchSeam(next)}
+                      onReverse={() => activeSeam && patchSeam(activeSeam, true)}
+                      labels={{
+                        title: t("inspector.title"),
+                        reverse: t("inspector.reverse"),
+                        spin: t("inspector.spin"),
+                        travel: t("inspector.travel"),
+                        approach: t("inspector.approach"),
+                        weave: t("inspector.weave"),
+                        weaveNone: t("inspector.weaveNone"),
+                        speed: t("inspector.speed"),
+                        empty: t("inspector.empty"),
+                      }}
+                    />
+                    <label className="block text-[10px] text-slate-500">
+                      {t("welds.process")}
+                      <select
+                        value={weldCondition}
+                        onChange={(e) => changeCondition(Number(e.target.value))}
+                        className="mt-0.5 w-full rounded bg-slate-100 px-2 py-2 text-xs"
+                      >
+                        {LORCH_S8_SCHEDULES.map((s) => (
+                          <option key={s.condition} value={s.condition}>
+                            Motoweld ARGF{s.job} · {s.currentA}A / {s.voltageV.toFixed(1)}V · V=
+                            {s.travelCmMin}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
                       <label className="block text-[10px] text-slate-500">
                         {t("mobile.argf")}
                         <div className="mt-0.5 rounded border border-slate-200 bg-white px-2 py-2 font-mono text-xs text-slate-800">
@@ -711,15 +824,19 @@ export default function Home() {
                         {t("mobile.wev")}
                         <input
                           type="number"
-                          min={1}
+                          min={0}
                           max={99}
                           value={weaveNo}
-                          onChange={(e) => setWeaveNo(Math.max(1, Number(e.target.value) || 1))}
+                          onChange={(e) => {
+                            const n = Math.max(0, Number(e.target.value) || 0);
+                            setWeaveNo(n);
+                            if (activeSeam) patchSeam({ ...activeSeam, weaveNo: n });
+                          }}
                           className="mt-0.5 w-full rounded border border-slate-200 bg-white px-2 py-2 font-mono text-xs text-slate-800"
                         />
                       </label>
                     </div>
-                  </div>
+                  </>
                 ) : (
                   <p className="px-1 text-xs text-slate-500">{t("welds.empty")}</p>
                 )}
@@ -730,31 +847,44 @@ export default function Home() {
               <div className="space-y-1">
                 {program ? (
                   <div className="max-h-full overflow-y-auto font-mono text-[11px]">
-                    {program.waypoints.map((wp, i) => (
-                      <button
-                        key={wp.id}
-                        onClick={() => {
-                          setManualJog(false);
-                          setSimPlaying(false);
-                          setSimT(wpProgress[i] ?? 0);
-                        }}
-                        className={`flex w-full items-center gap-2 rounded px-2 py-0.5 text-left ${
-                          sample && i === sample.wpIndex
-                            ? "bg-[#fff1e6] text-[#e87722]"
-                            : "text-slate-700 hover:bg-slate-100"
-                        }`}
-                      >
-                        <span className="w-8 text-slate-500">{wp.id}</span>
-                        <span className="w-10">{wp.move}</span>
-                        <span className="w-14 truncate text-[10px] uppercase text-slate-400">
-                          {t(`program.kind.${wp.kind}`)}
-                        </span>
-                        <span className="flex-1 truncate">{wp.speedLabel}</span>
-                        <span className={wp.tag === "TOUCH" ? "text-blue-600" : "text-orange-600"}>
-                          {wp.tag === "TOUCH" ? t("welds.tagTouch") : wp.tag ?? ""}
-                        </span>
-                      </button>
-                    ))}
+                    {program.waypoints.map((wp, i) => {
+                      const diag = wpDiags[i];
+                      return (
+                        <button
+                          key={wp.id}
+                          onClick={() => selectWaypoint(i)}
+                          className={`flex w-full items-center gap-2 rounded px-2 py-0.5 text-left ${
+                            selectedWp === i || (sample && i === sample.wpIndex)
+                              ? "bg-[#fff1e6] text-[#e87722]"
+                              : "text-slate-700 hover:bg-slate-100"
+                          }`}
+                        >
+                          <span className="w-12 text-slate-500">{informCLabel(i)}</span>
+                          <span className="w-10">{wp.move}</span>
+                          <span className="w-14 truncate text-[10px] uppercase text-slate-400">
+                            {t(`program.kind.${wp.kind}`)}
+                          </span>
+                          <span className="flex-1 truncate">{wp.speedLabel}</span>
+                          <span
+                            className={
+                              diag?.ik === "collision"
+                                ? "text-red-600"
+                                : diag?.ik === "near_limit"
+                                  ? "text-amber-600"
+                                  : wp.tag === "TOUCH"
+                                    ? "text-blue-600"
+                                    : "text-orange-600"
+                            }
+                          >
+                            {diag?.ik !== "ok"
+                              ? "!"
+                              : wp.tag === "TOUCH"
+                                ? t("welds.tagTouch")
+                                : wp.tag ?? ""}
+                          </span>
+                        </button>
+                      );
+                    })}
                   </div>
                 ) : (
                   <p className="px-1 text-xs text-slate-500">{t("program.empty")}</p>
@@ -844,6 +974,9 @@ export default function Home() {
               simT={simT}
               manualJog={manualJog}
               torchCalib={torchCalib}
+              selectedWp={selectedWp ?? sample?.wpIndex ?? null}
+              onSelectWp={selectWaypoint}
+              weaveNo={activeSeam?.weaveNo ?? weaveNo}
             />
 
             {program && sample && (
@@ -869,14 +1002,25 @@ export default function Home() {
               <div className="mb-1 truncate px-0.5 font-mono text-[10px] text-slate-500">
                 {instruction}
               </div>
-              <div className="flex items-center gap-1.5">
+              <SimTimeline
+                phases={timelinePhases}
+                markers={timelineMarkers}
+                simT={simT}
+                disabled={!program}
+                onSeek={(t) => {
+                  setSimPlaying(false);
+                  setManualJog(false);
+                  setSimT(t);
+                }}
+              />
+              <div className="mt-1.5 flex items-center gap-1.5">
                 <button
                   onClick={() => stepTo(-1)}
                   disabled={!program}
-                  className={`${btnGhost} !min-h-10 !px-2 !py-1`}
-                  title={t("sim.prev")}
+                  className={`${btnGhost} !min-h-10 !px-2 !py-1 text-[10px]`}
+                  title={t("sim.prevC", { c: prevCLabel })}
                 >
-                  ⏮
+                  |&lt; {prevCLabel}
                 </button>
                 <button
                   onClick={togglePlay}
@@ -888,91 +1032,91 @@ export default function Home() {
                 <button
                   onClick={() => stepTo(1)}
                   disabled={!program}
-                  className={`${btnGhost} !min-h-10 !px-2 !py-1`}
-                  title={t("sim.next")}
+                  className={`${btnGhost} !min-h-10 !px-2 !py-1 text-[10px]`}
+                  title={t("sim.nextC", { c: nextCLabel })}
                 >
-                  ⏭
+                  {nextCLabel} &gt;|
                 </button>
-                <input
-                  type="range"
-                  min={0}
-                  max={1}
-                  step={0.001}
-                  value={simT}
-                  disabled={!program}
-                  onChange={(e) => {
-                    setSimPlaying(false);
-                    setManualJog(false);
-                    setSimT(Number(e.target.value));
-                  }}
-                  className="touch-range touch-pan-y min-w-0 flex-1 accent-[#e87722]"
-                />
               </div>
             </div>
           </div>
 
           {/* Desktop / tablet landscape sim bar */}
-          <div className="hidden items-center gap-2 border-t border-slate-200 bg-white px-3 py-1.5 lg:flex">
-            <button
-              onClick={() => stepTo(-1)}
-              disabled={!program}
-              className={`${btnGhost} !px-2 !py-1`}
-              title={t("sim.prev")}
-            >
-              ⏮
-            </button>
-            <button
-              onClick={togglePlay}
-              disabled={!program}
-              className={`${btnPrimary} !px-4 !py-1`}
-            >
-              {simPlaying ? t("sim.pause") : simT >= 1 ? t("sim.replay") : t("sim.play")}
-            </button>
-            <button
-              onClick={() => stepTo(1)}
-              disabled={!program}
-              className={`${btnGhost} !px-2 !py-1`}
-              title={t("sim.next")}
-            >
-              ⏭
-            </button>
-            <button
-              onClick={() => {
-                setSimPlaying(false);
-                setSimT(0);
-              }}
-              disabled={!program}
-              className={`${btnGhost} !px-2 !py-1`}
-              title={t("sim.reset")}
-            >
-              ⟲
-            </button>
-            <div className="min-w-0 flex-1 truncate px-2 font-mono text-[11px] text-slate-500">
-              {instruction}
+          <div className="hidden flex-col gap-1 border-t border-slate-200 bg-white px-3 py-1.5 lg:flex">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => stepTo(-1)}
+                disabled={!program}
+                className={`${btnGhost} !px-2 !py-1 text-[11px]`}
+                title={t("sim.prevC", { c: prevCLabel })}
+              >
+                |&lt; {t("sim.prev")} {prevCLabel}
+              </button>
+              <button
+                onClick={togglePlay}
+                disabled={!program}
+                className={`${btnPrimary} !px-4 !py-1`}
+              >
+                {simPlaying ? t("sim.pause") : simT >= 1 ? t("sim.replay") : t("sim.play")}
+              </button>
+              <button
+                onClick={() => stepTo(1)}
+                disabled={!program}
+                className={`${btnGhost} !px-2 !py-1 text-[11px]`}
+                title={t("sim.nextC", { c: nextCLabel })}
+              >
+                {t("sim.next")} {nextCLabel} &gt;|
+              </button>
+              <button
+                onClick={() => {
+                  setSimPlaying(false);
+                  setSimT(0);
+                  setSelectedWp(0);
+                }}
+                disabled={!program}
+                className={`${btnGhost} !px-2 !py-1`}
+                title={t("sim.reset")}
+              >
+                ⟲
+              </button>
+              <div className="min-w-0 flex-1 truncate px-2 font-mono text-[11px] text-slate-500">
+                {instruction}
+              </div>
+              <select
+                value={simSpeed}
+                onChange={(e) => setSimSpeed(Number(e.target.value))}
+                className="rounded bg-slate-100 px-2 py-1 text-xs"
+              >
+                <option value={0.5}>0.5×</option>
+                <option value={1}>1×</option>
+                <option value={2}>2×</option>
+                <option value={4}>4×</option>
+              </select>
+              <input
+                type="range"
+                min={0}
+                max={1}
+                step={0.001}
+                value={simT}
+                disabled={!program}
+                onChange={(e) => {
+                  setSimPlaying(false);
+                  setManualJog(false);
+                  setSimT(Number(e.target.value));
+                }}
+                className="touch-range touch-pan-y w-40 accent-[#e87722]"
+              />
             </div>
-            <select
-              value={simSpeed}
-              onChange={(e) => setSimSpeed(Number(e.target.value))}
-              className="rounded bg-slate-100 px-2 py-1 text-xs"
-            >
-              <option value={0.5}>0.5×</option>
-              <option value={1}>1×</option>
-              <option value={2}>2×</option>
-              <option value={4}>4×</option>
-            </select>
-            <input
-              type="range"
-              min={0}
-              max={1}
-              step={0.001}
-              value={simT}
+            <SimTimeline
+              phases={timelinePhases}
+              markers={timelineMarkers}
+              simT={simT}
               disabled={!program}
-              onChange={(e) => {
+              onSeek={(t) => {
                 setSimPlaying(false);
                 setManualJog(false);
-                setSimT(Number(e.target.value));
+                setSimT(t);
               }}
-              className="touch-range touch-pan-y w-40 accent-[#e87722]"
             />
           </div>
         </div>

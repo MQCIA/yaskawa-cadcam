@@ -203,6 +203,9 @@ export default function RobotWorkspace({
   simT = 0,
   manualJog = false,
   torchCalib = DEFAULT_TORCH_CALIBRATION,
+  selectedWp = null,
+  onSelectWp,
+  weaveNo = 0,
 }: {
   modelId: string;
   joints: Joints;
@@ -214,6 +217,9 @@ export default function RobotWorkspace({
   simT?: number;
   manualJog?: boolean;
   torchCalib?: TorchCalibration;
+  selectedWp?: number | null;
+  onSelectWp?: (index: number) => void;
+  weaveNo?: number;
 }) {
   const positioner = positionerId
     ? POSITIONER_MODELS.find((p) => p.id === positionerId)
@@ -313,7 +319,13 @@ export default function RobotWorkspace({
         <group position={partPivot}>
           <group rotation={[0, 0, partRotZ]}>
             <group position={[-partPivot[0], -partPivot[1], -partPivot[2]]}>
-              <WeldScene program={program} simT={simT} />
+              <WeldScene
+                program={program}
+                simT={simT}
+                selectedWp={selectedWp}
+                onSelectWp={onSelectWp}
+                weaveNo={weaveNo}
+              />
             </group>
           </group>
         </group>
