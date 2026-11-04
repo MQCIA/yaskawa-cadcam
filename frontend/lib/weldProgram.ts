@@ -71,6 +71,15 @@ export type WeldProgram = {
     touchSense: boolean;
     sequenceOptimized: boolean;
     singularitySafe: boolean;
+    /**
+     * Torch roll about the wire axis (deg) chosen by the backend spin
+     * optimiser — redundant DOF for MIG/MAG with a bent ABIROB neck.
+     */
+    spinAngleDeg?: number;
+    /** Dense [S,L,U,R,B,T] deg along MOVL/MOVC for smooth URDF playback. */
+    denseJointAnglesDeg?: number[][];
+    /** Max consecutive joint step (deg) on the dense weld samples. */
+    maxJointStepDeg?: number;
   };
 };
 

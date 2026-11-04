@@ -84,6 +84,13 @@ class WeldSegmentIn(BaseModel):
 class SeamIn(BaseModel):
     start: list[float]
     end: list[float]
+    type: str | None = None
+    move_type: str | None = None
+    via: list[float] | None = None
+    points: list[list[float]] | None = None
+    bisector: list[float] | None = None
+    n1: list[float] | None = None
+    n2: list[float] | None = None
 
 
 class PlanRequest(BaseModel):
@@ -92,6 +99,10 @@ class PlanRequest(BaseModel):
     approach_height: float = 0.05
     weld_speed: float = 10.0
     arc_file: int = 1
+    optimize_spin: bool = True
+    spin_step_deg: float = 30.0
+    dense_step_m: float = 0.025
+    travel_angle_deg: float = 12.0
 
 
 class JbiRequest(BaseModel):
@@ -217,7 +228,11 @@ def calculate_ik(req: IkRequest):
 
 @app.post("/api/plan-path")
 def plan_path(req: PlanRequest):
-    """Turn detected seams into an ordered TCP path + weld ranges."""
+    """Turn detected seams into an ordered TCP path + weld ranges.
+
+    Also returns dense Cartesian samples and joint angles for smooth URDF
+    animation, plus the optimised torch spin ``ψ`` about the wire axis.
+    """
     if not req.seams:
         raise HTTPException(400, "No seams supplied")
     planned = plan_from_seams(
@@ -226,14 +241,39 @@ def plan_path(req: PlanRequest):
         approach_height=req.approach_height,
         weld_speed=req.weld_speed,
         arc_file=req.arc_file,
+        optimize_spin=req.optimize_spin,
+        spin_step_deg=req.spin_step_deg,
+        dense_step_m=req.dense_step_m,
+        travel_angle_deg=req.travel_angle_deg,
     )
     return {
         "points": planned.points,
         "weld_segments": [
-            {"start_index": w.start_index, "end_index": w.end_index,
-             "weld_speed": w.weld_speed, "arc_file": w.arc_file}
+            {
+                "start_index": w.start_index,
+                "end_index": w.end_index,
+                "weld_speed": w.weld_speed,
+                "arc_file": w.arc_file,
+                "move_type": w.move_type,
+            }
             for w in planned.weld_segments
         ],
+        "dense_points": planned.dense_points,
+        "dense_joint_angles_deg": planned.dense_joint_angles_deg,
+        "spin_angles_deg": planned.spin_angles_deg,
+        "spin_results": [
+            {
+                "spin_deg": s.spin_deg,
+                "cost": s.cost,
+                "rejected": s.rejected,
+                "reason": s.reason,
+                "candidate_count": s.candidate_count,
+                "feasible_count": s.feasible_count,
+            }
+            for s in planned.spin_results
+        ],
+        "max_joint_step_deg": planned.max_joint_step_deg,
+        "axis_names": AXIS_NAMES,
     }
 
 

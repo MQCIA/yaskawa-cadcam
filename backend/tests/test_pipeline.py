@@ -23,7 +23,12 @@ from app.dx200_postprocessor import (
     load_reference_jbi,
 )
 from app.cad_analysis import detect_seams
-from app.path_planning import plan_from_seams
+from app.path_planning import (
+    plan_from_seams,
+    preferred_spin_deg,
+    rpy_from_wire_spin,
+    torch_wire_direction,
+)
 from app.pulse_config import joint_pulses_to_deg
 from app.robot_config import (
     ACTIVE_MODEL,
@@ -202,8 +207,19 @@ def test_cad_seam_detection(lbracket):
 
 def test_full_pipeline(lbracket):
     seams = detect_seams(lbracket, angle_tol_deg=25, target_angle_deg=90)
-    planned = plan_from_seams(seams["segments"], samples_per_seam=5, arc_file=2)
+    planned = plan_from_seams(
+        seams["segments"],
+        samples_per_seam=5,
+        arc_file=2,
+        optimize_spin=True,
+        spin_step_deg=45.0,
+        dense_step_m=0.03,
+    )
     assert len(planned.points) > 0
+    assert len(planned.dense_joint_angles_deg) == len(planned.dense_points)
+    assert len(planned.spin_angles_deg) == len(planned.weld_segments)
+    # Dense animation stream must be at least as long as the sparse JBI path.
+    assert len(planned.dense_points) >= len(planned.points)
     # Planner poses are Motoman tip / wire frames (no TOOL.CND RPY).
     ik = solve_ik_path(planned.points, frame="tool0")
     assert ik["all_reachable"]
@@ -219,6 +235,104 @@ def test_full_pipeline(lbracket):
     assert "C00000=" in jbi and "BC00000=878036" in jbi
     assert "ARCON" in jbi and jbi.strip().endswith("END")
     assert "RB1,BS1" in jbi
+
+
+def _angle_step(a: float, b: float) -> float:
+    return abs((b - a + 180.0) % 360.0 - 180.0)
+
+
+def test_movl_joint_continuity_no_jump():
+    """Dense MOVL IK along a horizontal fillet: max joint step < 30°."""
+    # Horizontal floor/wall fillet along +X (PA position).
+    seam = {
+        "start": [0.75, 0.0, 0.35],
+        "end": [0.95, 0.0, 0.35],
+        "type": "line",
+        "bisector": [0.0, -0.7071, 0.7071],
+        "n1": [0.0, 0.0, 1.0],
+        "n2": [0.0, -1.0, 0.0],
+    }
+    planned = plan_from_seams(
+        [seam],
+        samples_per_seam=2,
+        approach_height=0.08,
+        optimize_spin=True,
+        spin_step_deg=30.0,
+        dense_step_m=0.025,
+        travel_angle_deg=12.0,
+    )
+    assert planned.dense_joint_angles_deg, "expected dense IK samples"
+    assert len(planned.dense_joint_angles_deg) >= 4
+    # Weld-only joints (drop approach / retract air moves).
+    weld_q = planned.dense_joint_angles_deg[1:-1]
+    assert len(weld_q) >= 2
+    max_step = 0.0
+    for i in range(1, len(weld_q)):
+        for j in range(6):
+            max_step = max(max_step, _angle_step(weld_q[i - 1][j], weld_q[i][j]))
+    assert max_step < 30.0, f"joint jump {max_step:.1f}° ≥ 30° along MOVL"
+    assert planned.max_joint_step_deg < 30.0
+    assert planned.spin_results and not planned.spin_results[0].rejected
+
+
+def test_spin_selection_horizontal_and_vertical():
+    """Spin ψ differs sensibly for horizontal vs vertical fillets; both feasible."""
+    horizontal = {
+        "start": [0.78, 0.0, 0.32],
+        "end": [0.92, 0.0, 0.32],
+        "type": "line",
+        "bisector": [0.0, -0.7071, 0.7071],
+        "n1": [0.0, 0.0, 1.0],
+        "n2": [0.0, -1.0, 0.0],
+    }
+    # Vertical fillet (wall–wall) along +Z travel on a side seam.
+    vertical = {
+        "start": [0.85, -0.05, 0.25],
+        "end": [0.85, -0.05, 0.45],
+        "type": "line",
+        "bisector": [-0.7071, -0.7071, 0.0],
+        "n1": [-1.0, 0.0, 0.0],
+        "n2": [0.0, -1.0, 0.0],
+    }
+
+    ph = plan_from_seams(
+        [horizontal],
+        samples_per_seam=2,
+        approach_height=0.08,
+        optimize_spin=True,
+        spin_step_deg=30.0,
+        dense_step_m=0.03,
+    )
+    pv = plan_from_seams(
+        [vertical],
+        samples_per_seam=2,
+        approach_height=0.08,
+        optimize_spin=True,
+        spin_step_deg=30.0,
+        dense_step_m=0.03,
+    )
+    assert ph.spin_results[0].feasible_count >= 1
+    assert pv.spin_results[0].feasible_count >= 1
+    assert not ph.spin_results[0].rejected
+    assert not pv.spin_results[0].rejected
+    # Preferred gooseneck-outward bases differ by orientation of the bisector.
+    wh = torch_wire_direction(
+        np.array(horizontal["bisector"]), np.array([0.14, 0.0, 0.0])
+    )
+    wv = torch_wire_direction(
+        np.array(vertical["bisector"]), np.array([0.0, 0.0, 0.2])
+    )
+    base_h = preferred_spin_deg(wh, np.array([1.0, 0.0, 0.0]), np.array(horizontal["bisector"]))
+    base_v = preferred_spin_deg(wv, np.array([0.0, 0.0, 1.0]), np.array(vertical["bisector"]))
+    # Chosen spins are finite degrees in [-180, 180).
+    for ang in (ph.spin_angles_deg[0], pv.spin_angles_deg[0], base_h, base_v):
+        assert -180.0 <= ang < 180.0
+    # RPY from wire+spin must be a valid finite orientation.
+    rx, ry, rz = rpy_from_wire_spin(wh, np.array([1.0, 0.0, 0.0]), ph.spin_angles_deg[0])
+    assert all(np.isfinite([rx, ry, rz]))
+    # Dense continuity holds for both orientations.
+    assert ph.max_joint_step_deg < 30.0
+    assert pv.max_joint_step_deg < 30.0
 
 
 def test_merge_collinear_and_arc_grouping():
