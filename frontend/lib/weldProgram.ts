@@ -446,6 +446,19 @@ export function duplicateWaypoint(
   return insertIdleWaypoint(prog, index, kind, { pos, liftMm: 0 });
 }
 
+/** Overwrite XYZ of an existing waypoint (metres). */
+export function setWaypointPosition(
+  prog: WeldProgram,
+  index: number,
+  pos: Vec3,
+): WeldProgram {
+  if (index < 0 || index >= prog.waypoints.length) return prog;
+  const waypoints = prog.waypoints.map((w, i) =>
+    i === index ? { ...w, pos: [pos[0], pos[1], pos[2]] as Vec3 } : w,
+  );
+  return finalizeWaypoints(prog, waypoints);
+}
+
 /** Change kind / move type of an existing waypoint (e.g. weld → travel). */
 export function setWaypointKind(
   prog: WeldProgram,

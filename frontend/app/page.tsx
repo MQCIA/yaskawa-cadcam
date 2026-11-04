@@ -22,7 +22,7 @@ import TorchCalibrationPanel from "@/components/TorchCalibrationPanel";
 import Dx200MotorosChecklist from "@/components/Dx200MotorosChecklist";
 import { useI18n, LanguageToggle } from "@/lib/i18n";
 import type { SeamSegment } from "@/components/RobotWorkspace";
-import { analyzeCad, calculateIk } from "@/lib/api";
+import { analyzeCad, calculateIk, forwardKinematics } from "@/lib/api";
 import { ROBOT_MODELS, POSITIONER_MODELS } from "@/lib/models";
 import {
   DEFAULT_TORCH_CALIBRATION,
@@ -30,6 +30,7 @@ import {
   saveTorchCalibration,
   type TorchCalibration,
 } from "@/lib/tool0";
+import { TSL_CARRIAGE_TOP_Y } from "@/lib/trackMesh";
 import {
   buildDemoProgram,
   buildHardDemoProgram,
@@ -48,7 +49,9 @@ import {
   insertIdleWaypoint,
   duplicateWaypoint,
   setWaypointKind,
+  setWaypointPosition,
   type IdleInsertKind,
+  type Vec3,
   type Waypoint,
   type WeldProgram,
 } from "@/lib/weldProgram";
@@ -69,6 +72,42 @@ const RobotWorkspace = dynamic(() => import("@/components/RobotWorkspace"), {
 });
 
 const PLAYBACK_BASE_SEC = 12;
+/** Match RobotWorkspace station axles — teach FK → program frame. */
+const STATION_POS_XZ: [number, number][] = [
+  [1.6, -1.2],
+  [1.6, 1.2],
+];
+const AXLE_Y = 0.95;
+
+function mountStationIndex(mount: Vec3): number {
+  let best = 0;
+  let bestD = Infinity;
+  STATION_POS_XZ.forEach(([x, z], i) => {
+    const d = Math.hypot(x - mount[0], z - mount[2]);
+    if (d < bestD) {
+      bestD = d;
+      best = i;
+    }
+  });
+  return best;
+}
+
+/** Inverse of WeldScene part-table transform (world TCP → program XYZ). */
+function worldToProgramFrame(
+  world: Vec3,
+  mount: Vec3,
+  tableRotateDeg: number,
+): Vec3 {
+  const si = mountStationIndex(mount);
+  const pivot: Vec3 = [STATION_POS_XZ[si][0], AXLE_Y, STATION_POS_XZ[si][1]];
+  const partRotZ = (-tableRotateDeg * Math.PI) / 180;
+  const dx = world[0] - pivot[0];
+  const dy = world[1] - pivot[1];
+  const dz = world[2] - pivot[2];
+  const c = Math.cos(-partRotZ);
+  const s = Math.sin(-partRotZ);
+  return [pivot[0] + dx * c - dy * s, pivot[1] + dx * s + dy * c, pivot[2] + dz];
+}
 
 type LeftTab = "workspace" | "welds" | "program";
 type Ribbon = "plan" | "settings" | "view";
@@ -104,6 +143,7 @@ export default function Home() {
   const [selectedWp, setSelectedWp] = useState<number | null>(null);
   const [selectedSeamId, setSelectedSeamId] = useState<string | null>(null);
   const [insertKind, setInsertKind] = useState<IdleInsertKind>("clearance");
+  const [liveTcpMm, setLiveTcpMm] = useState<string | null>(null);
 
   // Verbotics-style: joint jog is always available; ON until the user plays a plan.
   const [manualJog, setManualJog] = useState(true);
@@ -148,6 +188,36 @@ export default function Home() {
   useEffect(() => {
     if (simT >= 1 && simPlaying) setSimPlaying(false);
   }, [simT, simPlaying]);
+
+  // Live TCP from joint jog (for teach + Robot dock readout).
+  useEffect(() => {
+    if (!manualJog) {
+      setLiveTcpMm(null);
+      return;
+    }
+    let cancelled = false;
+    const q = [joints.S, joints.L, joints.U, joints.R, joints.B, joints.T];
+    const timer = window.setTimeout(() => {
+      void forwardKinematics(q)
+        .then((fk) => {
+          if (cancelled) return;
+          const tcp = fk.tcp_0 ?? fk.tcp;
+          const world: Vec3 = [
+            tcp.x,
+            tcp.y + TSL_CARRIAGE_TOP_Y,
+            tcp.z + railTravel,
+          ];
+          setLiveTcpMm(world.map((v) => (v * 1000).toFixed(1)).join(", "));
+        })
+        .catch(() => {
+          if (!cancelled) setLiveTcpMm(null);
+        });
+    }, 120);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [manualJog, joints, railTravel]);
 
   const wpProgress = useMemo(() => {
     if (!program) return [] as number[];
@@ -265,6 +335,71 @@ export default function Home() {
     setProgram(next);
     setSelectedWp(selectedWp + 1);
     setStatus(t("status.wpDuplicated", { c: informCLabel(selectedWp + 1) }));
+  }
+
+  /** Live TCP from joint jog (robot base → world → program frame). */
+  async function captureRobotProgramPos(): Promise<Vec3 | null> {
+    if (!program) return null;
+    setManualJog(true);
+    setSimPlaying(false);
+    const q = [joints.S, joints.L, joints.U, joints.R, joints.B, joints.T];
+    try {
+      const fk = await forwardKinematics(q);
+      const tcp = fk.tcp_0 ?? fk.tcp;
+      const world: Vec3 = [
+        tcp.x,
+        tcp.y + TSL_CARRIAGE_TOP_Y,
+        tcp.z + railTravel,
+      ];
+      const stIdx = mountStationIndex(program.mount);
+      const tableRot = stations[stIdx]?.rotate ?? 0;
+      return worldToProgramFrame(world, program.mount, tableRot);
+    } catch (err) {
+      setStatus(t("status.fkFail", { err: (err as Error).message }));
+      return null;
+    }
+  }
+
+  async function teachReplaceSelected() {
+    if (!program || selectedWp == null) return;
+    const pos = await captureRobotProgramPos();
+    if (!pos) return;
+    const next = setWaypointPosition(program, selectedWp, pos);
+    setProgram(next);
+    setStatus(
+      t("status.wpTaught", {
+        c: informCLabel(selectedWp),
+        xyz: pos.map((v) => (v * 1000).toFixed(1)).join(", "),
+      }),
+    );
+  }
+
+  async function teachInsertAfter() {
+    if (!program) return;
+    const pos = await captureRobotProgramPos();
+    if (!pos) return;
+    const after = selectedWp ?? program.waypoints.length - 1;
+    const next = insertIdleWaypoint(program, after, insertKind, {
+      pos,
+      liftMm: 0,
+    });
+    setProgram(next);
+    const newIdx = Math.min(after + 1, next.waypoints.length - 1);
+    setSelectedWp(newIdx);
+    setStatus(
+      t("status.wpTaughtInsert", {
+        kind: t(`program.kind.${insertKind}`),
+        c: informCLabel(newIdx),
+      }),
+    );
+  }
+
+  function editSelectedXyzMm(axis: 0 | 1 | 2, mm: number) {
+    if (!program || selectedWp == null) return;
+    const cur = program.waypoints[selectedWp].pos;
+    const pos: Vec3 = [...cur] as Vec3;
+    pos[axis] = mm / 1000;
+    setProgram(setWaypointPosition(program, selectedWp, pos));
   }
 
   function makeProgram(cond: number) {
@@ -969,44 +1104,97 @@ export default function Home() {
                         </button>
                       </div>
                       {selectedWp != null && program.waypoints[selectedWp] && (
-                        <label className="block text-[10px] text-slate-500">
-                          {t("program.changeKind")} ({informCLabel(selectedWp)})
-                          <select
-                            value={program.waypoints[selectedWp].kind}
-                            onChange={(e) => {
-                              const next = setWaypointKind(
-                                program,
-                                selectedWp,
-                                e.target.value as Waypoint["kind"],
-                              );
-                              setProgram(next);
-                              setStatus(
-                                t("status.wpKindChanged", {
-                                  c: informCLabel(selectedWp),
-                                  kind: t(`program.kind.${e.target.value}`),
-                                }),
-                              );
-                            }}
-                            className="mt-0.5 w-full rounded bg-white px-1.5 py-1 text-xs"
-                          >
-                            {(
-                              [
-                                "approach",
-                                "sense",
-                                "weld",
-                                "travel",
-                                "clearance",
-                                "retract",
-                                "index_safe",
-                              ] as const
-                            ).map((k) => (
-                              <option key={k} value={k}>
-                                {t(`program.kind.${k}`)}
-                              </option>
+                        <>
+                          <label className="block text-[10px] text-slate-500">
+                            {t("program.changeKind")} ({informCLabel(selectedWp)})
+                            <select
+                              value={program.waypoints[selectedWp].kind}
+                              onChange={(e) => {
+                                const next = setWaypointKind(
+                                  program,
+                                  selectedWp,
+                                  e.target.value as Waypoint["kind"],
+                                );
+                                setProgram(next);
+                                setStatus(
+                                  t("status.wpKindChanged", {
+                                    c: informCLabel(selectedWp),
+                                    kind: t(`program.kind.${e.target.value}`),
+                                  }),
+                                );
+                              }}
+                              className="mt-0.5 w-full rounded bg-white px-1.5 py-1 text-xs"
+                            >
+                              {(
+                                [
+                                  "approach",
+                                  "sense",
+                                  "weld",
+                                  "travel",
+                                  "clearance",
+                                  "retract",
+                                  "index_safe",
+                                ] as const
+                              ).map((k) => (
+                                <option key={k} value={k}>
+                                  {t(`program.kind.${k}`)}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                          <div className="text-[10px] text-slate-500">
+                            {t("program.xyzMm")} ({informCLabel(selectedWp)})
+                          </div>
+                          <div className="grid grid-cols-3 gap-1">
+                            {(["X", "Y", "Z"] as const).map((axis, ai) => (
+                              <label
+                                key={axis}
+                                className="block text-[9px] text-slate-500"
+                              >
+                                {axis}
+                                <input
+                                  type="number"
+                                  step={1}
+                                  value={Number(
+                                    (
+                                      program.waypoints[selectedWp].pos[ai] * 1000
+                                    ).toFixed(1),
+                                  )}
+                                  onChange={(e) =>
+                                    editSelectedXyzMm(
+                                      ai as 0 | 1 | 2,
+                                      Number(e.target.value) || 0,
+                                    )
+                                  }
+                                  className="mt-0.5 w-full rounded border border-slate-200 bg-white px-1 py-1 font-mono text-[10px]"
+                                />
+                              </label>
                             ))}
-                          </select>
-                        </label>
+                          </div>
+                        </>
                       )}
+                      <div className="grid grid-cols-1 gap-1">
+                        <button
+                          type="button"
+                          disabled={selectedWp == null}
+                          onClick={() => void teachReplaceSelected()}
+                          className={`${btnPrimary} !px-1.5 !py-1.5 text-[10px]`}
+                          title={t("program.teachReplaceHint")}
+                        >
+                          {t("program.teachReplace")}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void teachInsertAfter()}
+                          className={`${btnGhost} !px-1.5 !py-1.5 text-[10px]`}
+                          title={t("program.teachInsertHint")}
+                        >
+                          {t("program.teachInsert")}
+                        </button>
+                      </div>
+                      <p className="text-[9px] leading-snug text-slate-400">
+                        {t("program.teachHelp")}
+                      </p>
                     </div>
                     <div className="min-h-0 flex-1 overflow-y-auto font-mono text-[11px]">
                       {program.waypoints.map((wp, i) => {
@@ -1356,10 +1544,12 @@ export default function Home() {
               <dt className="text-slate-500">{t("robot.frame")}</dt>
               <dd>{t("robot.frameWorld")}</dd>
               <dt className="text-slate-500">{t("robot.tcp")}</dt>
-              <dd>
-                {sample
-                  ? `${sample.pos[0].toFixed(3)}, ${sample.pos[1].toFixed(3)}, ${sample.pos[2].toFixed(3)}`
-                  : "—"}
+              <dd className="text-right">
+                {manualJog && liveTcpMm
+                  ? `${liveTcpMm} mm`
+                  : sample
+                    ? `${(sample.pos[0] * 1000).toFixed(1)}, ${(sample.pos[1] * 1000).toFixed(1)}, ${(sample.pos[2] * 1000).toFixed(1)} mm`
+                    : "—"}
               </dd>
               <dt className="text-slate-500">{t("robot.rail")}</dt>
               <dd>{railTravel.toFixed(3)} m</dd>

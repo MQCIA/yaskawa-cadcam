@@ -19,6 +19,31 @@ export async function calculateIk(points: TcpPoint[], qSeedDeg?: number[]) {
   return res.json();
 }
 
+export type FkPose = {
+  x: number;
+  y: number;
+  z: number;
+  rx: number;
+  ry: number;
+  rz: number;
+};
+
+/** FK bundle: flange / tool0 / tcp_0 for the current joint vector (deg). */
+export async function forwardKinematics(qDeg: number[]) {
+  const res = await fetch(`${BASE}/api/forward-kinematics`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(qDeg),
+  });
+  if (!res.ok) throw new Error(`FK failed: ${res.status}`);
+  return res.json() as Promise<{
+    flange: FkPose;
+    tool0: FkPose;
+    tcp_0: FkPose;
+    tcp: FkPose;
+  }>;
+}
+
 export async function analyzeCad(file: File) {
   const form = new FormData();
   form.append("file", file);
