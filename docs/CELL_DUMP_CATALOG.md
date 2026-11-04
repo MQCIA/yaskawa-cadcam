@@ -179,7 +179,8 @@ Mined pulse scaling lives in `backend/app/pulse_config.py` (do not re-derive bli
 |-------|--------|
 | Every file opened / header-parsed | **Yes** (this catalog + `_dump_scan.json`) |
 | Every `.JBI` INST line interpreted | No — flags + counts; open job when needed |
-| Every ARCSRT/ARCEND row decoded | No — 1000× templates; sample EN 1 |
+| Every ARCSRT/ARCEND row decoded | No — 1000× templates identical; see [CELL_WELD_MAP.md](CELL_WELD_MAP.md) |
+| Motoweld ARGF / WEV# / MOVS map | Yes — [CELL_WELD_MAP.md](CELL_WELD_MAP.md) + `welding_config.py` |
 | Every PRM integer | No — sections + known RC1G/SV1G/RBCALIB mining |
 | `CMOS.BIN` full | **No** (binary image) |
 

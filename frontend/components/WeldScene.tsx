@@ -89,16 +89,29 @@ export default function WeldScene({
       {/* Weld seam — solid orange line on the geometry */}
       <Line points={program.seam} color="#ff7a1a" lineWidth={5} />
 
-      {/* TouchSense search points */}
+      {/* Finger-sized invisible hit spheres along the seam (CAD pick on touch) */}
+      {program.seam.map((p, i) => (
+        <mesh key={`seam-hit-${i}`} position={p} visible={false}>
+          <sphereGeometry args={[0.05, 8, 8]} />
+          <meshBasicMaterial />
+        </mesh>
+      ))}
+
+      {/* TouchSense search points — larger hit radius for finger pick */}
       {program.waypoints
         .filter((w) => w.kind === "sense")
         .map((w) => (
-          <mesh key={w.id} position={w.pos}>
-            <sphereGeometry args={[0.012, 10, 10]} />
-            <meshStandardMaterial color="#2563eb" emissive="#1d4ed8" emissiveIntensity={0.5} />
-          </mesh>
+          <group key={w.id} position={w.pos}>
+            <mesh>
+              <sphereGeometry args={[0.016, 10, 10]} />
+              <meshStandardMaterial color="#2563eb" emissive="#1d4ed8" emissiveIntensity={0.5} />
+            </mesh>
+            <mesh visible={false}>
+              <sphereGeometry args={[0.05, 8, 8]} />
+              <meshBasicMaterial />
+            </mesh>
+          </group>
         ))}
-
 
       {/* Growing weld bead over the welded portion of the seam */}
       {bead.map((p, i) => (
