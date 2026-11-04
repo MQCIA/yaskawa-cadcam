@@ -116,6 +116,8 @@ const pl: Dict = {
   "status.wpTaughtInsert": "Dodano {kind} {c} w pozycji palnika.",
   "status.torchPoseStale": "Brak pozycji palnika ze sceny — włącz widok 3D i jog osi.",
   "status.fkFail": "FK niedostępne ({err}). Uruchom backend.",
+  "status.planFail": "Plan ruchu nieudany: {err}",
+  "status.optimizeFail": "Optymalizacja nieudana: {err}",
 
   // Details
   "details.title": "Szczegóły",
@@ -355,6 +357,8 @@ const en: Dict = {
   "status.wpTaughtInsert": "Added {kind} {c} at torch tip.",
   "status.torchPoseStale": "No torch pose from the scene — show the 3D view and joint-jog.",
   "status.fkFail": "FK unavailable ({err}). Start the backend.",
+  "status.planFail": "Motion plan failed: {err}",
+  "status.optimizeFail": "Sequence optimize failed: {err}",
 
   "details.title": "Details",
   "details.tilt": "Tilt",

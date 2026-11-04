@@ -414,19 +414,31 @@ export default function Home() {
     }
   }
 
+  /** Keep the arm in joint jog — do not kick path-IK / playback. */
+  function holdRobotStill() {
+    setSimPlaying(false);
+    setManualJog(true);
+  }
+
   function planWelds() {
     if (!program) {
       setStatus(t("status.planNeedPart"));
       return;
     }
-    const planned = planMotions(program);
-    setProgram(planned);
-    setLeftTab("program");
-    setStatus(
-      t("status.planDone", {
-        collision: planned.meta?.collisionFree ? t("arcnc.yes") : t("arcnc.no"),
-      }),
-    );
+    try {
+      const planned = planMotions(program);
+      setProgram(planned);
+      holdRobotStill();
+      setLeftTab("program");
+      setStatus(
+        t("status.planDone", {
+          collision: planned.meta?.collisionFree ? t("arcnc.yes") : t("arcnc.no"),
+        }),
+      );
+    } catch (err) {
+      holdRobotStill();
+      setStatus(t("status.planFail", { err: (err as Error).message }));
+    }
   }
 
   function addTouchSense() {
@@ -434,10 +446,16 @@ export default function Home() {
       setStatus(t("status.planNeedPart"));
       return;
     }
-    const next = ensureTouchSense(program);
-    setProgram(next);
-    setLeftTab("program");
-    setStatus(t("status.touchSenseAdded"));
+    try {
+      const next = ensureTouchSense(program);
+      setProgram(next);
+      holdRobotStill();
+      setLeftTab("program");
+      setStatus(t("status.touchSenseAdded"));
+    } catch (err) {
+      holdRobotStill();
+      setStatus(t("status.planFail", { err: (err as Error).message }));
+    }
   }
 
   function optimizeWeldSequence() {
@@ -445,10 +463,17 @@ export default function Home() {
       setStatus(t("status.planNeedPart"));
       return;
     }
-    const next = optimizeSequence(program);
-    setProgram(next);
-    setLeftTab("program");
-    setStatus(t("status.sequenceOptimized"));
+    try {
+      const next = optimizeSequence(program);
+      setProgram(next);
+      holdRobotStill();
+      setSimT(0);
+      setLeftTab("program");
+      setStatus(t("status.sequenceOptimized"));
+    } catch (err) {
+      holdRobotStill();
+      setStatus(t("status.optimizeFail", { err: (err as Error).message }));
+    }
   }
 
   function changeCondition(c: number) {
@@ -458,6 +483,8 @@ export default function Home() {
 
   async function downloadJbi() {
     if (!program) return;
+    // Export must not start path playback / IK following.
+    holdRobotStill();
     const stIdx = selectedStation ?? 0;
     const stationAngle = stations[stIdx]?.rotate ?? 0;
     let jointAnglesDeg: number[][] | undefined;
@@ -470,6 +497,7 @@ export default function Home() {
     } catch {
       // Backend offline — fall back to local RECTAN review export.
     }
+    holdRobotStill();
     const text = generateJbi(program, {
       stationDeg: stationAngle,
       jointAnglesDeg,
