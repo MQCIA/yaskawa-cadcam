@@ -1627,7 +1627,19 @@ export default function Home() {
                   ARC {sample.arcOn ? "ON" : "OFF"}
                   <span className="text-slate-500">·</span>
                   {sample.elapsedSec.toFixed(1)}/{program.cycleSec.toFixed(1)}s
+                  {sample.move ? (
+                    <>
+                      <span className="text-slate-500">·</span>
+                      {sample.move}
+                      {sample.pathClass === "joint" ? " θ" : ""}
+                    </>
+                  ) : null}
                 </div>
+                {sample.warnings && sample.warnings.length > 0 && (
+                  <div className="mt-0.5 max-w-xs text-[10px] text-amber-700">
+                    {sample.warnings[0].message}
+                  </div>
+                )}
               </div>
             )}
 

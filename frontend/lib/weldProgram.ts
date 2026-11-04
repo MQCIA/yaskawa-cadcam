@@ -10,6 +10,12 @@
 // Everything here is an APPROXIMATE placeholder — validate in MotoSim before
 // real hardware use.
 
+import {
+  computeDx200Durations,
+  sampleDx200,
+  type SimWarning,
+} from "@/lib/dx200Sim";
+
 export type Vec3 = [number, number, number];
 /** INFORM: MOVC = circular weld; MOVS = TouchSense search (123123.JBI). */
 export type MoveType = "MOVJ" | "MOVL" | "MOVC" | "MOVS";
@@ -317,16 +323,7 @@ export function checkSingularitySafe(prog: WeldProgram): boolean {
 }
 
 function rebuildDurations(prog: WeldProgram): WeldProgram {
-  const airSpeed = 0.5;
-  const weldSpeed = prog.schedule.travelCmMin / 100 / 60;
-  const segDurations: number[] = [];
-  for (let i = 0; i < prog.waypoints.length - 1; i++) {
-    const a = prog.waypoints[i];
-    const b = prog.waypoints[i + 1];
-    const welding = a.arc && b.arc;
-    segDurations.push(dist(a.pos, b.pos) / (welding ? Math.max(weldSpeed, 1e-6) : airSpeed));
-  }
-  const cycleSec = segDurations.reduce((s, d) => s + d, 0);
+  const { segDurations, cycleSec } = computeDx200Durations(prog);
   return { ...prog, segDurations, cycleSec };
 }
 
@@ -1352,60 +1349,41 @@ function torchDirAt(prog: WeldProgram, wpIndex: number): Vec3 {
   return frames[i]?.dir ?? frames[0].dir;
 }
 
-/** Interpolate the TCP along the program at progress p in [0,1]. */
-export function sampleProgram(prog: WeldProgram, p: number) {
-  const wps = prog.waypoints;
-  if (!wps.length) {
-    return {
-      pos: [0, 0, 0] as Vec3,
-      dir: DEFAULT_TORCH_DIR,
-      wpIndex: 0,
-      arcOn: false,
-      elapsedSec: 0,
-    };
-  }
-  const durations =
-    prog.segDurations.length === wps.length - 1
-      ? prog.segDurations
-      : rebuildDurations(prog).segDurations;
-  const cycle =
-    prog.cycleSec > 1e-9
-      ? prog.cycleSec
-      : Math.max(
-          1e-6,
-          durations.reduce((s, d) => s + d, 0),
-        );
-  const target = Math.max(0, Math.min(1, p)) * cycle;
-  let acc = 0;
-  const nSeg = Math.min(durations.length, Math.max(0, wps.length - 1));
-  for (let i = 0; i < nSeg; i++) {
-    const d = Math.max(0, durations[i] ?? 0);
-    if (target <= acc + d || i === nSeg - 1) {
-      const local = d > 0 ? (target - acc) / d : 0;
-      const a = wps[i].pos;
-      const b = wps[i + 1]?.pos ?? a;
-      const pos: Vec3 = [
-        a[0] + (b[0] - a[0]) * local,
-        a[1] + (b[1] - a[1]) * local,
-        a[2] + (b[2] - a[2]) * local,
-      ];
-      return {
-        pos,
-        dir: torchDirAt(prog, i),
-        wpIndex: i,
-        arcOn: Boolean(wps[i].arc && wps[i + 1]?.arc),
-        elapsedSec: target,
-      };
-    }
-    acc += d;
-  }
-  const last = wps[wps.length - 1];
+export type ProgramSample = {
+  pos: Vec3;
+  dir: Vec3;
+  wpIndex: number;
+  arcOn: boolean;
+  elapsedSec: number;
+  jointsDeg?: number[];
+  move?: MoveType | "TIMER";
+  weaveActive?: boolean;
+  warnings?: SimWarning[];
+  pathClass?: "joint" | "cart" | "dwell";
+  bc?: number;
+  ecDeg?: number;
+};
+
+/** Interpolate TCP / joints along the program at progress p∈[0,1] (DX200 physics). */
+export function sampleProgram(
+  prog: WeldProgram,
+  p: number,
+  weaveNo = 0,
+): ProgramSample {
+  const s = sampleDx200(prog, p, weaveNo || prog.meta?.activeWeaveNo || 0);
   return {
-    pos: last.pos,
-    dir: torchDirAt(prog, wps.length - 1),
-    wpIndex: wps.length - 1,
-    arcOn: false,
-    elapsedSec: cycle,
+    pos: s.pos,
+    dir: s.dir,
+    wpIndex: s.wpIndex,
+    arcOn: s.arcOn,
+    elapsedSec: s.elapsedSec,
+    jointsDeg: s.jointsDeg,
+    move: s.move,
+    weaveActive: s.weaveActive,
+    warnings: s.warnings,
+    pathClass: s.pathClass,
+    bc: s.bc,
+    ecDeg: s.ecDeg,
   };
 }
 
