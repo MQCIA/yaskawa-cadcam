@@ -320,10 +320,169 @@ function rebuildDurations(prog: WeldProgram): WeldProgram {
     const a = prog.waypoints[i];
     const b = prog.waypoints[i + 1];
     const welding = a.arc && b.arc;
-    segDurations.push(dist(a.pos, b.pos) / (welding ? weldSpeed : airSpeed));
+    segDurations.push(dist(a.pos, b.pos) / (welding ? Math.max(weldSpeed, 1e-6) : airSpeed));
   }
   const cycleSec = segDurations.reduce((s, d) => s + d, 0);
   return { ...prog, segDurations, cycleSec };
+}
+
+function renumberWaypoints(waypoints: Waypoint[]): Waypoint[] {
+  return waypoints.map((w, i) => ({ ...w, id: pad(i + 1) }));
+}
+
+/** Re-tag ARCON/ARCOF on each contiguous weld run after edits. */
+function retagWeldArcs(waypoints: Waypoint[]): Waypoint[] {
+  const out = waypoints.map((w) => {
+    if (w.kind === "weld" && (w.tag === "ARCON" || w.tag === "ARCOF")) {
+      return { ...w, tag: undefined };
+    }
+    if (w.kind !== "weld" && (w.tag === "ARCON" || w.tag === "ARCOF")) {
+      return { ...w, tag: undefined };
+    }
+    return w;
+  });
+  let i = 0;
+  while (i < out.length) {
+    if (out[i].kind !== "weld") {
+      i++;
+      continue;
+    }
+    const start = i;
+    while (i < out.length && out[i].kind === "weld") i++;
+    const end = i - 1;
+    out[start] = { ...out[start], tag: "ARCON", arc: true };
+    out[end] = { ...out[end], tag: "ARCOF", arc: true };
+    for (let j = start + 1; j < end; j++) {
+      out[j] = { ...out[j], arc: true, tag: undefined };
+    }
+  }
+  return out;
+}
+
+function finalizeWaypoints(prog: WeldProgram, waypoints: Waypoint[]): WeldProgram {
+  const cleaned = renumberWaypoints(retagWeldArcs(waypoints));
+  return refreshMeta(rebuildDurations({ ...prog, waypoints: cleaned }));
+}
+
+export type IdleInsertKind =
+  | "travel"
+  | "clearance"
+  | "approach"
+  | "retract"
+  | "index_safe";
+
+const IDLE_SPEED: Record<IdleInsertKind, string> = {
+  travel: "VJ=50.00",
+  clearance: "VJ=80.00",
+  approach: "VJ=80.00",
+  retract: "VJ=50.00",
+  index_safe: "VJ=50.00",
+};
+
+/** Midpoint between two poses, optionally lifted in world Y (metres). */
+function midLift(a: Vec3, b: Vec3, liftM: number): Vec3 {
+  return [
+    (a[0] + b[0]) / 2,
+    (a[1] + b[1]) / 2 + liftM,
+    (a[2] + b[2]) / 2,
+  ];
+}
+
+/**
+ * Delete a program waypoint by index. Keeps at least two points.
+ * Rebuilds C# order, ARCON/ARCOF tags, and segment durations.
+ */
+export function deleteWaypoint(prog: WeldProgram, index: number): WeldProgram {
+  if (prog.waypoints.length <= 2) return prog;
+  if (index < 0 || index >= prog.waypoints.length) return prog;
+  const waypoints = prog.waypoints.filter((_, i) => i !== index);
+  return finalizeWaypoints(prog, waypoints);
+}
+
+/**
+ * Insert an idle / via point after ``afterIndex`` (−1 = before first).
+ * Default pose is the midpoint to the next point, lifted ``liftMm`` (clearance).
+ */
+export function insertIdleWaypoint(
+  prog: WeldProgram,
+  afterIndex: number,
+  kind: IdleInsertKind = "clearance",
+  opts?: { liftMm?: number; pos?: Vec3 },
+): WeldProgram {
+  const n = prog.waypoints.length;
+  if (n === 0) return prog;
+  const liftM = (opts?.liftMm ?? (kind === "clearance" || kind === "index_safe" ? 150 : 40)) / 1000;
+  const insertAt = Math.max(0, Math.min(n, afterIndex + 1));
+  const prev = prog.waypoints[Math.max(0, insertAt - 1)] ?? prog.waypoints[0];
+  const next = prog.waypoints[Math.min(n - 1, insertAt)] ?? prev;
+  const pos = opts?.pos ?? midLift(prev.pos, next.pos, liftM);
+  const wp: Waypoint = {
+    id: "tmp",
+    pos,
+    move: "MOVJ",
+    speedLabel: IDLE_SPEED[kind],
+    arc: false,
+    kind,
+    bc: prev.bc ?? next.bc,
+    ec: prev.ec ?? next.ec,
+  };
+  const waypoints = [
+    ...prog.waypoints.slice(0, insertAt),
+    wp,
+    ...prog.waypoints.slice(insertAt),
+  ];
+  return finalizeWaypoints(prog, waypoints);
+}
+
+/** Insert a duplicate of the selected point offset slightly (manual tweak seed). */
+export function duplicateWaypoint(
+  prog: WeldProgram,
+  index: number,
+  kind: IdleInsertKind = "travel",
+): WeldProgram {
+  if (index < 0 || index >= prog.waypoints.length) return prog;
+  const src = prog.waypoints[index];
+  const pos: Vec3 = [src.pos[0], src.pos[1] + 0.05, src.pos[2]];
+  return insertIdleWaypoint(prog, index, kind, { pos, liftMm: 0 });
+}
+
+/** Change kind / move type of an existing waypoint (e.g. weld → travel). */
+export function setWaypointKind(
+  prog: WeldProgram,
+  index: number,
+  kind: Waypoint["kind"],
+): WeldProgram {
+  if (index < 0 || index >= prog.waypoints.length) return prog;
+  const waypoints: Waypoint[] = prog.waypoints.map((w, i) => {
+    if (i !== index) return w;
+    const isWeld = kind === "weld";
+    const isSense = kind === "sense";
+    const move: MoveType = isSense
+      ? "MOVS"
+      : isWeld
+        ? w.move === "MOVC"
+          ? "MOVC"
+          : "MOVL"
+        : "MOVJ";
+    const idleKey: IdleInsertKind = (
+      ["travel", "clearance", "approach", "retract", "index_safe"] as string[]
+    ).includes(kind)
+      ? (kind as IdleInsertKind)
+      : "travel";
+    return {
+      ...w,
+      kind,
+      move,
+      arc: isWeld,
+      speedLabel: isWeld
+        ? `V=${prog.schedule.travelCmMin.toFixed(1)}`
+        : isSense
+          ? `V=${TOUCH_SENSE.searchSpeedCmMin}`
+          : IDLE_SPEED[idleKey],
+      tag: isSense ? "TOUCH" : undefined,
+    };
+  });
+  return finalizeWaypoints(prog, waypoints);
 }
 
 function withMeta(

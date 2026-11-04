@@ -44,6 +44,12 @@ import {
   ensureTouchSense,
   optimizeSequence,
   planMotions,
+  deleteWaypoint,
+  insertIdleWaypoint,
+  duplicateWaypoint,
+  setWaypointKind,
+  type IdleInsertKind,
+  type Waypoint,
   type WeldProgram,
 } from "@/lib/weldProgram";
 import {
@@ -97,6 +103,7 @@ export default function Home() {
   const [simSpeed, setSimSpeed] = useState(1);
   const [selectedWp, setSelectedWp] = useState<number | null>(null);
   const [selectedSeamId, setSelectedSeamId] = useState<string | null>(null);
+  const [insertKind, setInsertKind] = useState<IdleInsertKind>("clearance");
 
   // Verbotics-style: joint jog is always available; ON until the user plays a plan.
   const [manualJog, setManualJog] = useState(true);
@@ -199,6 +206,65 @@ export default function Home() {
         spin: edit.spinOffsetDeg.toFixed(0),
       }),
     );
+  }
+
+  function removeSelectedPoint() {
+    if (!program || selectedWp == null) return;
+    if (program.waypoints.length <= 2) {
+      setStatus(t("status.wpMinPoints"));
+      return;
+    }
+    const idx = selectedWp;
+    const next = deleteWaypoint(program, idx);
+    setProgram(next);
+    const newIdx = Math.min(idx, next.waypoints.length - 1);
+    setSelectedWp(newIdx);
+    setSimT(0);
+    setStatus(t("status.wpDeleted", { c: informCLabel(idx) }));
+  }
+
+  function insertPointAfterSelected() {
+    if (!program) return;
+    const after = selectedWp ?? program.waypoints.length - 1;
+    const next = insertIdleWaypoint(program, after, insertKind);
+    setProgram(next);
+    const newIdx = Math.min(after + 1, next.waypoints.length - 1);
+    setSelectedWp(newIdx);
+    setManualJog(false);
+    setSimPlaying(false);
+    // Seek after durations rebuild — approximate mid progress.
+    const cum = [0];
+    for (const d of next.segDurations) cum.push(cum[cum.length - 1] + d);
+    const total = next.cycleSec || 1;
+    setSimT((cum[newIdx] ?? 0) / total);
+    setStatus(
+      t("status.wpInserted", {
+        kind: t(`program.kind.${insertKind}`),
+        c: informCLabel(newIdx),
+      }),
+    );
+  }
+
+  function insertPointBeforeSelected() {
+    if (!program || selectedWp == null) return;
+    const after = selectedWp - 1;
+    const next = insertIdleWaypoint(program, after, insertKind);
+    setProgram(next);
+    setSelectedWp(selectedWp);
+    setStatus(
+      t("status.wpInserted", {
+        kind: t(`program.kind.${insertKind}`),
+        c: informCLabel(selectedWp),
+      }),
+    );
+  }
+
+  function duplicateSelectedPoint() {
+    if (!program || selectedWp == null) return;
+    const next = duplicateWaypoint(program, selectedWp, insertKind);
+    setProgram(next);
+    setSelectedWp(selectedWp + 1);
+    setStatus(t("status.wpDuplicated", { c: informCLabel(selectedWp + 1) }));
   }
 
   function makeProgram(cond: number) {
@@ -844,48 +910,168 @@ export default function Home() {
             )}
 
             {leftTab === "program" && (
-              <div className="space-y-1">
+              <div className="flex h-full min-h-0 flex-col gap-1">
                 {program ? (
-                  <div className="max-h-full overflow-y-auto font-mono text-[11px]">
-                    {program.waypoints.map((wp, i) => {
-                      const diag = wpDiags[i];
-                      return (
-                        <button
-                          key={wp.id}
-                          onClick={() => selectWaypoint(i)}
-                          className={`flex w-full items-center gap-2 rounded px-2 py-0.5 text-left ${
-                            selectedWp === i || (sample && i === sample.wpIndex)
-                              ? "bg-[#fff1e6] text-[#e87722]"
-                              : "text-slate-700 hover:bg-slate-100"
-                          }`}
+                  <>
+                    <div className="shrink-0 space-y-1.5 rounded border border-slate-200 bg-slate-50 p-1.5">
+                      <div className="text-[10px] font-semibold uppercase text-slate-500">
+                        {t("program.editTitle")}
+                      </div>
+                      <label className="block text-[10px] text-slate-500">
+                        {t("program.insertKind")}
+                        <select
+                          value={insertKind}
+                          onChange={(e) =>
+                            setInsertKind(e.target.value as IdleInsertKind)
+                          }
+                          className="mt-0.5 w-full rounded bg-white px-1.5 py-1 text-xs"
                         >
-                          <span className="w-12 text-slate-500">{informCLabel(i)}</span>
-                          <span className="w-10">{wp.move}</span>
-                          <span className="w-14 truncate text-[10px] uppercase text-slate-400">
-                            {t(`program.kind.${wp.kind}`)}
-                          </span>
-                          <span className="flex-1 truncate">{wp.speedLabel}</span>
-                          <span
-                            className={
-                              diag?.ik === "collision"
-                                ? "text-red-600"
-                                : diag?.ik === "near_limit"
-                                  ? "text-amber-600"
-                                  : wp.tag === "TOUCH"
-                                    ? "text-blue-600"
-                                    : "text-orange-600"
-                            }
-                          >
-                            {diag?.ik !== "ok"
-                              ? "!"
-                              : wp.tag === "TOUCH"
-                                ? t("welds.tagTouch")
-                                : wp.tag ?? ""}
-                          </span>
+                          <option value="clearance">{t("program.kind.clearance")}</option>
+                          <option value="travel">{t("program.kind.travel")}</option>
+                          <option value="approach">{t("program.kind.approach")}</option>
+                          <option value="retract">{t("program.kind.retract")}</option>
+                          <option value="index_safe">{t("program.kind.index_safe")}</option>
+                        </select>
+                      </label>
+                      <div className="grid grid-cols-2 gap-1">
+                        <button
+                          type="button"
+                          disabled={selectedWp == null}
+                          onClick={insertPointBeforeSelected}
+                          className={`${btnGhost} !px-1.5 !py-1 text-[10px]`}
+                          title={t("program.insertBefore")}
+                        >
+                          + {t("program.before")}
                         </button>
-                      );
-                    })}
-                  </div>
+                        <button
+                          type="button"
+                          onClick={insertPointAfterSelected}
+                          className={`${btnGhost} !px-1.5 !py-1 text-[10px]`}
+                          title={t("program.insertAfter")}
+                        >
+                          + {t("program.after")}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={selectedWp == null}
+                          onClick={duplicateSelectedPoint}
+                          className={`${btnGhost} !px-1.5 !py-1 text-[10px]`}
+                        >
+                          {t("program.duplicate")}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={selectedWp == null || program.waypoints.length <= 2}
+                          onClick={removeSelectedPoint}
+                          className="rounded border border-red-200 bg-white px-1.5 py-1 text-[10px] text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                          {t("program.delete")}
+                        </button>
+                      </div>
+                      {selectedWp != null && program.waypoints[selectedWp] && (
+                        <label className="block text-[10px] text-slate-500">
+                          {t("program.changeKind")} ({informCLabel(selectedWp)})
+                          <select
+                            value={program.waypoints[selectedWp].kind}
+                            onChange={(e) => {
+                              const next = setWaypointKind(
+                                program,
+                                selectedWp,
+                                e.target.value as Waypoint["kind"],
+                              );
+                              setProgram(next);
+                              setStatus(
+                                t("status.wpKindChanged", {
+                                  c: informCLabel(selectedWp),
+                                  kind: t(`program.kind.${e.target.value}`),
+                                }),
+                              );
+                            }}
+                            className="mt-0.5 w-full rounded bg-white px-1.5 py-1 text-xs"
+                          >
+                            {(
+                              [
+                                "approach",
+                                "sense",
+                                "weld",
+                                "travel",
+                                "clearance",
+                                "retract",
+                                "index_safe",
+                              ] as const
+                            ).map((k) => (
+                              <option key={k} value={k}>
+                                {t(`program.kind.${k}`)}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                      )}
+                    </div>
+                    <div className="min-h-0 flex-1 overflow-y-auto font-mono text-[11px]">
+                      {program.waypoints.map((wp, i) => {
+                        const diag = wpDiags[i];
+                        return (
+                          <div
+                            key={`${wp.id}-${i}`}
+                            className={`flex w-full items-center gap-1 rounded px-1 py-0.5 ${
+                              selectedWp === i || (sample && i === sample.wpIndex)
+                                ? "bg-[#fff1e6] text-[#e87722]"
+                                : "text-slate-700 hover:bg-slate-100"
+                            }`}
+                          >
+                            <button
+                              type="button"
+                              onClick={() => selectWaypoint(i)}
+                              className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                            >
+                              <span className="w-12 shrink-0 text-slate-500">
+                                {informCLabel(i)}
+                              </span>
+                              <span className="w-10 shrink-0">{wp.move}</span>
+                              <span className="w-14 shrink-0 truncate text-[10px] uppercase text-slate-400">
+                                {t(`program.kind.${wp.kind}`)}
+                              </span>
+                              <span className="min-w-0 flex-1 truncate">{wp.speedLabel}</span>
+                              <span
+                                className={
+                                  diag?.ik === "collision"
+                                    ? "text-red-600"
+                                    : diag?.ik === "near_limit"
+                                      ? "text-amber-600"
+                                      : wp.tag === "TOUCH"
+                                        ? "text-blue-600"
+                                        : "text-orange-600"
+                                }
+                              >
+                                {diag?.ik !== "ok"
+                                  ? "!"
+                                  : wp.tag === "TOUCH"
+                                    ? t("welds.tagTouch")
+                                    : wp.tag ?? ""}
+                              </span>
+                            </button>
+                            <button
+                              type="button"
+                              title={t("program.delete")}
+                              disabled={program.waypoints.length <= 2}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedWp(i);
+                                const next = deleteWaypoint(program, i);
+                                setProgram(next);
+                                setSelectedWp(Math.min(i, next.waypoints.length - 1));
+                                setStatus(t("status.wpDeleted", { c: informCLabel(i) }));
+                              }}
+                              className="shrink-0 rounded px-1.5 py-0.5 text-[10px] text-red-600 hover:bg-red-50 disabled:opacity-30"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </>
                 ) : (
                   <p className="px-1 text-xs text-slate-500">{t("program.empty")}</p>
                 )}

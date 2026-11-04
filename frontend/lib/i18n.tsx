@@ -91,6 +91,20 @@ const pl: Dict = {
 
   // Program
   "program.empty": "Brak programu. Najpierw zaplanuj spoiny.",
+  "program.editTitle": "Edycja punktów",
+  "program.insertKind": "Typ nowego punktu",
+  "program.insertBefore": "Wstaw przed wybranym",
+  "program.insertAfter": "Wstaw za wybranym",
+  "program.before": "Przed",
+  "program.after": "Za",
+  "program.duplicate": "Duplikuj",
+  "program.delete": "Usuń",
+  "program.changeKind": "Zmień typ punktu",
+  "status.wpDeleted": "Usunięto {c}.",
+  "status.wpInserted": "Wstawiono {kind} → {c}.",
+  "status.wpDuplicated": "Zduplikowano → {c}.",
+  "status.wpKindChanged": "{c} → {kind}.",
+  "status.wpMinPoints": "Program musi mieć co najmniej 2 punkty.",
 
   // Details
   "details.title": "Szczegóły",
@@ -305,6 +319,20 @@ const en: Dict = {
   "welds.empty": "No welds yet. Use Plan → Identify Welds.",
 
   "program.empty": "No program. Plan welds first.",
+  "program.editTitle": "Edit points",
+  "program.insertKind": "New point type",
+  "program.insertBefore": "Insert before selected",
+  "program.insertAfter": "Insert after selected",
+  "program.before": "Before",
+  "program.after": "After",
+  "program.duplicate": "Duplicate",
+  "program.delete": "Delete",
+  "program.changeKind": "Change point type",
+  "status.wpDeleted": "Deleted {c}.",
+  "status.wpInserted": "Inserted {kind} → {c}.",
+  "status.wpDuplicated": "Duplicated → {c}.",
+  "status.wpKindChanged": "{c} → {kind}.",
+  "status.wpMinPoints": "Program needs at least 2 points.",
 
   "details.title": "Details",
   "details.tilt": "Tilt",
