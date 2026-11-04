@@ -1,7 +1,5 @@
 "use client";
 
-import { Html } from "@react-three/drei";
-
 /**
  * Procedural Lorch S8 welding power source ("spawarka") on a travelling dolly.
  *
@@ -12,9 +10,9 @@ import { Html } from "@react-three/drei";
  */
 export default function WeldPowerSource({
   position = [0, 0, 0],
-  label = "LORCH S8",
 }: {
   position?: [number, number, number];
+  /** @deprecated Branding badge removed — it occluded the 3D view. */
   label?: string;
 }) {
   const body = 0x2a2f36; // anthracite cabinet
@@ -110,17 +108,6 @@ export default function WeldPowerSource({
         </mesh>
       </group>
 
-      {/* Branding badge */}
-      <Html
-        position={[cabW / 2 + 0.02, cabCy + 0.3, 0]}
-        center
-        distanceFactor={7}
-        occlude={false}
-      >
-        <div className="whitespace-nowrap rounded bg-[#0072ce] px-1.5 py-0.5 text-[11px] font-bold tracking-wide text-white">
-          {label}
-        </div>
-      </Html>
     </group>
   );
 }

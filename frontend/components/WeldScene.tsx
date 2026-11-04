@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
-import { Html, Line } from "@react-three/drei";
+import { Line } from "@react-three/drei";
 import * as THREE from "three";
 import { sampleProgram, type Vec3, type WeldProgram } from "@/lib/weldProgram";
 import {
@@ -100,8 +100,6 @@ function PathHit({
   selected: boolean;
   onSelect: (i: number) => void;
 }) {
-  const [hover, setHover] = useState(false);
-  const show = hover || selected;
   const color =
     diag.ik === "collision"
       ? "#ef4444"
@@ -113,13 +111,10 @@ function PathHit({
   return (
     <group position={pos}>
       <mesh
-        onPointerOver={(e) => {
-          e.stopPropagation();
-          setHover(true);
+        onPointerOver={() => {
           document.body.style.cursor = "pointer";
         }}
         onPointerOut={() => {
-          setHover(false);
           document.body.style.cursor = "auto";
         }}
         onClick={(e) => {
@@ -131,17 +126,12 @@ function PathHit({
         <meshStandardMaterial
           color={color}
           emissive={color}
-          emissiveIntensity={selected || hover ? 0.55 : 0.2}
+          emissiveIntensity={selected ? 0.55 : 0.2}
         />
       </mesh>
       {/* Finger-sized invisible hit target */}
       <mesh
         visible={false}
-        onPointerOver={(e) => {
-          e.stopPropagation();
-          setHover(true);
-        }}
-        onPointerOut={() => setHover(false)}
         onClick={(e) => {
           e.stopPropagation();
           onSelect(diag.index);
@@ -150,30 +140,6 @@ function PathHit({
         <sphereGeometry args={[0.045, 8, 8]} />
         <meshBasicMaterial />
       </mesh>
-      {show && (
-        <Html distanceFactor={10} style={{ pointerEvents: "none" }} center>
-          <div className="whitespace-nowrap rounded border border-slate-300 bg-white/95 px-2 py-1 font-mono text-[10px] text-slate-800 shadow-md">
-            <div className="font-sans text-[9px] font-semibold uppercase text-slate-500">
-              {diag.cLabel}
-            </div>
-            <div>
-              {diag.move} {diag.speedLabel}
-            </div>
-            <div>BC={diag.bc ?? "—"}</div>
-            <div
-              className={
-                diag.ik === "ok"
-                  ? "text-emerald-600"
-                  : diag.ik === "near_limit"
-                    ? "text-amber-600"
-                    : "text-red-600"
-              }
-            >
-              IK: {diag.ikLabel}
-            </div>
-          </div>
-        </Html>
-      )}
     </group>
   );
 }
