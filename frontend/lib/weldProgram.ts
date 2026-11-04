@@ -38,6 +38,10 @@ export type Waypoint = {
   ec?: [number, number];
   /** Optional RECT-X BS1 zone pulse (stable plateaus from 02025_KOSZ). */
   bc?: number;
+  /**
+   * Optional dwell after ARCON (s) — tack welds emit ``TIMER T=2.00`` like ``12.JBI``.
+   */
+  timerSec?: number;
 };
 
 export type WeldScheduleRow = {
@@ -350,10 +354,21 @@ function retagWeldArcs(waypoints: Waypoint[]): Waypoint[] {
     const start = i;
     while (i < out.length && out[i].kind === "weld") i++;
     const end = i - 1;
-    out[start] = { ...out[start], tag: "ARCON", arc: true };
-    out[end] = { ...out[end], tag: "ARCOF", arc: true };
-    for (let j = start + 1; j < end; j++) {
-      out[j] = { ...out[j], arc: true, tag: undefined };
+    if (start === end) {
+      // Tack / single sample — keep ARCON; ARCOF is emitted by the JBI writer
+      // when ``timerSec`` is set (12.JBI pattern) or on the same point.
+      out[start] = {
+        ...out[start],
+        tag: "ARCON",
+        arc: true,
+        timerSec: out[start].timerSec ?? 2.0,
+      };
+    } else {
+      out[start] = { ...out[start], tag: "ARCON", arc: true };
+      out[end] = { ...out[end], tag: "ARCOF", arc: true };
+      for (let j = start + 1; j < end; j++) {
+        out[j] = { ...out[j], arc: true, tag: undefined };
+      }
     }
   }
   return out;
@@ -550,6 +565,231 @@ export function setWaypointKind(
     };
   });
   return finalizeWaypoints(prog, waypoints);
+}
+
+export type SketchSeamKind = "tack" | "line" | "arc" | "spline";
+
+export type SketchedSeamInput = {
+  kind: SketchSeamKind;
+  /** Sampled seam points in program / world frame (metres). */
+  points: Vec3[];
+  /** Per-point torch wire directions (into the joint). */
+  dirs: Vec3[];
+  approachMm?: number;
+  label?: string;
+};
+
+/**
+ * Append a hand-drawn seam (tack / MOVL / MOVC / spline) with approach + retract.
+ * Keeps existing waypoints; stitches a clearance hop from the previous tip.
+ */
+export function appendSketchedSeam(
+  prog: WeldProgram,
+  input: SketchedSeamInput,
+): WeldProgram {
+  const pts = input.points;
+  if (!pts.length) return prog;
+  const dirs =
+    input.dirs.length === pts.length
+      ? input.dirs.map((d) => norm(d))
+      : pts.map(() => norm(input.dirs[0] ?? ([0, -Math.SQRT1_2, -Math.SQRT1_2] as Vec3)));
+  const approachMm = input.approachMm ?? 60;
+  const lift = approachMm / 1000;
+  const sch = prog.schedule;
+  const speedLabel = `V=${sch.travelCmMin.toFixed(1)}`;
+  const move: MoveType =
+    input.kind === "arc" ? "MOVC" : input.kind === "tack" ? "MOVL" : "MOVL";
+
+  const first = pts[0];
+  const last = pts[pts.length - 1];
+  const dir0 = dirs[0];
+  const dirN = dirs[dirs.length - 1];
+  const approachPos: Vec3 = [
+    first[0] - dir0[0] * lift,
+    first[1] - dir0[1] * lift,
+    first[2] - dir0[2] * lift,
+  ];
+  const retractPos: Vec3 = [
+    last[0] - dirN[0] * lift,
+    last[1] - dirN[1] * lift,
+    last[2] - dirN[2] * lift,
+  ];
+
+  const extra: Waypoint[] = [];
+  if (prog.waypoints.length > 0) {
+    const tip = prog.waypoints[prog.waypoints.length - 1].pos;
+    const mid: Vec3 = [
+      (tip[0] + approachPos[0]) / 2,
+      Math.max(tip[1], approachPos[1]) + 0.08,
+      (tip[2] + approachPos[2]) / 2,
+    ];
+    extra.push({
+      id: "TMP",
+      pos: mid,
+      move: "MOVJ",
+      speedLabel: "VJ=80.00",
+      arc: false,
+      kind: "clearance",
+    });
+  }
+  extra.push({
+    id: "TMP",
+    pos: approachPos,
+    move: "MOVJ",
+    speedLabel: "VJ=80.00",
+    arc: false,
+    kind: "approach",
+  });
+
+  if (input.kind === "tack") {
+    // 12.JBI pattern: ARCON → TIMER T=2.00 → ARCOF at one TCP.
+    extra.push({
+      id: "TMP",
+      pos: first,
+      move: "MOVL",
+      speedLabel,
+      arc: true,
+      kind: "weld",
+      tag: "ARCON",
+      timerSec: 2.0,
+    });
+  } else {
+    for (let i = 0; i < pts.length; i++) {
+      extra.push({
+        id: "TMP",
+        pos: pts[i],
+        move,
+        speedLabel,
+        arc: true,
+        kind: "weld",
+        tag:
+          i === 0
+            ? "ARCON"
+            : i === pts.length - 1
+              ? "ARCOF"
+              : undefined,
+      });
+    }
+  }
+
+  extra.push({
+    id: "TMP",
+    pos: retractPos,
+    move: "MOVJ",
+    speedLabel: "VJ=50.00",
+    arc: false,
+    kind: "retract",
+  });
+
+  const waypoints = [...prog.waypoints, ...extra];
+  const seam = [...prog.seam, ...pts];
+  const torchFrames = [
+    ...prog.torchFrames,
+    ...pts.map((pos, i) => ({ pos, dir: dirs[i] })),
+  ];
+
+  let next = finalizeWaypoints({ ...prog, seam, torchFrames }, waypoints);
+
+  // retagWeldArcs may drop timerSec — restore dwell on the last tack weld.
+  if (input.kind === "tack") {
+    const wps = [...next.waypoints];
+    for (let i = wps.length - 1; i >= 0; i--) {
+      if (wps[i].kind === "weld") {
+        wps[i] = { ...wps[i], timerSec: 2.0 };
+        break;
+      }
+    }
+    next = rebuildDurations({ ...next, waypoints: wps });
+  }
+
+  let end = -1;
+  for (let i = next.waypoints.length - 1; i >= 0; i--) {
+    if (next.waypoints[i].kind === "weld") {
+      end = i;
+      break;
+    }
+  }
+  let start = end;
+  while (start > 0 && next.waypoints[start - 1].kind === "weld") start--;
+  let approachIdx = start;
+  for (let j = start - 1; j >= 0; j--) {
+    if (next.waypoints[j].kind === "approach") {
+      approachIdx = j;
+      break;
+    }
+  }
+  let retractIdx = end;
+  for (let j = end + 1; j < next.waypoints.length; j++) {
+    if (next.waypoints[j].kind === "retract") {
+      retractIdx = j;
+      break;
+    }
+  }
+  const prevEdits = prog.meta?.seamEdits ?? [];
+  const n = prevEdits.length + 1;
+  const kindLabel =
+    input.kind === "tack"
+      ? "TACK"
+      : input.kind === "arc"
+        ? "ARC"
+        : input.kind === "spline"
+          ? "SPLINE"
+          : "LINE";
+  const seamEdits = [
+    ...prevEdits,
+    {
+      id: `seam-sk-${Date.now().toString(36)}`,
+      label: input.label ?? `Spoina ${n} (${kindLabel})`,
+      weldStart: start,
+      weldEnd: end,
+      approachIdx,
+      retractIdx,
+      spinOffsetDeg: 0,
+      travelAngleDeg: 12,
+      approachMm,
+      weaveNo: input.kind === "tack" ? 0 : 21,
+      weldSpeedV: sch.travelCmMin,
+      reversed: false,
+      sketchKind: input.kind,
+    },
+  ];
+
+  return withMeta(next, { seamEdits });
+}
+
+/** Remove one logical seam (approach…retract inclusive when dedicated). */
+export function deleteSeam(
+  prog: WeldProgram,
+  weldStart: number,
+  weldEnd: number,
+): WeldProgram {
+  if (weldStart < 0 || weldEnd < weldStart || weldEnd >= prog.waypoints.length) {
+    return prog;
+  }
+  let from = weldStart;
+  let to = weldEnd;
+  for (let j = weldStart - 1; j >= 0; j--) {
+    const k = prog.waypoints[j].kind;
+    if (k === "approach" || k === "clearance" || k === "travel") {
+      from = j;
+      break;
+    }
+    if (k === "weld") break;
+  }
+  for (let j = weldEnd + 1; j < prog.waypoints.length; j++) {
+    const k = prog.waypoints[j].kind;
+    if (k === "retract" || k === "clearance" || k === "travel") {
+      to = j;
+      break;
+    }
+    if (k === "weld") break;
+  }
+  if (prog.waypoints.length - (to - from + 1) < 2) return prog;
+  const waypoints = prog.waypoints.filter((_, i) => i < from || i > to);
+  const seamEdits = (prog.meta?.seamEdits ?? []).filter(
+    (e) => !(e.weldStart === weldStart && e.weldEnd === weldEnd),
+  );
+  return withMeta(finalizeWaypoints(prog, waypoints), { seamEdits });
 }
 
 function withMeta(
@@ -1361,15 +1601,23 @@ export function generateJbi(
       p.kind === "index_safe";
 
     if (p.tag === "ARCON") {
-      lines.push("TIMER T=0.50");
-      lines.push(`MACRO1 MJ#(0) ARGF${sch.job}`);
-      lines.push(
-        `' Lorch Tiptronic PROG-NR/ARGF${sch.job} (UI cond ${sch.condition}): ` +
-          `${sch.currentA}A / ${sch.voltageV.toFixed(1)}V / wire ${sch.wireMmin.toFixed(1)} m/min ` +
-          `— ARCSRT template; validate WPS`,
-      );
+      const isTack = (p.timerSec ?? 0) >= 1.5;
+      if (!isTack) {
+        lines.push("TIMER T=0.50");
+        lines.push(`MACRO1 MJ#(0) ARGF${sch.job}`);
+        lines.push(
+          `' Lorch Tiptronic PROG-NR/ARGF${sch.job} (UI cond ${sch.condition}): ` +
+            `${sch.currentA}A / ${sch.voltageV.toFixed(1)}V / wire ${sch.wireMmin.toFixed(1)} m/min ` +
+            `— ARCSRT template; validate WPS`,
+        );
+      }
       lines.push("ARCON");
-      lines.push(`WVON WEV#(${weaveNo})`);
+      if (isTack) {
+        // 12.JBI tack: ARCON / TIMER T=2.00 / ARCOF (no weave).
+        lines.push(`TIMER T=${(p.timerSec ?? 2).toFixed(2)}`);
+      } else {
+        lines.push(`WVON WEV#(${weaveNo})`);
+      }
     }
 
     if (p.kind === "sense" || p.move === "MOVS") {
@@ -1397,6 +1645,9 @@ export function generateJbi(
     if (p.tag === "ARCOF") {
       lines.push("ARCOF");
       lines.push("WVOF");
+    } else if (p.tag === "ARCON" && (p.timerSec ?? 0) >= 1.5) {
+      // Tack: ARCON + TIMER already written; close without weave.
+      lines.push("ARCOF");
     }
   });
   lines.push("END");

@@ -10,6 +10,7 @@ import RobotTrack from "./RobotTrack";
 import WeldScene from "./WeldScene";
 import WeldUrdfRobot from "./WeldUrdfRobot";
 import WeldPowerSource from "./WeldPowerSource";
+import type { DraftPoint } from "./SeamSketchLayer";
 import type { Joints } from "./AxisSliders";
 import {
   ROBOT_MODELS,
@@ -22,6 +23,7 @@ import {
   type TorchCalibration,
 } from "@/lib/tool0";
 import { TSL_CARRIAGE_TOP_Y } from "@/lib/trackMesh";
+import type { SketchMode } from "@/lib/seamSketch";
 
 export type SeamSegment = {
   start: [number, number, number];
@@ -190,6 +192,11 @@ export default function RobotWorkspace({
   selectedWp = null,
   onSelectWp,
   weaveNo = 0,
+  sketchMode = "orbit",
+  sketchSnap = true,
+  sketchDraft = [],
+  onSketchDraftChange,
+  onSketchCommit,
 }: {
   modelId: string;
   joints: Joints;
@@ -204,6 +211,11 @@ export default function RobotWorkspace({
   selectedWp?: number | null;
   onSelectWp?: (index: number) => void;
   weaveNo?: number;
+  sketchMode?: SketchMode;
+  sketchSnap?: boolean;
+  sketchDraft?: DraftPoint[];
+  onSketchDraftChange?: (pts: DraftPoint[]) => void;
+  onSketchCommit?: (pts: DraftPoint[]) => void;
 }) {
   const positioner = positionerId
     ? POSITIONER_MODELS.find((p) => p.id === positionerId)
@@ -227,12 +239,18 @@ export default function RobotWorkspace({
   // leaves a blank viewer; local lights are enough for the cell.
   // Cap DPR on phones/tablets to limit GPU heat and WebGL context loss on MA2010 STL.
   const [dpr, setDpr] = useState<[number, number]>([1, 2]);
+  const [sketchHover, setSketchHover] = useState(false);
   useEffect(() => {
     const coarse =
       typeof window.matchMedia === "function" &&
       window.matchMedia("(pointer: coarse)").matches;
     setDpr(coarse ? [1, 1.5] : [1, 2]);
   }, []);
+
+  const drawing = sketchMode !== "orbit";
+  // While the cursor is on the CAD surface in a draw mode, lock orbit rotate
+  // so left-click places points instead of spinning the camera.
+  const orbitRotate = !drawing || !sketchHover;
 
   return (
     <div className="absolute inset-0 h-full w-full touch-none overscroll-none">
@@ -246,6 +264,7 @@ export default function RobotWorkspace({
         height: "100%",
         display: "block",
         touchAction: "none",
+        cursor: drawing ? "crosshair" : "default",
       }}
       onCreated={({ gl }) => {
         gl.setClearColor("#ffffff", 1);
@@ -305,6 +324,12 @@ export default function RobotWorkspace({
                 selectedWp={selectedWp}
                 onSelectWp={onSelectWp}
                 weaveNo={weaveNo}
+                sketchMode={sketchMode}
+                sketchSnap={sketchSnap}
+                sketchDraft={sketchDraft}
+                onSketchDraftChange={onSketchDraftChange}
+                onSketchCommit={onSketchCommit}
+                onSketchHover={setSketchHover}
               />
             </group>
           </group>
@@ -315,7 +340,13 @@ export default function RobotWorkspace({
         <Seam key={i} seg={s} />
       ))}
 
-      <OrbitControls makeDefault enableDamping target={[1, 0.7, 0]} />
+      <OrbitControls
+        makeDefault
+        enableDamping
+        target={[1, 0.7, 0]}
+        enableRotate={orbitRotate}
+        enablePan={!drawing || !sketchHover}
+      />
     </Canvas>
     </div>
   );

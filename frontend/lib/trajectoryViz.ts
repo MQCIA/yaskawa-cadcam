@@ -39,6 +39,9 @@ export type TimelineMarker = {
   label: string;
 };
 
+/** How the seam was authored (CAD detect / 3D sketcher). */
+export type SeamSketchKind = "fillet" | "tack" | "line" | "arc" | "spline";
+
 /** Local per-seam overrides edited in the Seam Inspector. */
 export type SeamEdit = {
   id: string;
@@ -55,6 +58,8 @@ export type SeamEdit = {
   weaveNo: number;
   weldSpeedV: number;
   reversed: boolean;
+  /** Sketcher / detect type — drives list badges (LINE / ARC / SPLINE / TACK). */
+  sketchKind?: SeamSketchKind;
 };
 
 export function informCLabel(index: number): string {
@@ -249,21 +254,34 @@ export function discoverSeams(prog: WeldProgram): SeamEdit[] {
     const existing = prog.meta?.seamEdits?.find(
       (s) => s.weldStart === weldStart && s.weldEnd === weldEnd,
     );
+    const weldPts = prog.waypoints.slice(weldStart, weldEnd + 1);
+    const inferredKind: SeamSketchKind =
+      existing?.sketchKind ??
+      (weldPts.length === 1
+        ? "tack"
+        : weldPts.every((w) => w.move === "MOVC")
+          ? "arc"
+          : weldPts.length >= 8
+            ? "spline"
+            : "line");
     seams.push(
-      existing ?? {
-        id: `seam-${n}`,
-        label: `Spoina ${n}`,
-        weldStart,
-        weldEnd,
-        approachIdx,
-        retractIdx,
-        spinOffsetDeg: prog.meta?.spinAngleDeg ?? 0,
-        travelAngleDeg: 12,
-        approachMm: 60,
-        weaveNo: 21,
-        weldSpeedV: prog.schedule.travelCmMin,
-        reversed: false,
-      },
+      existing
+        ? { ...existing, weldStart, weldEnd, approachIdx, retractIdx }
+        : {
+            id: `seam-${n}`,
+            label: `Spoina ${n}`,
+            weldStart,
+            weldEnd,
+            approachIdx,
+            retractIdx,
+            spinOffsetDeg: prog.meta?.spinAngleDeg ?? 0,
+            travelAngleDeg: 12,
+            approachMm: 60,
+            weaveNo: 21,
+            weldSpeedV: prog.schedule.travelCmMin,
+            reversed: false,
+            sketchKind: inferredKind,
+          },
     );
     n++;
   }
