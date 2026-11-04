@@ -40,10 +40,24 @@ export type WeldScheduleRow = {
   process: string;
 };
 
+/** Optional solid for demo fixtures (pipe / tube) — rendered in WeldScene. */
+export type WeldPipe = {
+  /** Outer radius (m). */
+  radius: number;
+  /** Length along local axis (m). */
+  length: number;
+  /** Centre in world (m). */
+  center: Vec3;
+  /** Euler XYZ radians for the cylinder (Three.js default is Y-up). */
+  rotation: Vec3;
+};
+
 export type WeldProgram = {
   name: string;
   mount: Vec3;
   plates: { size: Vec3; center: Vec3 }[];
+  /** Optional pipe / tube solids (hard demo). */
+  pipes?: WeldPipe[];
   seam: Vec3[];
   torchFrames: { pos: Vec3; dir: Vec3 }[];
   waypoints: Waypoint[];
@@ -57,23 +71,32 @@ export type WeldProgram = {
     touchSense: boolean;
     sequenceOptimized: boolean;
     singularitySafe: boolean;
+    /**
+     * Torch roll about the wire axis (deg) chosen by the backend spin
+     * optimiser — redundant DOF for MIG/MAG with a bent ABIROB neck.
+     */
+    spinAngleDeg?: number;
+    /** Dense [S,L,U,R,B,T] deg along MOVL/MOVC for smooth URDF playback. */
+    denseJointAnglesDeg?: number[][];
+    /** Max consecutive joint step (deg) on the dense weld samples. */
+    maxJointStepDeg?: number;
   };
 };
 
 /**
- * Motoweld schedules mined from the DX200 dump (see docs/CELL_WELD_MAP.md).
- * ``job`` = MACRO1 MJ#(0) ARGFn = Motoweld PROG-NR.
- * A/V come from the shared ARCSRT.CND template (200 A / 20.0 V); wire ≈ Motoweld
- * WELDER.DAT curve at 200 A. Travel speeds match live jobs for that ARGF.
+ * Lorch Tiptronic schedules mined from the DX200 dump (see docs/BACKUP_AND_LORCH_ANALYSIS.md).
+ * ``job`` = MACRO1 MJ#(0) ARGFn = Tiptronic PROG-NR (MACRO.DAT tag PROG-NR: → job LORCH).
+ * A/V come from the shared ARCSRT.CND template (200 A / 20.0 V); wire ≈ WELDER.DAT
+ * curve at 200 A. Travel speeds match live jobs for that ARGF.
  */
 export const LORCH_S8_SCHEDULES: WeldScheduleRow[] = [
-  { condition: 1, job: 8, currentA: 200, voltageV: 20.0, wireMmin: 7.2, travelCmMin: 5.0, process: "Motoweld" },
-  { condition: 2, job: 5, currentA: 200, voltageV: 20.0, wireMmin: 7.2, travelCmMin: 4.2, process: "Motoweld" },
-  { condition: 3, job: 4, currentA: 200, voltageV: 20.0, wireMmin: 7.2, travelCmMin: 5.0, process: "Motoweld" },
-  { condition: 4, job: 1, currentA: 200, voltageV: 20.0, wireMmin: 7.2, travelCmMin: 5.0, process: "Motoweld" },
+  { condition: 1, job: 8, currentA: 200, voltageV: 20.0, wireMmin: 7.2, travelCmMin: 5.0, process: "Lorch Tiptronic" },
+  { condition: 2, job: 5, currentA: 200, voltageV: 20.0, wireMmin: 7.2, travelCmMin: 4.2, process: "Lorch Tiptronic" },
+  { condition: 3, job: 4, currentA: 200, voltageV: 20.0, wireMmin: 7.2, travelCmMin: 5.0, process: "Lorch Tiptronic" },
+  { condition: 4, job: 1, currentA: 200, voltageV: 20.0, wireMmin: 7.2, travelCmMin: 5.0, process: "Lorch Tiptronic" },
 ];
 
-/** Alias — Motoweld PROG-NR / ARGF tables (not Lorch ASF#). */
+/** Alias — Tiptronic PROG-NR / ARGF tables. */
 export const MOTOWELD_SCHEDULES = LORCH_S8_SCHEDULES;
 
 /** Weave files WEV#(n) from WEAV.CND (amp L/R mm, angle L/R °, frequency Hz). */
@@ -105,8 +128,88 @@ export const TOUCH_SENSE = {
   referenceJob: "123123.JBI",
 };
 
+// ---------------------------------------------------------------------------
+// TOOL 0 — single frontend source of truth (DX200 dump TOOL.CND / ///TOOL 0)
+// Must match backend/app/robot_config.py exactly.
+// ---------------------------------------------------------------------------
+
+/** Motoman tcp_0 translation relative to Motoman tool0 (mm). */
+export const TOOL0_XYZ_MM: readonly [number, number, number] = [
+  -54.280, 1.052, 415.702,
+];
+/** Motoman tcp_0 RPY (Rx, Ry, Rz) degrees in tool0. */
+export const TOOL0_RPY_DEG: readonly [number, number, number] = [
+  1.3119, -42.6215, -6.8387,
+];
+export const TOOL0_XYZ_M: readonly [number, number, number] = [
+  TOOL0_XYZ_MM[0] / 1000,
+  TOOL0_XYZ_MM[1] / 1000,
+  TOOL0_XYZ_MM[2] / 1000,
+];
+/** Euclidean tool0 → tcp_0 length (mm) ≈ 419.232. */
+export const TOOL0_LENGTH_MM = Math.hypot(...TOOL0_XYZ_MM);
+export const TOOL0_LENGTH_M = TOOL0_LENGTH_MM / 1000;
+
+/**
+ * Flange (REP-103) → Motoman tool0 rotation matrix (row-major 3×3).
+ * Columns = tool0 basis in flange — same as backend FLANGE_TO_TOOL0_R.
+ */
+export const FLANGE_TO_TOOL0_R: readonly (readonly [number, number, number])[] = [
+  [0, 0, 1],
+  [0, -1, 0],
+  [1, 0, 0],
+];
+
+/** Motoman TOOL RPY Euler order (matches kinematics_engine tool_file_se3). */
+export const TOOL_RPY_ORDER = "ZYX" as const;
+
+/**
+ * Production home C00000 pulses (DEFRO / cell jobs).
+ * Deg ≈ S=-0.21, L=-53.03, U=-52.87, R=+3.65, B=-81.80, T=-4.26.
+ */
+export const CELL_HOME_PULSES: readonly [
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+] = [-281, -101163, -84214, 3730, -80188, -1936];
+
+/** MA2010 pulses/deg (RC1G softlimits) — same as backend pulse_config. */
+export const MA2010_PULSES_PER_DEGREE: readonly [
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+] = [
+  1341.3833333333334,
+  1907.6768049155146,
+  1592.8945494186046,
+  1022.8666666666667,
+  980.2444444444444,
+  454.75714285714287,
+];
+
+export function cellHomeDeg(): [
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+] {
+  return CELL_HOME_PULSES.map(
+    (p, i) => p / MA2010_PULSES_PER_DEGREE[i],
+  ) as [number, number, number, number, number, number];
+}
+
 // Mount point on work-station 1's positioner faceplate (world coords, metres).
 export const DEMO_MOUNT: Vec3 = [1.6, 0.98, -1.2];
+/** Hard demo (90° fillet + pipe) on station 2 — forces rail travel to +Z. */
+export const DEMO_HARD_MOUNT: Vec3 = [1.6, 0.98, 1.2];
 
 const add = (a: Vec3, b: Vec3): Vec3 => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
 const dist = (a: Vec3, b: Vec3) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
@@ -255,6 +358,7 @@ export function buildDemoProgram(mount: Vec3 = DEMO_MOUNT, condition = 1): WeldP
     ]);
   }
 
+  // Fillet approach: tcp_0 +Z into the T-joint (−bisector of floor/wall normals).
   const torchDir = norm([0, -1, -1]);
   const torchFrames = seam.map((pos) => ({ pos, dir: torchDir }));
 
@@ -344,6 +448,227 @@ export function buildDemoProgram(mount: Vec3 = DEMO_MOUNT, condition = 1): WeldP
     segDurations: [],
     cycleSec: 0,
     weldLenMm: dist(seamStart, seamEnd) * 1000,
+    schedule: sch,
+  };
+  return refreshMeta(rebuildDurations(draft));
+}
+
+/**
+ * Harder offline demo on station 2:
+ *  1) Vertical 90° fillet (torch climbs a corner)
+ *  2) Air travel
+ *  3) Circumferential pipe-to-plate weld (MOVC ring)
+ */
+export function buildHardDemoProgram(
+  mount: Vec3 = DEMO_HARD_MOUNT,
+  condition = 1,
+): WeldProgram {
+  const sch =
+    LORCH_S8_SCHEDULES.find((s) => s.condition === condition) ?? LORCH_S8_SCHEDULES[0];
+
+  // --- Fixture: floor + vertical wall at 90°, plus Ø114 pipe on the floor ---
+  const platesLocal: { size: Vec3; center: Vec3 }[] = [
+    { size: [0.55, 0.02, 0.5], center: [0, 0.01, 0] },
+    { size: [0.55, 0.36, 0.02], center: [0, 0.19, -0.24] },
+  ];
+  const plates = platesLocal.map((p) => ({ size: p.size, center: add(mount, p.center) }));
+
+  const pipeRadius = 0.057;
+  const pipeLen = 0.36;
+  const pipeLocalCenter: Vec3 = [0.08, 0.02 + pipeRadius, 0.05];
+  const pipes: WeldPipe[] = [
+    {
+      radius: pipeRadius,
+      length: pipeLen,
+      center: add(mount, pipeLocalCenter),
+      // Cylinder default axis = Y; rotate to lie along +X on the floor plate.
+      rotation: [0, 0, Math.PI / 2],
+    },
+  ];
+
+  // Vertical 90° fillet seam (climbs the wall).
+  const vStart = add(mount, [-0.2, 0.03, -0.23]);
+  const vEnd = add(mount, [-0.2, 0.34, -0.23]);
+  const Nv = 10;
+  const seamV: Vec3[] = [];
+  for (let i = 0; i <= Nv; i++) {
+    const t = i / Nv;
+    seamV.push([
+      vStart[0] + (vEnd[0] - vStart[0]) * t,
+      vStart[1] + (vEnd[1] - vStart[1]) * t,
+      vStart[2] + (vEnd[2] - vStart[2]) * t,
+    ]);
+  }
+  const torchDirV = norm([0, 0, 1]); // into the corner / wall
+
+  // Circumferential seam on the pipe OD at the wall-side end (pipe-to-plate).
+  const ringCenter = add(mount, [
+    pipeLocalCenter[0] - pipeLen / 2 + 0.01,
+    pipeLocalCenter[1],
+    pipeLocalCenter[2],
+  ]);
+  const Nr = 16;
+  const seamR: Vec3[] = [];
+  for (let i = 0; i <= Nr; i++) {
+    const a = (i / Nr) * Math.PI * 2;
+    // Ring in YZ plane (pipe axis = X).
+    seamR.push([
+      ringCenter[0],
+      ringCenter[1] + Math.cos(a) * pipeRadius,
+      ringCenter[2] + Math.sin(a) * pipeRadius,
+    ]);
+  }
+
+  const seam = [...seamV, ...seamR];
+  const torchFrames = [
+    ...seamV.map((pos) => ({ pos, dir: torchDirV })),
+    ...seamR.map((pos) => {
+      // Radial outward from pipe axis (in YZ).
+      const dir = norm([
+        0,
+        pos[1] - ringCenter[1],
+        pos[2] - ringCenter[2],
+      ]);
+      // Slight push toward −X (into the wall joint).
+      return { pos, dir: norm([dir[0] - 0.35, dir[1], dir[2]]) };
+    }),
+  ];
+
+  const weldLabel = `V=${sch.travelCmMin} cm/min`;
+  const airLabel = "VJ=50%";
+  const senseLabel = `V=${TOUCH_SENSE.searchSpeedCmMin} cm/min`;
+
+  const approach = add(vStart, [0.05, 0.1, 0.12]);
+  const sense1 = add(vStart, [0.03, 0.05, 0.04]);
+  const sense2 = add(vStart, [0.0, 0.08, 0.04]);
+  const midTravel = add(mount, [0.05, 0.45, -0.05]);
+  const ringApproach = add(seamR[0], [0.08, 0.06, 0.06]);
+  const retract = add(seamR[Math.floor(Nr / 4)], [0.1, 0.12, 0.08]);
+
+  const waypoints: Waypoint[] = [];
+  let n = 1;
+  waypoints.push({
+    id: pad(n++),
+    pos: approach,
+    move: "MOVJ",
+    speedLabel: airLabel,
+    arc: false,
+    kind: "approach",
+  });
+  waypoints.push({
+    id: pad(n++),
+    pos: sense1,
+    move: "MOVS",
+    speedLabel: senseLabel,
+    arc: false,
+    kind: "sense",
+    tag: "TOUCH",
+  });
+  waypoints.push({
+    id: pad(n++),
+    pos: sense2,
+    move: "MOVS",
+    speedLabel: senseLabel,
+    arc: false,
+    kind: "sense",
+    tag: "TOUCH",
+  });
+  waypoints.push({
+    id: pad(n++),
+    pos: seamV[0],
+    move: "MOVL",
+    speedLabel: "V=15 cm/min",
+    arc: true,
+    kind: "weld",
+    tag: "ARCON",
+  });
+  for (let i = 1; i < seamV.length - 1; i++) {
+    waypoints.push({
+      id: pad(n++),
+      pos: seamV[i],
+      move: "MOVL",
+      speedLabel: weldLabel,
+      arc: true,
+      kind: "weld",
+    });
+  }
+  waypoints.push({
+    id: pad(n++),
+    pos: seamV[seamV.length - 1],
+    move: "MOVL",
+    speedLabel: weldLabel,
+    arc: true,
+    kind: "weld",
+    tag: "ARCOF",
+  });
+  waypoints.push({
+    id: pad(n++),
+    pos: midTravel,
+    move: "MOVJ",
+    speedLabel: airLabel,
+    arc: false,
+    kind: "travel",
+  });
+  waypoints.push({
+    id: pad(n++),
+    pos: ringApproach,
+    move: "MOVJ",
+    speedLabel: airLabel,
+    arc: false,
+    kind: "travel",
+  });
+  waypoints.push({
+    id: pad(n++),
+    pos: seamR[0],
+    move: "MOVC",
+    speedLabel: "V=15 cm/min",
+    arc: true,
+    kind: "weld",
+    tag: "ARCON",
+  });
+  for (let i = 1; i < seamR.length - 1; i++) {
+    waypoints.push({
+      id: pad(n++),
+      pos: seamR[i],
+      move: "MOVC",
+      speedLabel: weldLabel,
+      arc: true,
+      kind: "weld",
+    });
+  }
+  waypoints.push({
+    id: pad(n++),
+    pos: seamR[seamR.length - 1],
+    move: "MOVC",
+    speedLabel: weldLabel,
+    arc: true,
+    kind: "weld",
+    tag: "ARCOF",
+  });
+  waypoints.push({
+    id: pad(n++),
+    pos: retract,
+    move: "MOVJ",
+    speedLabel: airLabel,
+    arc: false,
+    kind: "retract",
+  });
+
+  let weldLen = 0;
+  for (let i = 0; i < seamV.length - 1; i++) weldLen += dist(seamV[i], seamV[i + 1]);
+  for (let i = 0; i < seamR.length - 1; i++) weldLen += dist(seamR[i], seamR[i + 1]);
+
+  const draft: WeldProgram = {
+    name: "DEMO_HARD_90_PIPE",
+    mount,
+    plates,
+    pipes,
+    seam,
+    torchFrames,
+    waypoints,
+    segDurations: [],
+    cycleSec: 0,
+    weldLenMm: weldLen * 1000,
     schedule: sch,
   };
   return refreshMeta(rebuildDurations(draft));
@@ -667,7 +992,7 @@ export function generateJbi(
       lines.push("TIMER T=0.50");
       lines.push(`MACRO1 MJ#(0) ARGF${sch.job}`);
       lines.push(
-        `' Motoweld PROG-NR/ARGF${sch.job} (UI cond ${sch.condition}): ` +
+        `' Lorch Tiptronic PROG-NR/ARGF${sch.job} (UI cond ${sch.condition}): ` +
           `${sch.currentA}A / ${sch.voltageV.toFixed(1)}V / wire ${sch.wireMmin.toFixed(1)} m/min ` +
           `— ARCSRT template; validate WPS`,
       );

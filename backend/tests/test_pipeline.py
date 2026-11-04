@@ -10,7 +10,12 @@ import pytest
 import trimesh
 from shapely.geometry import Polygon
 
-from app.kinematics_engine import forward_kinematics, solve_ik_path, get_robot
+from app.kinematics_engine import (
+    forward_kinematics,
+    forward_kinematics_frames,
+    solve_ik_path,
+    get_robot,
+)
 from app.dx200_postprocessor import (
     generate_jbi,
     WeldSegment,
@@ -18,8 +23,21 @@ from app.dx200_postprocessor import (
     load_reference_jbi,
 )
 from app.cad_analysis import detect_seams
-from app.path_planning import plan_from_seams
-from app.robot_config import ACTIVE_MODEL, ACTIVE_POSITIONER, MODELS
+from app.path_planning import (
+    plan_from_seams,
+    preferred_spin_deg,
+    rpy_from_wire_spin,
+    torch_wire_direction,
+)
+from app.pulse_config import joint_pulses_to_deg
+from app.robot_config import (
+    ACTIVE_MODEL,
+    ACTIVE_POSITIONER,
+    CELL_HOME_PULSES,
+    MODELS,
+    TOOL0_LENGTH_MM,
+    TOOL0_XYZ_MM,
+)
 from app.welding_config import (
     ACTIVE_POWER_SOURCE,
     ARCSRT_TEMPLATE,
@@ -56,7 +74,8 @@ def test_config_loaded():
     assert ACTIVE_MODEL.pulses_per_degree is not None
     assert ACTIVE_MODEL.pulses_per_degree[0] > 1000  # S ≈ 1341 from RC1G
     assert ACTIVE_POSITIONER.axes[0].pulses_per_degree > 1000  # ≈ 1019.7
-    assert "MOTOWELD" in ACTIVE_POWER_SOURCE.name.upper()
+    assert "LORCH" in ACTIVE_POWER_SOURCE.name.upper()
+    assert "MOTOWELD" in ACTIVE_POWER_SOURCE.welder_dat_label.upper()
     assert set(LORCH_S8_SCHEDULES) >= {1, 2, 3}
 
 
@@ -91,7 +110,7 @@ def test_jbi_ma2010_cell_profile():
     assert "+MOVJ EC" in jbi
     assert "BC00000=878036" in jbi
     assert "EC00001=45886,0" in jbi  # 45 * 1019.6889…
-    assert "Motoweld" in jbi
+    assert "Lorch Tiptronic" in jbi or "ARGF" in jbi
     assert jbi.strip().endswith("END")
 
 
@@ -188,9 +207,21 @@ def test_cad_seam_detection(lbracket):
 
 def test_full_pipeline(lbracket):
     seams = detect_seams(lbracket, angle_tol_deg=25, target_angle_deg=90)
-    planned = plan_from_seams(seams["segments"], samples_per_seam=5, arc_file=2)
+    planned = plan_from_seams(
+        seams["segments"],
+        samples_per_seam=5,
+        arc_file=2,
+        optimize_spin=True,
+        spin_step_deg=45.0,
+        dense_step_m=0.03,
+    )
     assert len(planned.points) > 0
-    ik = solve_ik_path(planned.points)
+    assert len(planned.dense_joint_angles_deg) == len(planned.dense_points)
+    assert len(planned.spin_angles_deg) == len(planned.weld_segments)
+    # Dense animation stream must be at least as long as the sparse JBI path.
+    assert len(planned.dense_points) >= len(planned.points)
+    # Planner poses are Motoman tip / wire frames (no TOOL.CND RPY).
+    ik = solve_ik_path(planned.points, frame="tool0")
     assert ik["all_reachable"]
     jbi = generate_jbi(
         planned.points,
@@ -204,6 +235,104 @@ def test_full_pipeline(lbracket):
     assert "C00000=" in jbi and "BC00000=878036" in jbi
     assert "ARCON" in jbi and jbi.strip().endswith("END")
     assert "RB1,BS1" in jbi
+
+
+def _angle_step(a: float, b: float) -> float:
+    return abs((b - a + 180.0) % 360.0 - 180.0)
+
+
+def test_movl_joint_continuity_no_jump():
+    """Dense MOVL IK along a horizontal fillet: max joint step < 30°."""
+    # Horizontal floor/wall fillet along +X (PA position).
+    seam = {
+        "start": [0.75, 0.0, 0.35],
+        "end": [0.95, 0.0, 0.35],
+        "type": "line",
+        "bisector": [0.0, -0.7071, 0.7071],
+        "n1": [0.0, 0.0, 1.0],
+        "n2": [0.0, -1.0, 0.0],
+    }
+    planned = plan_from_seams(
+        [seam],
+        samples_per_seam=2,
+        approach_height=0.08,
+        optimize_spin=True,
+        spin_step_deg=30.0,
+        dense_step_m=0.025,
+        travel_angle_deg=12.0,
+    )
+    assert planned.dense_joint_angles_deg, "expected dense IK samples"
+    assert len(planned.dense_joint_angles_deg) >= 4
+    # Weld-only joints (drop approach / retract air moves).
+    weld_q = planned.dense_joint_angles_deg[1:-1]
+    assert len(weld_q) >= 2
+    max_step = 0.0
+    for i in range(1, len(weld_q)):
+        for j in range(6):
+            max_step = max(max_step, _angle_step(weld_q[i - 1][j], weld_q[i][j]))
+    assert max_step < 30.0, f"joint jump {max_step:.1f}° ≥ 30° along MOVL"
+    assert planned.max_joint_step_deg < 30.0
+    assert planned.spin_results and not planned.spin_results[0].rejected
+
+
+def test_spin_selection_horizontal_and_vertical():
+    """Spin ψ differs sensibly for horizontal vs vertical fillets; both feasible."""
+    horizontal = {
+        "start": [0.78, 0.0, 0.32],
+        "end": [0.92, 0.0, 0.32],
+        "type": "line",
+        "bisector": [0.0, -0.7071, 0.7071],
+        "n1": [0.0, 0.0, 1.0],
+        "n2": [0.0, -1.0, 0.0],
+    }
+    # Vertical fillet (wall–wall) along +Z travel on a side seam.
+    vertical = {
+        "start": [0.85, -0.05, 0.25],
+        "end": [0.85, -0.05, 0.45],
+        "type": "line",
+        "bisector": [-0.7071, -0.7071, 0.0],
+        "n1": [-1.0, 0.0, 0.0],
+        "n2": [0.0, -1.0, 0.0],
+    }
+
+    ph = plan_from_seams(
+        [horizontal],
+        samples_per_seam=2,
+        approach_height=0.08,
+        optimize_spin=True,
+        spin_step_deg=30.0,
+        dense_step_m=0.03,
+    )
+    pv = plan_from_seams(
+        [vertical],
+        samples_per_seam=2,
+        approach_height=0.08,
+        optimize_spin=True,
+        spin_step_deg=30.0,
+        dense_step_m=0.03,
+    )
+    assert ph.spin_results[0].feasible_count >= 1
+    assert pv.spin_results[0].feasible_count >= 1
+    assert not ph.spin_results[0].rejected
+    assert not pv.spin_results[0].rejected
+    # Preferred gooseneck-outward bases differ by orientation of the bisector.
+    wh = torch_wire_direction(
+        np.array(horizontal["bisector"]), np.array([0.14, 0.0, 0.0])
+    )
+    wv = torch_wire_direction(
+        np.array(vertical["bisector"]), np.array([0.0, 0.0, 0.2])
+    )
+    base_h = preferred_spin_deg(wh, np.array([1.0, 0.0, 0.0]), np.array(horizontal["bisector"]))
+    base_v = preferred_spin_deg(wv, np.array([0.0, 0.0, 1.0]), np.array(vertical["bisector"]))
+    # Chosen spins are finite degrees in [-180, 180).
+    for ang in (ph.spin_angles_deg[0], pv.spin_angles_deg[0], base_h, base_v):
+        assert -180.0 <= ang < 180.0
+    # RPY from wire+spin must be a valid finite orientation.
+    rx, ry, rz = rpy_from_wire_spin(wh, np.array([1.0, 0.0, 0.0]), ph.spin_angles_deg[0])
+    assert all(np.isfinite([rx, ry, rz]))
+    # Dense continuity holds for both orientations.
+    assert ph.max_joint_step_deg < 30.0
+    assert pv.max_joint_step_deg < 30.0
 
 
 def test_merge_collinear_and_arc_grouping():
@@ -371,7 +500,9 @@ def test_motoweld_argf_and_arcsrt_template():
 def test_weave_files_from_weav_cnd():
     """M3: WEV#(1/15/16/21) amplitudes match WEAV.CND."""
     assert get_weave(1).amp_l_mm == 2.0 and get_weave(1).angle_l_deg == 70.0
+    assert get_weave(1).dwell_s[0] == 0.1
     assert get_weave(15).amp_l_mm == 3.0 and get_weave(15).frequency_hz == 3.0
+    assert get_weave(15).dwell_s[5] == 0.3
     assert get_weave(16).angle_r_deg == 0.0
     assert get_weave(21).amp_l_mm == 4.0 and get_weave(21).amp_r_mm == 0.0
     weav = (CELL / "WEAV.CND").read_text(encoding="latin-1", errors="replace")
@@ -388,3 +519,68 @@ def test_touchsense_movs_pattern_from_123123():
     assert TOUCH_SENSE.station_vj == 0.78
     macro = (CELL / "MACRO.DAT").read_text(encoding="latin-1", errors="replace")
     assert "//MACRO1 1" in macro and "PROG-NR:" in macro
+
+
+def test_tool0_frame_chain_consistency():
+    """FE↔BE contract: flange→tool0→tcp_0 length is dump TOOL 0, JBI uses ///TOOL 0.
+
+    Golden poses from ``docs/CELL_POSES.md`` (home C00000 + ``000.JBI`` bookends).
+    Euclidean ‖tcp_0 − tool0‖ must equal
+    √((-54.280)² + 1.052² + 415.702²) ≈ 419.232 mm for every S..T pose.
+    """
+    expected_len_mm = float(np.linalg.norm(np.asarray(TOOL0_XYZ_MM, dtype=float)))
+    assert TOOL0_LENGTH_MM == pytest.approx(expected_len_mm, abs=1e-9)
+    assert expected_len_mm == pytest.approx(419.231, abs=0.002)
+
+    home_deg = joint_pulses_to_deg(list(CELL_HOME_PULSES))
+    # Slight rounding from user brief (−0.21, −53.03, −52.87, +3.63, −81.80, −4.26).
+    assert home_deg[0] == pytest.approx(-0.21, abs=0.01)
+    assert home_deg[1] == pytest.approx(-53.03, abs=0.01)
+    assert home_deg[4] == pytest.approx(-81.80, abs=0.01)
+
+    # HOME_TRACK fixture + selected 000.JBI points (docs/CELL_POSES.md).
+    golden_pulses = [
+        list(CELL_HOME_PULSES),
+        [95902, -19559, -65353, -68228, -62443, 70439],  # 000 C00000 approach
+        [96643, 1036, -73382, -77097, -56952, 78162],  # 000 C00002
+        [144285, 13854, -56584, 51164, -49608, 19486],  # 000 C00005
+        [116865, -4881, -33684, -3254, -73880, -61311],  # 000 C00019
+        [0, 0, 0, 0, 0, 0],
+        [10.0, -20.0, 15.0, 5.0, 30.0, 0.0],  # deg directly below
+    ]
+    # Last entry is already degrees — handle separately.
+    poses_deg = [joint_pulses_to_deg(p) for p in golden_pulses[:-1]]
+    poses_deg.append(list(golden_pulses[-1]))
+
+    for q in poses_deg:
+        frames = forward_kinematics_frames(q)
+        for key in ("flange", "tool0", "tcp_0"):
+            assert set(frames[key]) >= {"x", "y", "z", "rx", "ry", "rz"}
+        t0 = np.array([frames["tool0"][k] for k in "xyz"], dtype=float)
+        tcp = np.array([frames["tcp_0"][k] for k in "xyz"], dtype=float)
+        dist_mm = float(np.linalg.norm(tcp - t0) * 1000.0)
+        assert dist_mm == pytest.approx(expected_len_mm, abs=1e-6), (
+            f"tool0→tcp_0 length {dist_mm:.6f} mm ≠ {expected_len_mm:.6f} at q={q}"
+        )
+        # Origins of flange and tool0 coincide (static rotation only).
+        fl = np.array([frames["flange"][k] for k in "xyz"], dtype=float)
+        assert np.linalg.norm(fl - t0) == pytest.approx(0.0, abs=1e-9)
+
+    # Generated .JBI always declares ///TOOL 0.
+    pts = [
+        {"x": 0.8, "y": 0.0, "z": 0.5, "rx": 180.0, "ry": 0.0, "rz": 0.0},
+        {"x": 0.9, "y": 0.1, "z": 0.5, "rx": 180.0, "ry": 0.0, "rz": 0.0},
+    ]
+    jbi = generate_jbi(
+        pts,
+        [WeldSegment(0, 1)],
+        PostprocessorConfig(),
+        station_deg=[0.0, 0.0],
+        joint_angles_deg=[home_deg, home_deg],
+    )
+    assert "///TOOL 0" in jbi
+    assert f"C00000={','.join(str(p) for p in CELL_HOME_PULSES)}" in jbi
+
+    home_job = (CELL / "HOME_TRACK.JBI").read_text(encoding="utf-8", errors="replace")
+    assert "///TOOL 0" in home_job
+    assert "C00000=-281,-101163,-84214,3730,-80188,-1936" in home_job

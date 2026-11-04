@@ -5,7 +5,8 @@ Production cell (``reference/robot-cell-dx200`` / SYSTEM.SYS):
   * Robot        : Yaskawa **MA2010** (MA02010-A0*) on DX200 ARC WELDING
   * Base         : RECT-X → INFORM **BS1**
   * Station      : TURN S1–S4 → INFORM **ST1** (jobs use GROUP2 ST1)
-  * Power source : MOTOWELD-E Series 350A (see welding_config.py)
+  * Power source : Lorch Tiptronic via MACRO1→LORCH (see welding_config.py;
+    WELDER.DAT still labelled Motoweld-E template)
 
 Pulse↔degree for MA2010 + TURN is mined in ``pulse_config.py`` from RC.PRM /
 RBCALIB. DH link lengths remain approximate until verified against MotoSim.
@@ -116,6 +117,36 @@ MODELS["MA2010"].pulses_per_degree = list(MA2010_PULSES_PER_DEGREE)
 MODELS["MA2010"].approximate = True
 
 AXIS_NAMES = ["S", "L", "U", "R", "B", "T"]
+
+# ---------------------------------------------------------------------------
+# TOOL 0 — single source of truth (DX200 dump TOOL.CND / ///TOOL 0 in jobs)
+# Physical mount: ABICOR BINZEL iCAT mini + ABIROB neck (PDF); TCP from TOOL.CND only.
+# ---------------------------------------------------------------------------
+# Motoman ``tcp_0`` relative to Motoman ``tool0`` (Z+ out of flange).
+# MotoROS2: flange → tcp_0 = flange→tool0 · this transform.
+TOOL0_XYZ_MM: tuple[float, float, float] = (-54.280, 1.052, 415.702)
+TOOL0_RPY_DEG: tuple[float, float, float] = (1.3119, -42.6215, -6.8387)
+TOOL0_XYZ_M: tuple[float, float, float] = (
+    TOOL0_XYZ_MM[0] / 1000.0,
+    TOOL0_XYZ_MM[1] / 1000.0,
+    TOOL0_XYZ_MM[2] / 1000.0,
+)
+TOOL0_LENGTH_MM: float = float(
+    (TOOL0_XYZ_MM[0] ** 2 + TOOL0_XYZ_MM[1] ** 2 + TOOL0_XYZ_MM[2] ** 2) ** 0.5
+)  # ≈ 419.232 mm
+
+# ROS-Industrial flange (REP-103, X+ out) → Motoman tool0 (Z+ out).
+# Columns = tool0 basis in flange (AR2010 ``flange-tool0``).
+FLANGE_TO_TOOL0_R: tuple[tuple[float, float, float], ...] = (
+    (0.0, 0.0, 1.0),
+    (0.0, -1.0, 0.0),
+    (1.0, 0.0, 0.0),
+)
+
+# Production home bookend C00000 from jobs (DEFRO / 000.JBI family).
+# Pulses → deg via MA2010_PULSES_PER_DEGREE ≈
+# S=-0.21°, L=-53.03°, U=-52.87°, R=+3.65°, B=-81.80°, T=-4.26°.
+CELL_HOME_PULSES: tuple[int, ...] = (-281, -101163, -84214, 3730, -80188, -1936)
 
 
 # ---------------------------------------------------------------------------

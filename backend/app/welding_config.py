@@ -1,27 +1,27 @@
 """
-Welding power-source configuration — Motoweld-E on the production DX200 cell.
+Welding power-source configuration — Lorch Tiptronic via MACRO1 on DX200.
 
-Mined from CF dump fixtures (`backend/tests/fixtures/robot-cell/`, same files as
-`reference/robot-cell-dx200`):
+Hard facts from CF dump ``reference/dx200-backup-20260915`` (+ fixtures):
 
-  * ``MACRO.DAT`` ``//MACRO1 1`` → ``///JOB1 LORCH`` / tag ``PROG-NR:``
-    so ``MACRO1 MJ#(0) ARGFn`` selects Motoweld program **n** (not an ASF#).
-  * ``ARCSRT.CND`` — all 1000 ``//ARCSRT EN`` blocks are **identical** templates;
-    the teachable arc-start row used on this dump is ``200,20.0,100``
-    (200 A / 20.0 V / 100 %). Wire-related field ``13.3`` appears on the
-    comment/aux lines; Motoweld synergic curves live in ``WELDER.DAT`` /
-    ``WELDUDEF.DAT``.
-  * ``WEAV.CND`` — ``WEV#(1|15|16|21)`` amplitudes / angles / frequency.
-  * ``123123.JBI`` — TouchSense search uses ``MOVS … V=11.0 +MOVJ EC# VJ=0.78``.
+  * ``MACRO.DAT`` ``//MACRO1 1`` → ``///JOB1 LORCH``, tag ``PROG-NR:``
+    so ``MACRO1 MJ#(0) ARGFn`` selects **Lorch Tiptronic program n**.
+    The job body ``LORCH.JBI`` is **missing** from the CF zip — DOUT/OG map TBD.
+  * ``IONAME.DAT``: ``IN#51 = LORCH OK``; universal OT MAN GAS / WIRE FEED /
+    WIRE REVERSE / WIRECUT / BLOKADA SPAWARKI.
+  * Arc start/stop in user jobs: Motoman ``ARCON`` / ``ARCOF`` (ARC WELDING CIO).
+  * ``ARCSRT.CND`` — all ``//ARCSRT EN`` blocks identical: ``200,20.0,100``.
+  * ``WELDER.DAT`` still labelled Motoweld-E (factory template + wire↔A curve);
+    live program select path is Lorch Tiptronic, not Motoweld PROG UI.
+  * ``WEAV.CND`` — ``WEV#(1|15|16|21)``; ``123123.JBI`` TouchSense ``MOVS``.
 
-See ``docs/CELL_WELD_MAP.md`` and ``docs/CELL.md``.
+See ``docs/BACKUP_AND_LORCH_ANALYSIS.md`` and ``docs/CELL_WELD_MAP.md``.
 
 ============================================================================
   !!!  UWAGA / WARNING  !!!
 ============================================================================
-A/V/wire below combine the shared ARCSRT template with Motoweld PROG-NR (=ARGF)
+A/V/wire below combine the shared ARCSRT template with Tiptronic PROG-NR (=ARGF)
 and travel speeds observed next to those ARGFs in live jobs. They are **not**
-a qualified WPS — validate on the Motoweld pendant and in MotoSim.
+a qualified WPS — validate on the Lorch pendant and in MotoSim.
 ============================================================================
 """
 
@@ -53,15 +53,18 @@ ARCSRT_TEMPLATE = ArcSrtTemplate(
     wire_hint=13.3,
 )
 
-# Motoweld factory curve sample (WELDER.DAT) — wire m/min ↔ A
+# Wire↔A curve still stored under Motoweld-E blocks in WELDER.DAT (synergic sample).
 MOTOWELD_WIRE_M_MIN = (0.00, 1.35, 2.70, 10.80, 12.15, 13.50)
 MOTOWELD_CURRENT_A = (30, 62, 94, 286, 318, 350)
+# Alias — same table until Lorch Tiptronic tables are dumped from the source.
+LORCH_WIRE_M_MIN = MOTOWELD_WIRE_M_MIN
+LORCH_CURRENT_A = MOTOWELD_CURRENT_A
 
 
 def wire_for_current(amps: float) -> float:
-    """Linear interpolate Motoweld ``WELDER.DAT`` wire feed for a given current."""
-    xs = MOTOWELD_CURRENT_A
-    ys = MOTOWELD_WIRE_M_MIN
+    """Linear interpolate ``WELDER.DAT`` wire feed for a given current."""
+    xs = LORCH_CURRENT_A
+    ys = LORCH_WIRE_M_MIN
     if amps <= xs[0]:
         return ys[0]
     if amps >= xs[-1]:
@@ -74,7 +77,7 @@ def wire_for_current(amps: float) -> float:
 
 
 # ---------------------------------------------------------------------------
-# Motoweld ARGF (= PROG-NR) schedules used in production jobs
+# Lorch Tiptronic PROG-NR (= ARGF) schedules used in production jobs
 # ---------------------------------------------------------------------------
 
 @dataclass
@@ -82,15 +85,15 @@ class WeldSchedule:
     """One reusable welding condition shown in the UI / JBI comments."""
 
     condition_no: int
-    lorch_job: int  # Motoweld PROG-NR = ARGF value in MACRO1 MJ#(0) ARGFn
+    lorch_job: int  # Tiptronic PROG-NR = ARGF in MACRO1 MJ#(0) ARGFn
     current_a: float
     voltage_v: float
     wire_speed: float
     travel_speed: float
     gas: str = "CO2/Mix (cell)"
-    process: str = "Motoweld"
+    process: str = "Lorch Tiptronic"
     default_weave: int = 21
-    arcsrt_en: int = 1  # all EN identical; documented for map completeness
+    arcsrt_en: int = 1
     note: str = ""
 
 
@@ -99,8 +102,7 @@ _ARCSRT_V = ARCSRT_TEMPLATE.voltage_v
 _WIRE_200 = round(wire_for_current(_ARCSRT_A), 1)  # ≈ 7.2 m/min
 
 
-# Keys = UI condition numbers. ``lorch_job`` = real ARGF / Motoweld PROG-NR.
-# Travel speeds mined from jobs that call the matching ARGF (see CELL_WELD_MAP).
+# Keys = UI condition numbers. ``lorch_job`` = Tiptronic PROG-NR / ARGF.
 LORCH_S8_SCHEDULES: dict[int, WeldSchedule] = {
     1: WeldSchedule(
         1,
@@ -144,18 +146,41 @@ LORCH_S8_SCHEDULES: dict[int, WeldSchedule] = {
     ),
 }
 
-# Direct ARGF → schedule lookup (Motoweld PROG-NR)
-MOTOWELD_ARGF_SCHEDULES: dict[int, WeldSchedule] = {
+# Direct ARGF → schedule lookup (Tiptronic PROG-NR)
+LORCH_ARGF_SCHEDULES: dict[int, WeldSchedule] = {
     s.lorch_job: s for s in LORCH_S8_SCHEDULES.values()
 }
-
-# Alias for clarity in new code
+# Back-compat aliases
+MOTOWELD_ARGF_SCHEDULES = LORCH_ARGF_SCHEDULES
 MOTOWELD_SCHEDULES = LORCH_S8_SCHEDULES
 
 
 # ---------------------------------------------------------------------------
+# Named I/O from IONAME.DAT (bit indices)
+# ---------------------------------------------------------------------------
+
+@dataclass(frozen=True)
+class CellWeldIo:
+    """Digital names mined from ``IONAME.DAT`` (not the missing LORCH.JBI)."""
+
+    lorch_ok_in: int = 51
+    air_ok_in: int = 9
+    wirecut_out: int = 7
+    welder_lock_out: int = 26
+    man_gas_out: int = 4091
+    wire_feed_out: int = 4094
+    wire_reverse_out: int = 4095
+    macro_job: str = "LORCH"
+    macro_tag: str = "PROG-NR:"
+
+
+CELL_WELD_IO = CellWeldIo()
+
+
+# ---------------------------------------------------------------------------
 # Weave files WEV#(n) from WEAV.CND
-# Row format after header: amp_l, amp_r, ang_l, ang_r, freq, travel_or_mode
+# Geometry row: amp_l, amp_r, ang_l, ang_r, freq, aux
+# Dwell row: eight floats (s) — L/R corner dwells
 # ---------------------------------------------------------------------------
 
 @dataclass(frozen=True)
@@ -168,25 +193,29 @@ class WeaveFile:
     angle_r_deg: float
     frequency_hz: float
     aux: float
+    dwell_s: tuple[float, ...]
     used_in_jobs: str
 
 
-# Parsed from WEAV.CND for numbers used in live jobs (user request: 1, 15, 16, 21).
 WEAVE_FILES: dict[int, WeaveFile] = {
     1: WeaveFile(
         1, 0, 2.0, 2.0, 70.0, 70.0, 2.0, 2.0,
+        (0.1, 0.0, 0.1, 0.0, 0.1, 0.0, 0.1, 0.0),
         "DEFRO-60_STARE, 1-DEFRO-5-KOSZ, KASUJ",
     ),
     15: WeaveFile(
         15, 1, 3.0, 3.0, 45.0, 45.0, 3.0, 5.0,
+        (0.1, 0.0, 0.1, 0.0, 0.1, 0.3, 0.1, 0.0),
         "1KT.JBI, 02025_KOSZ… (+ARGF4)",
     ),
     16: WeaveFile(
         16, 1, 2.0, 2.0, 45.0, 0.0, 2.0, 1.0,
+        (0.1, 0.0, 0.1, 0.0, 0.1, 0.0, 0.1, 0.0),
         "02025_KOSZ… after WEV#(15)",
     ),
     21: WeaveFile(
         21, 0, 4.0, 0.0, 0.0, 0.0, 2.0, 3.5,
+        (0.1, 0.0, 0.1, 0.0, 0.1, 0.0, 0.1, 0.0),
         "DEFRO-70-NOWE/KOPIA default production weave",
     ),
 }
@@ -213,8 +242,9 @@ TOUCH_SENSE = TouchSenseConfig()
 
 @dataclass
 class PowerSourceConfig:
-    name: str = "MOTOWELD-E Series 350A"
-    interface: str = "arc-interface"
+    name: str = "Lorch S SpeedPulse (Tiptronic via MACRO1→LORCH)"
+    interface: str = "macro1-tiptronic+arcon"
+    welder_dat_label: str = "MOTOWELD-E Series 350A class"  # CF template leftover
     default_condition: int = 1
     default_argf: int = 8
     default_weave: int = DEFAULT_WEAVE_NO
@@ -233,12 +263,12 @@ def get_schedule(condition_no: int) -> WeldSchedule:
 
 
 def get_schedule_by_argf(argf: int) -> WeldSchedule:
-    if argf not in MOTOWELD_ARGF_SCHEDULES:
+    if argf not in LORCH_ARGF_SCHEDULES:
         raise KeyError(
-            f"Motoweld ARGF{argf} not in mined map. "
-            f"Available: {sorted(MOTOWELD_ARGF_SCHEDULES)}"
+            f"Lorch Tiptronic ARGF{argf} not in mined map. "
+            f"Available: {sorted(LORCH_ARGF_SCHEDULES)}"
         )
-    return MOTOWELD_ARGF_SCHEDULES[argf]
+    return LORCH_ARGF_SCHEDULES[argf]
 
 
 def get_weave(wev_no: int) -> WeaveFile:

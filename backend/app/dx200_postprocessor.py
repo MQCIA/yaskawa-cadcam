@@ -34,6 +34,7 @@ from .pulse_config import (
     deg_to_joint_pulses,
     station_deg_to_ec,
 )
+from .robot_config import TOOL0_XYZ_MM
 from .welding_config import LORCH_S8_SCHEDULES, WeldSchedule
 
 
@@ -65,8 +66,8 @@ class PostprocessorConfig:
     use_station_axis: bool = True
     station_pulses_per_deg: float = STATION_PULSES_PER_DEGREE
     joint_approach: bool = True
-    # Production TOOL 0 tip Z ≈ 415.7 mm (informational / comments).
-    tool_tcp_mm: tuple[float, float, float] = (-54.280, 1.052, 415.702)
+    # Production TOOL 0 from robot_config / TOOL.CND (informational / comments).
+    tool_tcp_mm: tuple[float, float, float] = TOOL0_XYZ_MM
     default_weave: int = 21
     macro_arg: int = 8  # MACRO1 MJ#(0) ARGF8 seen before ARCON
     # Emit full PULSE C# when True and joint_angles_deg is provided.
@@ -94,7 +95,7 @@ def _weld_comment(cond_no: int) -> str:
     if not sched:
         return f"' weld condition {cond_no}"
     return (
-        f"' Motoweld cond {cond_no} / ARGF{sched.lorch_job}: "
+        f"' Lorch Tiptronic PROG-NR/ARGF{sched.lorch_job} (UI cond {cond_no}): "
         f"{sched.current_a:.0f}A / {sched.voltage_v:.1f}V / "
         f"wire {sched.wire_speed:.1f} m/min / {sched.process}"
     )

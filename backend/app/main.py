@@ -14,10 +14,16 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel, Field
 
-from .kinematics_engine import forward_kinematics, get_robot, solve_ik_path
+from .kinematics_engine import (
+    forward_kinematics,
+    forward_kinematics_frames,
+    get_robot,
+    solve_ik_path,
+)
 from .dx200_postprocessor import PostprocessorConfig, WeldSegment, generate_jbi
 from .path_planning import plan_from_seams
 from .robot_config import ACTIVE_MODEL, ACTIVE_POSITIONER, AXIS_NAMES, MODELS
+from .robot_link import decode_motoros2_error, describe_robot_link
 from .welding_config import (
     ACTIVE_POWER_SOURCE,
     LORCH_S8_SCHEDULES,
@@ -59,6 +65,13 @@ class IkRequest(BaseModel):
     q_seed_deg: list[float] | None = Field(
         default=None, description="Optional 6-value seed pose in degrees."
     )
+    frame: str = Field(
+        default="tcp",
+        description=(
+            "MotoROS2 frame for poses: flange (REP-103), tool0 (Motoman Z+), "
+            "or tcp (TOOL.CND tip). Path-planner samples usually use tool0."
+        ),
+    )
 
 
 class WeldSegmentIn(BaseModel):
@@ -71,6 +84,13 @@ class WeldSegmentIn(BaseModel):
 class SeamIn(BaseModel):
     start: list[float]
     end: list[float]
+    type: str | None = None
+    move_type: str | None = None
+    via: list[float] | None = None
+    points: list[list[float]] | None = None
+    bisector: list[float] | None = None
+    n1: list[float] | None = None
+    n2: list[float] | None = None
 
 
 class PlanRequest(BaseModel):
@@ -79,6 +99,10 @@ class PlanRequest(BaseModel):
     approach_height: float = 0.05
     weld_speed: float = 10.0
     arc_file: int = 1
+    optimize_spin: bool = True
+    spin_step_deg: float = 30.0
+    dense_step_m: float = 0.025
+    travel_angle_deg: float = 12.0
 
 
 class JbiRequest(BaseModel):
@@ -195,13 +219,20 @@ def cell_config():
 def calculate_ik(req: IkRequest):
     if not req.points:
         raise HTTPException(400, "No points supplied")
+    frame = (req.frame or "tcp").lower()
+    if frame not in ("flange", "tool0", "tcp"):
+        raise HTTPException(400, "frame must be flange, tool0, or tcp")
     points = [p.model_dump() for p in req.points]
-    return solve_ik_path(points, q_seed_deg=req.q_seed_deg)
+    return solve_ik_path(points, q_seed_deg=req.q_seed_deg, frame=frame)  # type: ignore[arg-type]
 
 
 @app.post("/api/plan-path")
 def plan_path(req: PlanRequest):
-    """Turn detected seams into an ordered TCP path + weld ranges."""
+    """Turn detected seams into an ordered TCP path + weld ranges.
+
+    Also returns dense Cartesian samples and joint angles for smooth URDF
+    animation, plus the optimised torch spin ``ψ`` about the wire axis.
+    """
     if not req.seams:
         raise HTTPException(400, "No seams supplied")
     planned = plan_from_seams(
@@ -210,22 +241,61 @@ def plan_path(req: PlanRequest):
         approach_height=req.approach_height,
         weld_speed=req.weld_speed,
         arc_file=req.arc_file,
+        optimize_spin=req.optimize_spin,
+        spin_step_deg=req.spin_step_deg,
+        dense_step_m=req.dense_step_m,
+        travel_angle_deg=req.travel_angle_deg,
     )
     return {
         "points": planned.points,
         "weld_segments": [
-            {"start_index": w.start_index, "end_index": w.end_index,
-             "weld_speed": w.weld_speed, "arc_file": w.arc_file}
+            {
+                "start_index": w.start_index,
+                "end_index": w.end_index,
+                "weld_speed": w.weld_speed,
+                "arc_file": w.arc_file,
+                "move_type": w.move_type,
+            }
             for w in planned.weld_segments
         ],
+        "dense_points": planned.dense_points,
+        "dense_joint_angles_deg": planned.dense_joint_angles_deg,
+        "spin_angles_deg": planned.spin_angles_deg,
+        "spin_results": [
+            {
+                "spin_deg": s.spin_deg,
+                "cost": s.cost,
+                "rejected": s.rejected,
+                "reason": s.reason,
+                "candidate_count": s.candidate_count,
+                "feasible_count": s.feasible_count,
+            }
+            for s in planned.spin_results
+        ],
+        "max_joint_step_deg": planned.max_joint_step_deg,
+        "axis_names": AXIS_NAMES,
     }
 
 
 @app.post("/api/forward-kinematics")
-def fk(q_deg: list[float]):
+def fk(q_deg: list[float], all_frames: bool = True):
+    """FK for joint angles (deg).
+
+    By default returns MotoROS2 frames ``flange``, ``tool0``, and ``tcp_0``
+    (plus ``tcp`` alias) for ``/tf`` cross-checks. Pass ``all_frames=false``
+    for a single ``tcp`` pose (legacy flat dict).
+    """
     if len(q_deg) != get_robot().n:
         raise HTTPException(400, f"Expected {get_robot().n} joint values")
+    if all_frames:
+        return forward_kinematics_frames(q_deg)
     return forward_kinematics(q_deg)
+
+
+@app.get("/api/motoros2-error/{error_code}")
+def motoros2_error(error_code: int):
+    """Decode FollowJointTrajectory ``error_code`` (−ECCCCC)."""
+    return decode_motoros2_error(error_code)
 
 
 @app.post("/api/generate-jbi", response_class=PlainTextResponse)
@@ -276,10 +346,22 @@ async def analyze_cad(
         os.unlink(tmp_path)
 
 
+@app.get("/api/robot-link")
+def robot_link():
+    """Execution path for this cell: INFORM .JBI, plus optional MotoROS2 status.
+
+    ArcNC does not expose an API. ROS is reported only when a micro-ROS Agent
+    address is configured; this endpoint never commands motion. Motoweld
+    ``WVON`` / ``MACRO1`` always go through native ``.JBI``.
+    """
+    return describe_robot_link()
+
+
 @app.get("/")
 def root():
     return {
         "service": "Yaskawa CAD/CAM prototype",
         "status": "ok",
         "disclaimer": "Prototype. Placeholder kinematics. Validate in MotoSim.",
+        "robot_link": "/api/robot-link",
     }

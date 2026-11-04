@@ -1,0 +1,17 @@
+Viewport torch CAD slot — awaiting correct model
+================================================
+
+Cell hardware (PDF + TOOL.CND):
+  ABICOR BINZEL iCAT mini (MA2010 flange) + ABIROB® G/W neck ≈45°
+  (TOOL 0 Ry −42.6215°). See docs/BACKUP_AND_LORCH_ANALYSIS.md §7.
+
+Current UI mesh: ../torch_esab/rm62_36deg.stl (Verbotics placeholder).
+
+Rejected download (wrong family):
+  Marathon OS “Welding Torch Robo WH PP W500”
+  https://marathon-os.com/library/welding-torch-robo-wh-pp-w500-6a2e663ea257a80888c08dcb
+  STEP parts named “Holder Abirob A300 ECO” — ABIROB® A series / ROBO WH,
+  not ABIROB® G/W + iCAT mini. Removed from viewer default 2026-11-04.
+
+No free public STEP for ABIROB® G + iCAT mini found (GrabCAD/TraceParts/
+Marathon/OEM portal). Drop OEM STEP here when available.

@@ -36,6 +36,7 @@ const pl: Dict = {
   // Plan actions
   "plan.importPart": "Importuj część",
   "plan.loadDemo": "Załaduj demo",
+  "plan.loadHardDemo": "Demo trudne (90° + rura)",
   "plan.identifyWelds": "Wykryj spoiny",
   "plan.weldSettings": "Ustawienia spoiny",
   "plan.plan": "Planuj",
@@ -132,6 +133,39 @@ const pl: Dict = {
   "robot.help":
     "Przesuwaj S/L/U/R/B/T, żeby ręcznie ruszać AR2010 (jak panel Robot w Verbotics Weld). Odtwórz przełącza na IK ścieżki. Baza / Zero zerują osie.",
 
+  // Execution / MotoROS2 checklist
+  "exec.title": "Wykonanie na robocie",
+  "exec.summary":
+    "Spawanie: natywny .JBI (ARCON / WVON / MACRO1). MotoROS2 — opcjonalna telemetria i dojazdy po DN2.44+.",
+  "exec.checklistTitle": "Specyfikacja i Checklista DX200 (JBI vs MotoROS2)",
+  "exec.firmwareWarn":
+    "Dump komórki jest na DN2.27 — przed MotoROS2 wymagany upgrade do DN2.44.00-00 lub nowszego.",
+  "exec.firmwareOk": "Firmware zgodny z MotoROS2",
+  "exec.firmwareBad": "Firmware za stary na MotoROS2",
+  "exec.s2cTitle": "Parametry S2C (DX200)",
+  "exec.groupsTitle": "Mapowanie grup RB1/BS1/ST → r1/b1/s",
+  "exec.tfTitle": "Łańcuch TF",
+  "exec.limitsTitle": "Ograniczenia MotoROS2",
+  "exec.jbiNote":
+    "follow_joint_trajectory wymaga INIT_ROS i DN2.44+ — tylko telemetria/dojazdy. Spawanie zawsze przez .JBI.",
+
+  // Torch / TOOL 0 calibration
+  "torch.panelTitle": "Palnik (TOOL 0) — Lokalizacja i Model 3D",
+  "torch.panelHelp":
+    "TCP z dumpa DX200 (TOOL.CND: −54.28, 1.05, 415.70 mm · RPY 1.31/−42.62/−6.84°). Sprzęt: ABICOR BINZEL iCAT mini + ABIROB G/W (~45°). Mesh UI: placeholder (brak publicznego STEP G/W+iCAT).",
+  "torch.tcpSection": "TCP TOOL 0 (mm / °)",
+  "torch.mountSection": "Kalibracja mocowania na kołnierzu",
+  "torch.flangePreset": "Oś wyjściowa kołnierza URDF",
+  "torch.meshSection": "Model 3D palnika",
+  "torch.meshVendor": "Placeholder mesh (czekamy na STEP ABIROB G/W + iCAT)",
+  "torch.meshProcedural": "Proceduralny",
+  "torch.meshCustom": "Własny STL/GLB",
+  "torch.uploadMesh": "Wgraj plik .stl / .glb",
+  "torch.customScale": "Skala siatki",
+  "torch.showAxes": "Pokaż osie XYZ (kołnierz + TCP)",
+  "torch.resetTcp": "Przywróć TCP z dumpa",
+  "torch.resetAll": "Reset całej kalibracji",
+
   // Axis help
   "axis.S": "Obrót podstawy",
   "axis.L": "Ramię dolne",
@@ -139,7 +173,7 @@ const pl: Dict = {
   "axis.R": "Obrót ramienia",
   "axis.B": "Zgięcie nadgarstka",
   "axis.T": "Obrót uchwytu",
-  "axis.home": "Baza (0°)",
+  "axis.home": "Baza (C00000)",
 
   // Status messages
   "status.programReady":
@@ -150,7 +184,7 @@ const pl: Dict = {
     "Wykryj spoiny: spoina z {n} punktami już jest w projekcie.",
   "status.planNeedPart": "Zaimportuj / załaduj część przed planowaniem.",
   "status.planDone": "Plan ruchu gotowy · bez kolizji: {collision}. Otwórz Program i naciśnij Odtwórz.",
-  "status.home": "Robot → pozycja bazowa (wszystkie osie 0°).",
+  "status.home": "Robot → home C00000 nad szyną BS1 (TOOL 0).",
   "status.zero": "Robot → Zero (wszystkie wartości osi = 0°).",
   "status.jogOn": "Ręczny ruch osi WŁĄCZONY.",
   "status.importing": "Import CAD…",
@@ -206,6 +240,7 @@ const en: Dict = {
 
   "plan.importPart": "Import Part",
   "plan.loadDemo": "Load Demo",
+  "plan.loadHardDemo": "Hard demo (90° + pipe)",
   "plan.identifyWelds": "Identify Welds",
   "plan.weldSettings": "Weld Settings",
   "plan.plan": "Plan",
@@ -293,13 +328,45 @@ const en: Dict = {
   "robot.help":
     "Move S/L/U/R/B/T to jog the AR2010 by hand (like Verbotics Weld’s Robot panel). Play switches to path IK. Home / Zero reset the axes.",
 
+  "exec.title": "Robot execution",
+  "exec.summary":
+    "Welding: native .JBI (ARCON / WVON / MACRO1). MotoROS2 — optional telemetry and air moves after DN2.44+.",
+  "exec.checklistTitle": "DX200 Spec & Checklist (JBI vs MotoROS2)",
+  "exec.firmwareWarn":
+    "Cell dump is DN2.27 — upgrade to DN2.44.00-00 or newer before installing MotoROS2.",
+  "exec.firmwareOk": "Firmware OK for MotoROS2",
+  "exec.firmwareBad": "Firmware too old for MotoROS2",
+  "exec.s2cTitle": "S2C parameters (DX200)",
+  "exec.groupsTitle": "Group map RB1/BS1/ST → r1/b1/s",
+  "exec.tfTitle": "TF chain",
+  "exec.limitsTitle": "MotoROS2 limitations",
+  "exec.jbiNote":
+    "follow_joint_trajectory needs INIT_ROS and DN2.44+ — telemetry/air only. Welding always via .JBI.",
+
+  // Torch / TOOL 0 calibration
+  "torch.panelTitle": "Torch (TOOL 0) — Location & 3D Model",
+  "torch.panelHelp":
+    "TCP from DX200 TOOL.CND (−54.28, 1.05, 415.70 mm · RPY 1.31/−42.62/−6.84°). Hardware: ABICOR BINZEL iCAT mini + ABIROB G/W (~45°). UI mesh: placeholder (no public G/W+iCAT STEP yet).",
+  "torch.tcpSection": "TCP TOOL 0 (mm / °)",
+  "torch.mountSection": "Flange mount calibration",
+  "torch.flangePreset": "URDF flange outgoing axis",
+  "torch.meshSection": "Torch 3D model",
+  "torch.meshVendor": "Placeholder mesh (awaiting ABIROB G/W + iCAT STEP)",
+  "torch.meshProcedural": "Procedural",
+  "torch.meshCustom": "Custom STL/GLB",
+  "torch.uploadMesh": "Upload .stl / .glb",
+  "torch.customScale": "Mesh scale",
+  "torch.showAxes": "Show XYZ axes (flange + TCP)",
+  "torch.resetTcp": "Restore dump TCP",
+  "torch.resetAll": "Reset all calibration",
+
   "axis.S": "Base rotation",
   "axis.L": "Lower arm",
   "axis.U": "Upper arm",
   "axis.R": "Arm roll",
   "axis.B": "Wrist bend",
   "axis.T": "Torch roll",
-  "axis.home": "Home (0°)",
+  "axis.home": "Home (C00000)",
 
   "status.programReady":
     "Program ready: T-fillet · {mm} mm · cycle ≈ {sec} s",
@@ -309,7 +376,7 @@ const en: Dict = {
     "Identify Welds: seam with {n} points already in project.",
   "status.planNeedPart": "Import / load a part before planning.",
   "status.planDone": "Motion plan ready · collision-free: {collision}. Open Program and press Play.",
-  "status.home": "Robot → Home pose (all axes 0°).",
+  "status.home": "Robot → home C00000 over RECT-X (TOOL 0).",
   "status.zero": "Robot → Zero (all joint values set to 0°).",
   "status.jogOn": "Manual joint jog ON.",
   "status.importing": "Importing CAD…",

@@ -1,15 +1,19 @@
 """
 Pulse ↔ degree / mm conversion mined from the production DX200 CF dump
-(`reference/robot-cell-dx200`, 2026-09-15).
+(`reference/dx200-backup-20260915` / fixtures, 2026-09-15).
 
 Sources
 -------
-* Robot softlimits: ``RC.PRM`` / ``RC1G`` indices 924–937 (pulse ±limits)
+* Robot softlimits: ``RC.PRM`` / ``ALL.PRM`` ``///RC1G`` indices 924–937
   paired with MA2010 URDF joint limits (``frontend/public/models/ma2010``).
-* Station TURN: ``RBCALIB.DAT`` SPULSE steps (E Δ≈91771 over ~90°) and
-  ``RC3G``/``RC4G`` (S1/S2 TURN-1). Production jobs write ``EC#=p,0``.
-* Base RECT-X: park pulse from ``jobs/000.JBI`` / ``RBCALIB`` MBSC; stroke
-  softlimit hint ``RC1G[8]=1082000``. mm→pulse not certified (no lead in dump).
+* Station TURN: ``RBCALIB.DAT`` SPULSE steps (E2 Δ≈91771 over ~90°) —
+  ``STATION_PULSES_PER_DEGREE``. S1/S2 = TURN-1 (``EC#=p,0``); S3/S4 = TURN-2
+  (``EC#=a,b``). Axis-2 scale from RBCALIB; axis-1 uses the same factor for
+  production TURN-1 first components (hard lead/softlimit for TURN-2 axis-1
+  is not in RC5G/RC6G — softlimits are ±99999999).
+* Base RECT-X: park / home BC from jobs; softlimit hint ``RC1G[8]=1082000``.
+  **pulses/mm is NOT in the dump** (no lead/pitch parameter) — see
+  ``docs/BACKUP_AND_LORCH_ANALYSIS.md``.
 * Encoder resolution: ``SV.PRM`` / ``SV1G[24..29]=4096``.
 
 Validate in MotoSim before any controller load. Absolute-encoder ABSO offsets
@@ -50,13 +54,21 @@ def _ppd_from_softlimits() -> list[float]:
 # Derived: ≈ [1341.38, 1907.68, 1592.89, 1022.87, 980.24, 454.76]
 MA2010_PULSES_PER_DEGREE: list[float] = _ppd_from_softlimits()
 
-# RBCALIB SSTC1→SSTC2: E2 0 → −91771 (≈ −90° on TURN axis)
+# RBCALIB SSTC1→SSTC2: E2 0 → −91771 (≈ −90° on TURN axis-2)
 STATION_PULSES_PER_DEGREE: float = 91771.0 / 90.0  # ≈ 1019.6889
+# Second RBCALIB set (RBCALIB 4) gave ΔE2=+91799 / 90° ≈ 1019.99 — same family.
+STATION_AXIS2_PULSES_PER_DEGREE: float = STATION_PULSES_PER_DEGREE
 
 # Production park / teach defaults
 BASE_PARK_PULSE: int = 878036  # jobs/000.JBI BC#
+BASE_HOME_TRACK_PULSE: int = 570125  # DEFRO / home over rail
 BASE_SOFTLIMIT_PULSE: int = 1_082_000  # RC1G[8] travel hint
+# Certified lead not in CF — leave None until measured on cell.
+BASE_PULSES_PER_MM: float | None = None
 STATION_IDLE_PULSE: int = -1746  # jobs/000.JBI EC# first component at weld
+# Home bookend C00000 (see robot_config.CELL_HOME_PULSES) — kept here for
+# pulse-only callers; degrees via joint_pulses_to_deg.
+CELL_HOME_PULSES: tuple[int, ...] = (-281, -101163, -84214, 3730, -80188, -1936)
 
 ENCODER_RESOLUTION: int = 4096  # SV1G
 
@@ -67,7 +79,10 @@ class PulseConfig:
 
     robot_pulses_per_degree: tuple[float, ...] = tuple(MA2010_PULSES_PER_DEGREE)
     station_pulses_per_degree: float = STATION_PULSES_PER_DEGREE
+    station_axis2_pulses_per_degree: float = STATION_AXIS2_PULSES_PER_DEGREE
     base_park_pulse: int = BASE_PARK_PULSE
+    base_home_track_pulse: int = BASE_HOME_TRACK_PULSE
+    base_pulses_per_mm: float | None = BASE_PULSES_PER_MM
     station_idle_pulse: int = STATION_IDLE_PULSE
     encoder_resolution: int = ENCODER_RESOLUTION
 
@@ -107,6 +122,19 @@ def station_deg_to_ec(
     return int(round(deg * ppd)), int(second_axis)
 
 
+def station_deg2_to_ec(
+    deg1: float,
+    deg2: float,
+    *,
+    ppd1: float | None = None,
+    ppd2: float | None = None,
+) -> tuple[int, int]:
+    """TURN-2 (ST3/ST4): both EC components are live axes."""
+    a = ppd1 if ppd1 is not None else CELL_PULSE.station_pulses_per_degree
+    b = ppd2 if ppd2 is not None else CELL_PULSE.station_axis2_pulses_per_degree
+    return int(round(deg1 * a)), int(round(deg2 * b))
+
+
 def base_mm_to_bc(
     mm: float | None = None,
     *,
@@ -115,6 +143,7 @@ def base_mm_to_bc(
 ) -> int:
     """RECT-X BC#. Without certified pulses/mm, return park pulse (matches 000.JBI)."""
     park = park_pulse if park_pulse is not None else CELL_PULSE.base_park_pulse
-    if mm is None or pulses_per_mm is None:
+    ppm = pulses_per_mm if pulses_per_mm is not None else CELL_PULSE.base_pulses_per_mm
+    if mm is None or ppm is None:
         return park
-    return int(round(park + mm * pulses_per_mm))
+    return int(round(park + mm * ppm))

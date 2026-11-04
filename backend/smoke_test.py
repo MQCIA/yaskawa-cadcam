@@ -21,7 +21,7 @@ def test_config():
     print(f"Station pulse/deg: {CELL_PULSE.station_pulses_per_degree:.4f}")
     assert ACTIVE_MODEL.name == "MA2010"
     assert ACTIVE_POSITIONER.name == "TURN-ST1"
-    assert "MOTOWELD" in ACTIVE_POWER_SOURCE.name.upper()
+    assert "LORCH" in ACTIVE_POWER_SOURCE.name.upper()
 
 
 def test_fk_ik_roundtrip():
@@ -65,14 +65,14 @@ def test_jbi():
         station_deg=[0.0, 45.0, 90.0],
         joint_angles_deg=joints,
     )
-    print("\n--- Generated JBI (MA2010 + TURN ST1 + Motoweld) ---")
+    print("\n--- Generated JBI (MA2010 + TURN ST1 + Lorch Tiptronic) ---")
     print(jbi)
     assert jbi.startswith("/JOB")
     assert "//NAME WELD_AUTO" in jbi
     assert "ARCON" in jbi and "ARCOF" in jbi
     assert "RB1,BS1" in jbi and "ST1" in jbi
     assert "+MOVJ EC" in jbi
-    assert "Motoweld" in jbi
+    assert "Lorch Tiptronic" in jbi or "ARGF" in jbi
     assert "BC00000=878036" in jbi
     assert "///POSTYPE PULSE" in jbi
     assert "///RECTAN" not in jbi
