@@ -208,12 +208,11 @@ A/V w UI = szablon ARCSRT (200 A / 20 V), dopóki Lorch nie udostępni tabeli Ti
 | Stan | Opis |
 |------|------|
 | CAD z uploadu | **Brak** (tylko PDF iCAT) |
-| Mesh w UI | `frontend/public/models/torch/abirob_a300_eco.stl` — community STEP z Marathon OS (ABIROB® **A300 ECO** holder + szyjka; listing „Robo WH PP W500”) |
-| Źródło | CDN `d1d8a3050v4fu6.cloudfront.net/…/6a2e663ea257a80888c08dcb.step` · szczegóły `models/torch/SOURCE.txt` |
-| Kalibracja TCP | tip + oś drutu → TOOL 0 xyz/RPY (`torchMesh.ts`); residual mocowania ≈ **56 mm** (A300 ECO ≠ G/W komórki) |
-| Legacy | `torch_esab/rm62_36deg.stl` — stary placeholder Verbotics, niewyświetlany |
+| Mesh w UI | `frontend/public/models/torch_esab/rm62_36deg.stl` — placeholder Verbotics, tip → TOOL 0 |
+| Odrzucony download | Marathon „Robo WH PP W500” / części **Holder Abirob A300 ECO** — **zła rodzina** (A / ROBO WH ≠ ABIROB® G/W + iCAT mini) |
+| Publiczny STEP G/W+iCAT | **Nie znaleziony** (Marathon / GrabCAD / TraceParts / OEM) |
 
-Gdy pojawi się OEM STEP G/W + iCAT: `tools/convert_torch_cad.py` → podmiana w `models/torch/` + nowa macierz w `torchMesh.ts`.
+Gdy pojawi się OEM STEP G/W + iCAT: `tools/convert_torch_cad.py` → `models/torch/` + macierz w `torchMesh.ts`.
 
 ---
 
@@ -232,6 +231,6 @@ Szczegóły: [CELL_POSES.md](CELL_POSES.md).
 
 1. **`LORCH.JBI`** — pełna treść makra (DOUT / OG / M-reg).
 2. **Lorch „INT” / robot interface manual** — mapa Tiptronic ↔ I/O.
-3. **OEM CAD ABIROB G/W + iCAT** (STEP) — dokładniejszy mesh (obecny A300 ECO ma ~56 mm residual mocowania).
+3. **OEM CAD ABIROB G/W + iCAT mini** (STEP) — prawdziwy mesh (publiczny A300 ECO / ROBO WH odrzucony).
 4. **Lead RECT-X (mm/rev lub pulses/mm)** — pomiar lub tabliczka.
 5. **`UFRAME.CND`** — jeśli ramki są uczone poza tą kopią CF.

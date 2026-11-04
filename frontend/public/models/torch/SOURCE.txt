@@ -1,30 +1,17 @@
-Viewport torch mesh — ABICOR BINZEL ABIROB® family
-====================================================
+Viewport torch CAD slot — awaiting correct model
+================================================
 
-Files
-  abirob_a300_eco.stl / .glb / .step
-  abirob_a300_eco_meta.json   (tip + align quat used by lib/torchMesh.ts)
+Cell hardware (PDF + TOOL.CND):
+  ABICOR BINZEL iCAT mini (MA2010 flange) + ABIROB® G/W neck ≈45°
+  (TOOL 0 Ry −42.6215°). See docs/BACKUP_AND_LORCH_ANALYSIS.md §7.
 
-Download (2026-11-04)
-  Product page: https://marathon-os.com/library/welding-torch-robo-wh-pp-w500-6a2e663ea257a80888c08dcb
-  STEP CDN:     https://d1d8a3050v4fu6.cloudfront.net/6a2e663ea257a80888c08dcb/6a2e663ea257a80888c08dcb.step
-  STEP header:  Main_ass.STEP (SolidWorks 2022 → AP214)
-  Parts inside: “Holder Abirob A300 ECO”, neck (Горелка1), gas-nozzle stack
+Current UI mesh: ../torch_esab/rm62_36deg.stl (Verbotics placeholder).
 
-Conversion
-  cascadio.step_to_glb → trimesh concatenate → scale m→mm → STL/GLB
-  tools/convert_torch_cad.py (same pipeline)
+Rejected download (wrong family):
+  Marathon OS “Welding Torch Robo WH PP W500”
+  https://marathon-os.com/library/welding-torch-robo-wh-pp-w500-6a2e663ea257a80888c08dcb
+  STEP parts named “Holder Abirob A300 ECO” — ABIROB® A series / ROBO WH,
+  not ABIROB® G/W + iCAT mini. Removed from viewer default 2026-11-04.
 
-TCP / alignment
-  Tip + wire axis calibrated so VendorTorchAtTcp places the tip exactly at
-  DX200 TOOL.CND TOOL 0 (xyz −54.280, 1.052, 415.702 mm · RPY 1.3119,
-  −42.6215, −6.8387 deg). Twist around the wire matches TOOL0 mount azimuth.
-  Mount residual ≈ 56 mm — CAD is A300 ECO, cell neck is ABIROB G/W ≈45°.
-
-Cell hardware (PDF dump, not this STEP)
-  ABICOR BINZEL iCAT mini (MA2010) + ABIROB® G/W neck.
-  Replace this mesh when an OEM G/W / iCAT STEP for the cell is available.
-
-License / provenance
-  Third-party community CAD on Marathon OS; not an official ABICOR BINZEL
-  distribution. Visual use in this viewer only.
+No free public STEP for ABIROB® G + iCAT mini found (GrabCAD/TraceParts/
+Marathon/OEM portal). Drop OEM STEP here when available.

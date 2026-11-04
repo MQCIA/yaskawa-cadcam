@@ -152,12 +152,12 @@ const pl: Dict = {
   // Torch / TOOL 0 calibration
   "torch.panelTitle": "Palnik (TOOL 0) — Lokalizacja i Model 3D",
   "torch.panelHelp":
-    "TCP z dumpa DX200 (TOOL.CND: −54.28, 1.05, 415.70 mm · RPY 1.31/−42.62/−6.84°). Sprzęt: ABICOR BINZEL iCAT mini + ABIROB (~45°). Mesh UI: ABIROB A300 ECO (Marathon OS STEP).",
+    "TCP z dumpa DX200 (TOOL.CND: −54.28, 1.05, 415.70 mm · RPY 1.31/−42.62/−6.84°). Sprzęt: ABICOR BINZEL iCAT mini + ABIROB G/W (~45°). Mesh UI: placeholder (brak publicznego STEP G/W+iCAT).",
   "torch.tcpSection": "TCP TOOL 0 (mm / °)",
   "torch.mountSection": "Kalibracja mocowania na kołnierzu",
   "torch.flangePreset": "Oś wyjściowa kołnierza URDF",
   "torch.meshSection": "Model 3D palnika",
-  "torch.meshVendor": "ABIROB A300 ECO (Marathon OS)",
+  "torch.meshVendor": "Placeholder mesh (czekamy na STEP ABIROB G/W + iCAT)",
   "torch.meshProcedural": "Proceduralny",
   "torch.meshCustom": "Własny STL/GLB",
   "torch.uploadMesh": "Wgraj plik .stl / .glb",
@@ -346,12 +346,12 @@ const en: Dict = {
   // Torch / TOOL 0 calibration
   "torch.panelTitle": "Torch (TOOL 0) — Location & 3D Model",
   "torch.panelHelp":
-    "TCP from DX200 TOOL.CND (−54.28, 1.05, 415.70 mm · RPY 1.31/−42.62/−6.84°). Hardware: ABICOR BINZEL iCAT mini + ABIROB (~45°). UI mesh: ABIROB A300 ECO (Marathon OS STEP).",
+    "TCP from DX200 TOOL.CND (−54.28, 1.05, 415.70 mm · RPY 1.31/−42.62/−6.84°). Hardware: ABICOR BINZEL iCAT mini + ABIROB G/W (~45°). UI mesh: placeholder (no public G/W+iCAT STEP yet).",
   "torch.tcpSection": "TCP TOOL 0 (mm / °)",
   "torch.mountSection": "Flange mount calibration",
   "torch.flangePreset": "URDF flange outgoing axis",
   "torch.meshSection": "Torch 3D model",
-  "torch.meshVendor": "ABIROB A300 ECO (Marathon OS)",
+  "torch.meshVendor": "Placeholder mesh (awaiting ABIROB G/W + iCAT STEP)",
   "torch.meshProcedural": "Procedural",
   "torch.meshCustom": "Custom STL/GLB",
   "torch.uploadMesh": "Upload .stl / .glb",
