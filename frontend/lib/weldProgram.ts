@@ -75,19 +75,19 @@ export type WeldProgram = {
 };
 
 /**
- * Motoweld schedules mined from the DX200 dump (see docs/CELL_WELD_MAP.md).
- * ``job`` = MACRO1 MJ#(0) ARGFn = Motoweld PROG-NR.
- * A/V come from the shared ARCSRT.CND template (200 A / 20.0 V); wire ≈ Motoweld
- * WELDER.DAT curve at 200 A. Travel speeds match live jobs for that ARGF.
+ * Lorch Tiptronic schedules mined from the DX200 dump (see docs/BACKUP_AND_LORCH_ANALYSIS.md).
+ * ``job`` = MACRO1 MJ#(0) ARGFn = Tiptronic PROG-NR (MACRO.DAT tag PROG-NR: → job LORCH).
+ * A/V come from the shared ARCSRT.CND template (200 A / 20.0 V); wire ≈ WELDER.DAT
+ * curve at 200 A. Travel speeds match live jobs for that ARGF.
  */
 export const LORCH_S8_SCHEDULES: WeldScheduleRow[] = [
-  { condition: 1, job: 8, currentA: 200, voltageV: 20.0, wireMmin: 7.2, travelCmMin: 5.0, process: "Motoweld" },
-  { condition: 2, job: 5, currentA: 200, voltageV: 20.0, wireMmin: 7.2, travelCmMin: 4.2, process: "Motoweld" },
-  { condition: 3, job: 4, currentA: 200, voltageV: 20.0, wireMmin: 7.2, travelCmMin: 5.0, process: "Motoweld" },
-  { condition: 4, job: 1, currentA: 200, voltageV: 20.0, wireMmin: 7.2, travelCmMin: 5.0, process: "Motoweld" },
+  { condition: 1, job: 8, currentA: 200, voltageV: 20.0, wireMmin: 7.2, travelCmMin: 5.0, process: "Lorch Tiptronic" },
+  { condition: 2, job: 5, currentA: 200, voltageV: 20.0, wireMmin: 7.2, travelCmMin: 4.2, process: "Lorch Tiptronic" },
+  { condition: 3, job: 4, currentA: 200, voltageV: 20.0, wireMmin: 7.2, travelCmMin: 5.0, process: "Lorch Tiptronic" },
+  { condition: 4, job: 1, currentA: 200, voltageV: 20.0, wireMmin: 7.2, travelCmMin: 5.0, process: "Lorch Tiptronic" },
 ];
 
-/** Alias — Motoweld PROG-NR / ARGF tables (not Lorch ASF#). */
+/** Alias — Tiptronic PROG-NR / ARGF tables. */
 export const MOTOWELD_SCHEDULES = LORCH_S8_SCHEDULES;
 
 /** Weave files WEV#(n) from WEAV.CND (amp L/R mm, angle L/R °, frequency Hz). */
@@ -983,7 +983,7 @@ export function generateJbi(
       lines.push("TIMER T=0.50");
       lines.push(`MACRO1 MJ#(0) ARGF${sch.job}`);
       lines.push(
-        `' Motoweld PROG-NR/ARGF${sch.job} (UI cond ${sch.condition}): ` +
+        `' Lorch Tiptronic PROG-NR/ARGF${sch.job} (UI cond ${sch.condition}): ` +
           `${sch.currentA}A / ${sch.voltageV.toFixed(1)}V / wire ${sch.wireMmin.toFixed(1)} m/min ` +
           `— ARCSRT template; validate WPS`,
       );

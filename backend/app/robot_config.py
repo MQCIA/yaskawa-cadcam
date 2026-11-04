@@ -5,7 +5,8 @@ Production cell (``reference/robot-cell-dx200`` / SYSTEM.SYS):
   * Robot        : Yaskawa **MA2010** (MA02010-A0*) on DX200 ARC WELDING
   * Base         : RECT-X → INFORM **BS1**
   * Station      : TURN S1–S4 → INFORM **ST1** (jobs use GROUP2 ST1)
-  * Power source : MOTOWELD-E Series 350A (see welding_config.py)
+  * Power source : Lorch Tiptronic via MACRO1→LORCH (see welding_config.py;
+    WELDER.DAT still labelled Motoweld-E template)
 
 Pulse↔degree for MA2010 + TURN is mined in ``pulse_config.py`` from RC.PRM /
 RBCALIB. DH link lengths remain approximate until verified against MotoSim.
@@ -119,6 +120,7 @@ AXIS_NAMES = ["S", "L", "U", "R", "B", "T"]
 
 # ---------------------------------------------------------------------------
 # TOOL 0 — single source of truth (DX200 dump TOOL.CND / ///TOOL 0 in jobs)
+# Physical mount: ABICOR BINZEL iCAT mini + ABIROB neck (PDF); TCP from TOOL.CND only.
 # ---------------------------------------------------------------------------
 # Motoman ``tcp_0`` relative to Motoman ``tool0`` (Z+ out of flange).
 # MotoROS2: flange → tcp_0 = flange→tool0 · this transform.

@@ -69,7 +69,8 @@ def test_config_loaded():
     assert ACTIVE_MODEL.pulses_per_degree is not None
     assert ACTIVE_MODEL.pulses_per_degree[0] > 1000  # S ≈ 1341 from RC1G
     assert ACTIVE_POSITIONER.axes[0].pulses_per_degree > 1000  # ≈ 1019.7
-    assert "MOTOWELD" in ACTIVE_POWER_SOURCE.name.upper()
+    assert "LORCH" in ACTIVE_POWER_SOURCE.name.upper()
+    assert "MOTOWELD" in ACTIVE_POWER_SOURCE.welder_dat_label.upper()
     assert set(LORCH_S8_SCHEDULES) >= {1, 2, 3}
 
 
@@ -104,7 +105,7 @@ def test_jbi_ma2010_cell_profile():
     assert "+MOVJ EC" in jbi
     assert "BC00000=878036" in jbi
     assert "EC00001=45886,0" in jbi  # 45 * 1019.6889…
-    assert "Motoweld" in jbi
+    assert "Lorch Tiptronic" in jbi or "ARGF" in jbi
     assert jbi.strip().endswith("END")
 
 
@@ -385,7 +386,9 @@ def test_motoweld_argf_and_arcsrt_template():
 def test_weave_files_from_weav_cnd():
     """M3: WEV#(1/15/16/21) amplitudes match WEAV.CND."""
     assert get_weave(1).amp_l_mm == 2.0 and get_weave(1).angle_l_deg == 70.0
+    assert get_weave(1).dwell_s[0] == 0.1
     assert get_weave(15).amp_l_mm == 3.0 and get_weave(15).frequency_hz == 3.0
+    assert get_weave(15).dwell_s[5] == 0.3
     assert get_weave(16).angle_r_deg == 0.0
     assert get_weave(21).amp_l_mm == 4.0 and get_weave(21).amp_r_mm == 0.0
     weav = (CELL / "WEAV.CND").read_text(encoding="latin-1", errors="replace")

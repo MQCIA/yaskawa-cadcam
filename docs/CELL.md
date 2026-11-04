@@ -10,7 +10,8 @@ Parsed from `D:\YASKAWA\z robota` → `reference/robot-cell-dx200` (2026-09-15).
 | Robot R1 | **MA02010-A0\*** (MA2010) |
 | Base B1 | **RECT-X** (linear travel) → INFORM group **BS1** |
 | Station | S1–S4 **TURN** → INFORM group **ST1** |
-| Welder | **MOTOWELD-E Series 350A** (`WELDER.DAT`) |
+| Welder | **Lorch Tiptronic** via `MACRO1→LORCH` (`WELDER.DAT` still labelled Motoweld-E template) |
+| Torch mount | **ABICOR BINZEL iCAT mini** + ABIROB neck (PDF; no STEP in repo yet) |
 | TOOL 0 TCP | `-54.280, 1.052, 415.702` mm |
 | TOOL 0 RPY | `1.3119, -42.6215, -6.8387` deg |
 
@@ -51,13 +52,13 @@ MACRO1 MJ#(0) ARGFn
 
 No `ARCON ASF#(...)` on this cell — conditions come from `ARCSRT.CND` / macros.
 
-## Motoweld ARGF / WEAV / TouchSense (M3)
+## Lorch Tiptronic ARGF / WEAV / TouchSense (M3)
 
-Full map: **[CELL_WELD_MAP.md](CELL_WELD_MAP.md)** · code: `backend/app/welding_config.py`.
+Full map: **[CELL_WELD_MAP.md](CELL_WELD_MAP.md)** · **[BACKUP_AND_LORCH_ANALYSIS.md](BACKUP_AND_LORCH_ANALYSIS.md)** · code: `backend/app/welding_config.py`.
 
 | Topic | Dump fact |
 |-------|-----------|
-| `MACRO1 MJ#(0) ARGFn` | Motoweld **PROG-NR = n** (`MACRO.DAT` MACRO1 1, tag `PROG-NR:`) |
+| `MACRO1 MJ#(0) ARGFn` | Lorch Tiptronic **PROG-NR = n** (`///JOB1 LORCH`, tag `PROG-NR:`) |
 | `ARCSRT.CND` | All 1000 EN blocks identical → **200 A / 20.0 V / 100 %** |
 | Live ARGF | **1, 4, 5, 8** (also 6, 10) — travel V≈4.2–7.5 in jobs |
 | `WEV#(1)` | 2 mm / 70° / 2 Hz |
@@ -75,11 +76,12 @@ Full map: **[CELL_WELD_MAP.md](CELL_WELD_MAP.md)** · code: `backend/app/welding
 - Without joints: C# stays RECTAN; BC/EC still use pulse units
 - Torch in viewer: MotoROS2 chain `flange → tool0 → tcp_0` (`WeldUrdfRobot`
   portals `WeldTorch3D` into Motoman `tool0`). Live TOOL 0 + mount calibration
-  UI (`frontend/lib/tool0.ts`). Default TCP from `TOOL.CND`. Default mesh:
-  **ESAB `rm62_36deg.stl`**.
+  UI (`frontend/lib/tool0.ts`). Default TCP from `TOOL.CND`. Viewport mesh:
+  Verbotics placeholder STL calibrated to TOOL 0 (OEM ABIROB STEP TBD).
 - Robot link API: `GET /api/robot-link` · FK frames:
   `POST /api/forward-kinematics` → `{ flange, tool0, tcp_0 }`.
 - Golden poses (home C00000, `000.JBI`): [CELL_POSES.md](CELL_POSES.md)
+- Backup / Lorch / iCAT reverse-engineering: [BACKUP_AND_LORCH_ANALYSIS.md](BACKUP_AND_LORCH_ANALYSIS.md)
 
 Large binaries (`CMOS.BIN`, `ALL.PRM`, …) stay under `reference/` (gitignored).
 

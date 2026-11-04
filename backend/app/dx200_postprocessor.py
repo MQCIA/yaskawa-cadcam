@@ -95,7 +95,7 @@ def _weld_comment(cond_no: int) -> str:
     if not sched:
         return f"' weld condition {cond_no}"
     return (
-        f"' Motoweld cond {cond_no} / ARGF{sched.lorch_job}: "
+        f"' Lorch Tiptronic PROG-NR/ARGF{sched.lorch_job} (UI cond {cond_no}): "
         f"{sched.current_a:.0f}A / {sched.voltage_v:.1f}V / "
         f"wire {sched.wire_speed:.1f} m/min / {sched.process}"
     )
