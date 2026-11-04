@@ -20,6 +20,14 @@ from .kinematics_engine import (
     get_robot,
     solve_ik_path,
 )
+from .dx200_trajectory import (
+    build_movj_polyline,
+    cartesian_duration_s,
+    movj_duration_s,
+    sample_circle,
+    sample_movj_tcp,
+    wrist_singularity_warning,
+)
 from .dx200_postprocessor import PostprocessorConfig, WeldSegment, generate_jbi
 from .path_planning import plan_from_seams
 from .robot_config import ACTIVE_MODEL, ACTIVE_POSITIONER, AXIS_NAMES, MODELS
@@ -314,6 +322,78 @@ def fk(q_deg: list[float], all_frames: bool = True):
     if all_frames:
         return forward_kinematics_frames(q_deg)
     return forward_kinematics(q_deg)
+
+
+class MovjSimRequest(BaseModel):
+    q0_deg: list[float]
+    q1_deg: list[float]
+    vj: float = 80.0
+    dec: float = 20.0
+    samples: int = 24
+    bc0: float | None = None
+    bc1: float | None = None
+    ec0: float | None = None
+    ec1: float | None = None
+
+
+class MovcSimRequest(BaseModel):
+    p1: list[float]
+    p2: list[float]
+    p3: list[float]
+    v_cm_min: float = 5.0
+    samples: int = 24
+
+
+@app.post("/api/simulate-movj")
+def simulate_movj(req: MovjSimRequest):
+    """DX200 MOVJ: joint trapezoid + FK TCP polyline (true air-move arc)."""
+    if len(req.q0_deg) != 6 or len(req.q1_deg) != 6:
+        raise HTTPException(400, "q0_deg / q1_deg must each have 6 values")
+    duration = movj_duration_s(
+        req.q0_deg,
+        req.q1_deg,
+        vj=req.vj,
+        dec=req.dec,
+        bc0=req.bc0,
+        bc1=req.bc1,
+        ec0=req.ec0,
+        ec1=req.ec1,
+    )
+    poly = build_movj_polyline(
+        req.q0_deg, req.q1_deg, samples=max(3, req.samples), dec=req.dec
+    )
+    mid = sample_movj_tcp(req.q0_deg, req.q1_deg, 0.5, dec=req.dec)
+    return {
+        "duration_s": duration,
+        "tcp_polyline": poly,
+        "mid_q_deg": mid.q_deg,
+        "mid_tcp": mid.pos,
+        "warnings": mid.warnings,
+        "wrist_warning": wrist_singularity_warning(mid.q_deg),
+    }
+
+
+@app.post("/api/simulate-movc")
+def simulate_movc(req: MovcSimRequest):
+    """DX200 MOVC: circle-through-3 at constant V (cm/min)."""
+    import numpy as np
+
+    p1, p2, p3 = (np.asarray(req.p1, float), np.asarray(req.p2, float), np.asarray(req.p3, float))
+    pts = []
+    n = max(3, req.samples)
+    for i in range(n):
+        s = i / (n - 1)
+        p = sample_circle(p1, p2, p3, s)
+        pts.append([float(x) for x in p])
+    # Arc length ≈ sum of chords.
+    length = 0.0
+    for i in range(len(pts) - 1):
+        length += float(np.linalg.norm(np.asarray(pts[i + 1]) - np.asarray(pts[i])))
+    return {
+        "duration_s": cartesian_duration_s(length, req.v_cm_min),
+        "length_m": length,
+        "tcp_polyline": pts,
+    }
 
 
 @app.get("/api/motoros2-error/{error_code}")

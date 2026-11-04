@@ -11,6 +11,7 @@ import {
   weavePolyline,
   type WaypointDiag,
 } from "@/lib/trajectoryViz";
+import { movjTcpPolyline, weaveBeadPoints } from "@/lib/dx200Sim";
 import SeamSketchLayer, {
   type DraftPoint,
 } from "@/components/SeamSketchLayer";
@@ -179,7 +180,7 @@ export default function WeldScene({
   onSketchCommit?: (pts: DraftPoint[]) => void;
   onSketchHover?: (active: boolean) => void;
 }) {
-  const s = sampleProgram(program, simT);
+  const s = sampleProgram(program, simT, weaveNo);
   const diags = useMemo(() => diagnoseWaypoints(program), [program]);
   const activeWeave = weaveNo || program.meta?.activeWeaveNo || 0;
 
@@ -187,35 +188,51 @@ export default function WeldScene({
   const retractDur = program.segDurations[program.segDurations.length - 1] ?? 0;
   const weldDur = Math.max(1e-6, program.cycleSec - approachDur - retractDur);
   const f = Math.max(0, Math.min(1, (s.elapsedSec - approachDur) / weldDur));
-  const bead = beadPoints(program.seam, f);
+  const bead = useMemo(() => {
+    if (activeWeave > 0) {
+      return weaveBeadPoints(
+        program.seam,
+        program.torchFrames.map((t) => t.dir),
+        activeWeave,
+        f,
+      );
+    }
+    return beadPoints(program.seam, f);
+  }, [program.seam, program.torchFrames, activeWeave, f]);
 
-  // Segment polylines by motion class.
-  const weldRuns: Vec3[][] = [];
-  const airRuns: Vec3[][] = [];
-  {
-    let run: Vec3[] = [];
-    let mode: "weld" | "air" | null = null;
-    const flush = () => {
-      if (run.length >= 2) {
-        if (mode === "weld") weldRuns.push(run);
-        else if (mode === "air") airRuns.push(run);
-      }
-      run = [];
+  // Segment polylines: weld = Cartesian; air MOVJ = FK(θ) arc (not chord).
+  const { weldRuns, airRuns, hotAir } = useMemo(() => {
+    const weldRuns: Vec3[][] = [];
+    const airRuns: Vec3[][] = [];
+    const hotAir: boolean[] = [];
+    let weldRun: Vec3[] = [];
+    const flushWeld = () => {
+      if (weldRun.length >= 2) weldRuns.push(weldRun);
+      weldRun = [];
     };
     for (let i = 0; i < program.waypoints.length - 1; i++) {
       const a = program.waypoints[i];
       const b = program.waypoints[i + 1];
-      const isWeld = a.arc && b.arc;
-      const nextMode: "weld" | "air" = isWeld ? "weld" : "air";
-      if (mode !== nextMode) {
-        flush();
-        mode = nextMode;
-        run = [a.pos];
+      const isWeld = Boolean(a.arc && b.arc);
+      if (isWeld) {
+        if (!weldRun.length) weldRun = [a.pos];
+        weldRun.push(b.pos);
+      } else {
+        flushWeld();
+        const joint =
+          a.move === "MOVJ" ||
+          a.kind === "approach" ||
+          a.kind === "retract" ||
+          a.kind === "travel" ||
+          a.kind === "clearance" ||
+          a.kind === "index_safe";
+        airRuns.push(joint ? movjTcpPolyline(program, i, i + 1, 18) : [a.pos, b.pos]);
+        hotAir.push(diags[i]?.ik === "near_limit" || diags[i]?.ik === "collision");
       }
-      run.push(b.pos);
     }
-    flush();
-  }
+    flushWeld();
+    return { weldRuns, airRuns, hotAir };
+  }, [program, diags]);
 
   const select = onSelectWp ?? (() => undefined);
 
@@ -274,18 +291,32 @@ export default function WeldScene({
         );
       })}
 
-      {/* Air MOVJ / clearance — dashed blue */}
+      {/* Air MOVJ — dashed blue FK arc; yellow/red when near limit / collision */}
       {airRuns.map((pts, i) => (
         <Line
           key={`air-${i}`}
           points={pts}
-          color="#2563eb"
-          lineWidth={2}
+          color={hotAir[i] ? "#eab308" : "#2563eb"}
+          lineWidth={hotAir[i] ? 3 : 2}
           dashed
           dashSize={0.035}
           gapSize={0.022}
         />
       ))}
+
+      {/* Live kinematic warnings */}
+      {s.warnings?.map((w, i) =>
+        w.kind === "singularity" || w.kind === "joint_rate" || w.kind === "collision" ? (
+          <mesh key={`warn-${i}`} position={s.pos}>
+            <sphereGeometry args={[0.022, 10, 10]} />
+            <meshStandardMaterial
+              color={w.kind === "collision" ? "#ef4444" : "#eab308"}
+              emissive={w.kind === "collision" ? "#ef4444" : "#eab308"}
+              emissiveIntensity={0.7}
+            />
+          </mesh>
+        ) : null,
+      )}
 
       {/* Growing weld bead */}
       {bead.map((p, i) => (
