@@ -190,7 +190,8 @@ def test_full_pipeline(lbracket):
     seams = detect_seams(lbracket, angle_tol_deg=25, target_angle_deg=90)
     planned = plan_from_seams(seams["segments"], samples_per_seam=5, arc_file=2)
     assert len(planned.points) > 0
-    ik = solve_ik_path(planned.points)
+    # Planner poses are Motoman tip / wire frames (no TOOL.CND RPY).
+    ik = solve_ik_path(planned.points, frame="tool0")
     assert ik["all_reachable"]
     jbi = generate_jbi(
         planned.points,

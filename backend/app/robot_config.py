@@ -117,6 +117,12 @@ MODELS["MA2010"].approximate = True
 
 AXIS_NAMES = ["S", "L", "U", "R", "B", "T"]
 
+# Cell dump TOOL.CND — Yaskawa Tool No. 0 (``tcp_0``) relative to Motoman
+# ``tool0`` (Z+ out of flange). MotoROS2 publishes ``flange → tcp_N`` as
+# ``flange→tool0`` · this transform (see ``doc/ros_api.md``).
+TOOL0_XYZ_MM: tuple[float, float, float] = (-54.280, 1.052, 415.702)
+TOOL0_RPY_DEG: tuple[float, float, float] = (1.3119, -42.6215, -6.8387)
+
 
 # ---------------------------------------------------------------------------
 # External axes: production TURN station + optional H1000D placeholder.

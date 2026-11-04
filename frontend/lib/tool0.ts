@@ -1,13 +1,21 @@
 /**
- * Production DX200 TOOL 0 + live mount/TCP calibration.
+ * Production DX200 TOOL 0 + MotoROS2 / ROS-Industrial frame chain.
  *
- * Motoman flange frame: origin at flange-face centre, +Z out of the flange
- * (ISO / Yaskawa tool axis before RPY).
+ * Official MotoROS2 (`doc/ros_api.md` — Provided TF transforms):
  *
- * MA2010 URDF: `link_6_t.stl` flange face at X≈0.100 m (Y/Z disc ±50 mm);
- * `joint_6_t-tool0` = xyz (0.100, 0, 0), rpy (0,0,0) → URDF +X = flange approach.
- * Map Motoman → URDF with R_y(+π/2): (x,y,z)_m → (z, y, −x)_urdf.
+ *   flange  — REP-103 relative to the link: X+ forward (out of flange),
+ *             Y+ left, Z+ up.
+ *   tool0   — Yaskawa "all zeros toolframe": Z+ forward (out of flange).
+ *             Static `flange → tool0` (never follows a configured tool file).
+ *   tcp_0   — active Yaskawa Tool No. 0 from `TOOL.CND`, expressed in the
+ *             Motoman / `tool0` frame (Z+ out).
+ *
+ * MA2010 URDF `joint_6_t-tool0` (0.100,0,0) places a flange-face frame with
+ * approach = URDF +X (REP-103 `flange`). AR2010 already has `flange` +
+ * `flange-tool0` with the Motoman rotation below.
  */
+
+import * as THREE from "three";
 
 export const TOOL0_XYZ_MM = [-54.28, 1.052, 415.702] as const;
 export const TOOL0_RPY_DEG = [1.3119, -42.6215, -6.8387] as const;
@@ -18,33 +26,56 @@ export const TOOL0_XYZ_M = [
   TOOL0_XYZ_MM[2] / 1000,
 ] as const;
 
-/** Straight-line flange→tip length (metres). */
+/** Straight-line tool0-origin → tip length (metres). */
 export const TOOL0_LENGTH_M = Math.hypot(...TOOL0_XYZ_M);
 
 /** Stick-out beyond copper nozzle (m). */
 export const TORCH_STICK_OUT_M = 0.018;
 
+/**
+ * ROS-Industrial / Motoman `flange → tool0` (AR2010 `flange-tool0` URDF).
+ * Motoman +Z = flange +X, Motoman +X = flange +Z, Motoman +Y = flange −Y.
+ * Matches backend `flange_to_tool0_se3` (Three.js Matrix4 column-major).
+ */
+export function flangeToTool0Quaternion(): THREE.Quaternion {
+  const m = new THREE.Matrix4().fromArray([
+    0, 0, 1, 0, // col0 = tool0 +X = flange +Z
+    0, -1, 0, 0, // col1 = tool0 +Y = flange −Y
+    1, 0, 0, 0, // col2 = tool0 +Z = flange +X
+    0, 0, 0, 1,
+  ]);
+  return new THREE.Quaternion().setFromRotationMatrix(m);
+}
+
+/**
+ * @deprecated Prefer the explicit `flange → tool0` chain. Kept for the
+ * calibration panel so an operator can force a raw axis mapping.
+ */
 export type FlangeAxisPreset = "plusZ_iso" | "plusX_raw" | "minusX" | "plusY";
 
 export type TorchCalibration = {
-  /** TOOL 0 TCP offset from flange, millimetres (Motoman). */
+  /** TOOL 0 TCP offset from Motoman `tool0`, millimetres. */
   tcpXmm: number;
   tcpYmm: number;
   tcpZmm: number;
-  /** TOOL 0 RPY, degrees (Motoman Rx, Ry, Rz). */
+  /** TOOL 0 RPY, degrees (Motoman Rx, Ry, Rz) in `tool0`. */
   tcpRxDeg: number;
   tcpRyDeg: number;
   tcpRzDeg: number;
-  /** Extra mount offset on the flange parent, millimetres. */
+  /** Extra mount offset on the Motoman `tool0` parent, millimetres. */
   mountXmm: number;
   mountYmm: number;
   mountZmm: number;
   mountRxDeg: number;
   mountRyDeg: number;
   mountRzDeg: number;
-  /** How Motoman +Z maps onto the URDF flange/tool0 axes. */
+  /**
+   * Override for the Motoman←flange map. Default `plusZ_iso` matches
+   * `flange → tool0` approach (Z_m ≡ X_flange); use only when skipping the
+   * explicit Motoman child (legacy).
+   */
   flangePreset: FlangeAxisPreset;
-  /** Show AxesHelper at flange origin and TCP. */
+  /** Show AxesHelper at tool0 origin and tcp_0. */
   showAxes: boolean;
   /**
    * Geometry mode.
@@ -56,7 +87,7 @@ export type TorchCalibration = {
   /** Object URL for uploaded STL/GLB (session-only). */
   customMeshUrl: string | null;
   customMeshKind: "stl" | "glb" | null;
-  /** Extra transform for a custom mesh in Motoman flange frame (mm / deg). */
+  /** Extra transform for a custom mesh in Motoman `tool0` (mm / deg). */
   customXmm: number;
   customYmm: number;
   customZmm: number;
@@ -142,10 +173,8 @@ export function tcpRpyRad(c: TorchCalibration): [number, number, number] {
 export const TOOL_RPY_ORDER = "ZYX" as const;
 
 /**
- * Euler (XYZ) that maps Motoman flange (+Z out) onto the URDF parent axes.
- * `plusZ_iso` is correct for MA2010 `tool0` (approach = URDF +X).
- * `plusX_raw` is identity — use when parenting to an AR2010-style `flange`
- * that already applies R_y(+π/2) in the URDF.
+ * Euler (XYZ) that maps Motoman flange (+Z out) onto a REP-103 parent (+X out).
+ * Prefer parenting under an explicit Motoman `tool0` child instead.
  */
 export function flangePresetEuler(
   preset: FlangeAxisPreset,
@@ -153,13 +182,13 @@ export function flangePresetEuler(
   const h = Math.PI / 2;
   switch (preset) {
     case "plusZ_iso":
-      return [0, h, 0]; // Motoman Z → URDF +X
+      return [0, h, 0]; // Motoman Z → URDF +X (approach only; roll differs from ROS-I)
     case "plusX_raw":
       return [0, 0, 0];
     case "minusX":
-      return [0, -h, 0]; // Motoman Z → URDF −X
+      return [0, -h, 0];
     case "plusY":
-      return [-h, 0, 0]; // Motoman Z → URDF +Y
+      return [-h, 0, 0];
     default:
       return [0, h, 0];
   }

@@ -29,8 +29,9 @@ if (typeof window !== "undefined") {
 }
 
 /**
- * MIG torch in the Motoman flange / TOOL frame (+Z out of flange).
- * Default mesh: bundled ESAB `rm62_36deg.stl` with tip at calibrated TOOL 0 TCP.
+ * MIG torch in the Motoman / MotoROS2 ``tool0`` frame (+Z out of flange).
+ * Parent must be ``flange → tool0`` (REP-103 → Yaskawa); tip sits at ``tcp_0``
+ * (TOOL.CND). Default mesh: ESAB ``rm62_36deg.stl``.
  */
 export default function WeldTorch3D({
   calib,
