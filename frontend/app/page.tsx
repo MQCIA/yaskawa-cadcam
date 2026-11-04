@@ -45,6 +45,8 @@ import {
   ensureTouchSense,
   optimizeSequence,
   planMotions,
+  appendSketchedSeam,
+  deleteSeam,
   deleteWaypoint,
   insertIdleWaypoint,
   duplicateWaypoint,
@@ -65,7 +67,15 @@ import {
   informCLabel,
   type SeamEdit,
 } from "@/lib/trajectoryViz";
+import {
+  circleThrough3Points,
+  sampleCatmullRom,
+  torchDirFromNormal,
+  type SketchMode,
+} from "@/lib/seamSketch";
 import SeamInspector from "@/components/SeamInspector";
+import SeamSketchToolbar from "@/components/SeamSketchToolbar";
+import type { DraftPoint } from "@/components/SeamSketchLayer";
 import SimTimeline from "@/components/SimTimeline";
 
 const RobotWorkspace = dynamic(() => import("@/components/RobotWorkspace"), {
@@ -151,6 +161,9 @@ export default function Home() {
   const [selectedSeamId, setSelectedSeamId] = useState<string | null>(null);
   const [insertKind, setInsertKind] = useState<IdleInsertKind>("clearance");
   const [liveTcpMm, setLiveTcpMm] = useState<string | null>(null);
+  const [sketchMode, setSketchMode] = useState<SketchMode>("orbit");
+  const [sketchSnap, setSketchSnap] = useState(true);
+  const [sketchDraft, setSketchDraft] = useState<DraftPoint[]>([]);
 
   // Verbotics-style: joint jog is always available; ON until the user plays a plan.
   const [manualJog, setManualJog] = useState(true);
@@ -266,6 +279,140 @@ export default function Home() {
         spin: edit.spinOffsetDeg.toFixed(0),
       }),
     );
+  }
+
+  function commitSketch(draft: DraftPoint[]) {
+    if (!program || draft.length === 0) return;
+    const kind =
+      sketchMode === "orbit"
+        ? "line"
+        : sketchMode === "tack"
+          ? "tack"
+          : sketchMode === "arc"
+            ? "arc"
+            : sketchMode === "spline"
+              ? "spline"
+              : "line";
+
+    let points: Vec3[] = draft.map((d) => d.point);
+    let dirs: Vec3[] = draft.map((d) => torchDirFromNormal(d.normal));
+
+    if (kind === "tack") {
+      points = [draft[0].point];
+      dirs = [torchDirFromNormal(draft[0].normal)];
+    } else if (kind === "line") {
+      points = [draft[0].point, draft[Math.min(1, draft.length - 1)].point];
+      dirs = [
+        torchDirFromNormal(draft[0].normal),
+        torchDirFromNormal(draft[Math.min(1, draft.length - 1)].normal),
+      ];
+      // Densify for torch orientation lerp.
+      const a = points[0];
+      const b = points[1];
+      const dense: Vec3[] = [];
+      const denseDirs: Vec3[] = [];
+      const n = 6;
+      for (let i = 0; i <= n; i++) {
+        const t = i / n;
+        dense.push([
+          a[0] + (b[0] - a[0]) * t,
+          a[1] + (b[1] - a[1]) * t,
+          a[2] + (b[2] - a[2]) * t,
+        ]);
+        const da = dirs[0];
+        const db = dirs[1];
+        denseDirs.push(
+          torchDirFromNormal([
+            da[0] + (db[0] - da[0]) * t,
+            da[1] + (db[1] - da[1]) * t,
+            da[2] + (db[2] - da[2]) * t,
+          ]),
+        );
+      }
+      points = dense;
+      dirs = denseDirs;
+    } else if (kind === "arc" && draft.length >= 3) {
+      const circ = circleThrough3Points(
+        draft[0].point,
+        draft[1].point,
+        draft[2].point,
+        20,
+      );
+      if (!circ) {
+        setStatus(t("status.sketchCollinear"));
+        setSketchDraft([]);
+        return;
+      }
+      points = circ;
+      const n0 = torchDirFromNormal(draft[0].normal);
+      const n1 = torchDirFromNormal(draft[1].normal);
+      const n2 = torchDirFromNormal(draft[2].normal);
+      dirs = circ.map((_, i) => {
+        const t = i / Math.max(1, circ.length - 1);
+        // Piecewise lerp of torch dirs along the arc.
+        if (t < 0.5) {
+          const u = t * 2;
+          return torchDirFromNormal([
+            n0[0] + (n1[0] - n0[0]) * u,
+            n0[1] + (n1[1] - n0[1]) * u,
+            n0[2] + (n1[2] - n0[2]) * u,
+          ]);
+        }
+        const u = (t - 0.5) * 2;
+        return torchDirFromNormal([
+          n1[0] + (n2[0] - n1[0]) * u,
+          n1[1] + (n2[1] - n1[1]) * u,
+          n1[2] + (n2[2] - n1[2]) * u,
+        ]);
+      });
+    } else if (kind === "spline") {
+      const controls = draft.map((d) => d.point);
+      points = sampleCatmullRom(controls, 8);
+      const cDirs = draft.map((d) => torchDirFromNormal(d.normal));
+      dirs = points.map((_, i) => {
+        const t = i / Math.max(1, points.length - 1);
+        const fi = t * (cDirs.length - 1);
+        const i0 = Math.floor(fi);
+        const i1 = Math.min(cDirs.length - 1, i0 + 1);
+        const u = fi - i0;
+        const a = cDirs[i0];
+        const b = cDirs[i1];
+        return torchDirFromNormal([
+          a[0] + (b[0] - a[0]) * u,
+          a[1] + (b[1] - a[1]) * u,
+          a[2] + (b[2] - a[2]) * u,
+        ]);
+      });
+    }
+
+    try {
+      const next = appendSketchedSeam(program, { kind, points, dirs });
+      setProgram(next);
+      setSimPlaying(false);
+      setManualJog(true);
+      setSketchDraft([]);
+      setLeftTab("welds");
+      const found = discoverSeams(next);
+      const last = found[found.length - 1];
+      if (last) {
+        setSelectedSeamId(last.id);
+        setSelectedWp(last.weldStart);
+        if (last.weaveNo) setWeaveNo(last.weaveNo);
+      }
+      setStatus(
+        t("status.sketchAdded", {
+          kind: kind.toUpperCase(),
+          n: points.length,
+        }),
+      );
+    } catch (err) {
+      setStatus(t("status.sketchFail", { err: (err as Error).message }));
+    }
+  }
+
+  function finishSpline() {
+    if (sketchMode !== "spline" || sketchDraft.length < 2) return;
+    commitSketch(sketchDraft);
   }
 
   function removeSelectedPoint() {
@@ -603,6 +750,30 @@ export default function Home() {
   );
   const activeSeam =
     seamList.find((s) => s.id === selectedSeamId) ?? seamList[0] ?? null;
+
+  function removeSelectedSeam() {
+    if (!program || !activeSeam) return;
+    const next = deleteSeam(program, activeSeam.weldStart, activeSeam.weldEnd);
+    setProgram(next);
+    setSelectedSeamId(null);
+    setSelectedWp(null);
+    setStatus(t("status.seamDeleted", { seam: activeSeam.label }));
+  }
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Enter" && sketchMode === "spline" && sketchDraft.length >= 2) {
+        e.preventDefault();
+        commitSketch(sketchDraft);
+      }
+      if (e.key === "Escape" && sketchDraft.length > 0) {
+        setSketchDraft([]);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [sketchMode, sketchDraft, program]);
+
   const wpDiags = useMemo(
     () => (program ? diagnoseWaypoints(program) : []),
     [program],
@@ -974,27 +1145,48 @@ export default function Home() {
                 {program ? (
                   <>
                     <div className="space-y-1">
-                      {seamList.map((s) => (
-                        <button
-                          key={s.id}
-                          type="button"
-                          onClick={() => {
-                            setSelectedSeamId(s.id);
-                            selectWaypoint(s.weldStart);
-                          }}
-                          className={`flex w-full items-center justify-between rounded border px-2 py-1.5 text-left text-xs ${
-                            activeSeam?.id === s.id
-                              ? "border-[#e87722] bg-orange-50 text-[#e87722]"
-                              : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-                          }`}
-                        >
-                          <span className="font-medium">{s.label}</span>
-                          <span className="rounded bg-orange-50 px-1.5 py-0.5 text-[10px] text-orange-700">
-                            {t("welds.fillet")}
-                          </span>
-                        </button>
-                      ))}
+                      {seamList.map((s) => {
+                        const badge =
+                          s.sketchKind === "tack"
+                            ? "TACK"
+                            : s.sketchKind === "arc"
+                              ? "ARC / MOVC"
+                              : s.sketchKind === "spline"
+                                ? "SPLINE"
+                                : s.sketchKind === "line"
+                                  ? "LINE"
+                                  : t("welds.fillet");
+                        return (
+                          <button
+                            key={s.id}
+                            type="button"
+                            onClick={() => {
+                              setSelectedSeamId(s.id);
+                              selectWaypoint(s.weldStart);
+                            }}
+                            className={`flex w-full items-center justify-between rounded border px-2 py-1.5 text-left text-xs ${
+                              activeSeam?.id === s.id
+                                ? "border-[#e87722] bg-orange-50 text-[#e87722]"
+                                : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                            }`}
+                          >
+                            <span className="font-medium">{s.label}</span>
+                            <span className="rounded bg-orange-50 px-1.5 py-0.5 text-[10px] text-orange-700">
+                              {badge}
+                            </span>
+                          </button>
+                        );
+                      })}
                     </div>
+                    {activeSeam && (
+                      <button
+                        type="button"
+                        onClick={removeSelectedSeam}
+                        className="w-full rounded border border-red-200 bg-red-50 px-2 py-1.5 text-xs text-red-700 hover:bg-red-100"
+                      >
+                        {t("sketch.deleteSeam")}
+                      </button>
+                    )}
                     <div className="text-[11px] text-slate-500">
                       {t("welds.length", {
                         mm: program.weldLenMm.toFixed(0),
@@ -1369,7 +1561,57 @@ export default function Home() {
               selectedWp={selectedWp ?? sample?.wpIndex ?? null}
               onSelectWp={selectWaypoint}
               weaveNo={activeSeam?.weaveNo ?? weaveNo}
+              sketchMode={sketchMode}
+              sketchSnap={sketchSnap}
+              sketchDraft={sketchDraft}
+              onSketchDraftChange={setSketchDraft}
+              onSketchCommit={commitSketch}
             />
+
+            {program && (
+              <SeamSketchToolbar
+                mode={sketchMode}
+                snapOn={sketchSnap}
+                draftCount={sketchDraft.length}
+                canFinishSpline={sketchMode === "spline" && sketchDraft.length >= 2}
+                disabled={!program}
+                onMode={(m) => {
+                  setSketchMode(m);
+                  setSketchDraft([]);
+                  if (m !== "orbit") {
+                    setSimPlaying(false);
+                    setManualJog(true);
+                    setMobileTab("scene");
+                  }
+                }}
+                onSnap={setSketchSnap}
+                onUndo={() => setSketchDraft((d) => d.slice(0, -1))}
+                onCancel={() => setSketchDraft([])}
+                onFinishSpline={finishSpline}
+                labels={{
+                  title: t("sketch.title"),
+                  orbit: t("sketch.orbit"),
+                  tack: t("sketch.tack"),
+                  line: t("sketch.line"),
+                  arc: t("sketch.arc"),
+                  spline: t("sketch.spline"),
+                  snap: t("sketch.snap"),
+                  undo: t("sketch.undo"),
+                  cancel: t("sketch.cancel"),
+                  finish: t("sketch.finish"),
+                  hint:
+                    sketchMode === "orbit"
+                      ? t("sketch.hintOrbit")
+                      : sketchMode === "tack"
+                        ? t("sketch.hintTack")
+                        : sketchMode === "line"
+                          ? t("sketch.hintLine")
+                          : sketchMode === "arc"
+                            ? t("sketch.hintArc")
+                            : t("sketch.hintSpline"),
+                }}
+              />
+            )}
 
             {program && sample && (
               <div className="pointer-events-none absolute left-2 top-2 rounded border border-slate-200 bg-white/90 px-2 py-1 font-mono text-[10px] text-slate-700 sm:left-3 sm:top-3 sm:px-2.5 sm:py-1.5 sm:text-[11px]">

@@ -11,6 +11,10 @@ import {
   weavePolyline,
   type WaypointDiag,
 } from "@/lib/trajectoryViz";
+import SeamSketchLayer, {
+  type DraftPoint,
+} from "@/components/SeamSketchLayer";
+import type { SketchMode } from "@/lib/seamSketch";
 
 const dist = (a: Vec3, b: Vec3) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
 
@@ -155,6 +159,12 @@ export default function WeldScene({
   selectedWp = null,
   onSelectWp,
   weaveNo = 0,
+  sketchMode = "orbit",
+  sketchSnap = true,
+  sketchDraft = [],
+  onSketchDraftChange,
+  onSketchCommit,
+  onSketchHover,
 }: {
   program: WeldProgram;
   simT: number;
@@ -162,6 +172,12 @@ export default function WeldScene({
   onSelectWp?: (index: number) => void;
   /** Active WEV# — non-zero draws a zigzag weld polyline. */
   weaveNo?: number;
+  sketchMode?: SketchMode;
+  sketchSnap?: boolean;
+  sketchDraft?: DraftPoint[];
+  onSketchDraftChange?: (pts: DraftPoint[]) => void;
+  onSketchCommit?: (pts: DraftPoint[]) => void;
+  onSketchHover?: (active: boolean) => void;
 }) {
   const s = sampleProgram(program, simT);
   const diags = useMemo(() => diagnoseWaypoints(program), [program]);
@@ -203,30 +219,47 @@ export default function WeldScene({
 
   const select = onSelectWp ?? (() => undefined);
 
+  const sketching = Boolean(onSketchCommit && onSketchDraftChange);
+
   return (
     <group>
-      {program.plates.map((pl, i) => (
-        <mesh key={`pl-${i}`} position={pl.center} castShadow receiveShadow>
-          <boxGeometry args={pl.size} />
-          <meshStandardMaterial color={0x8a939f} metalness={0.35} roughness={0.55} />
-        </mesh>
-      ))}
-
-      {program.pipes?.map((pp, i) => (
-        <mesh
-          key={`pipe-${i}`}
-          position={pp.center}
-          rotation={pp.rotation}
-          castShadow
-          receiveShadow
-        >
-          <cylinderGeometry args={[pp.radius, pp.radius, pp.length, 48]} />
-          <meshStandardMaterial color={0x7a8490} metalness={0.45} roughness={0.4} />
-        </mesh>
-      ))}
+      {sketching ? (
+        <SeamSketchLayer
+          program={program}
+          mode={sketchMode}
+          snapOn={sketchSnap}
+          draft={sketchDraft}
+          onDraftChange={onSketchDraftChange!}
+          onCommit={onSketchCommit!}
+          onDrawingHover={onSketchHover}
+        />
+      ) : (
+        <>
+          {program.plates.map((pl, i) => (
+            <mesh key={`pl-${i}`} position={pl.center} castShadow receiveShadow>
+              <boxGeometry args={pl.size} />
+              <meshStandardMaterial color={0x8a939f} metalness={0.35} roughness={0.55} />
+            </mesh>
+          ))}
+          {program.pipes?.map((pp, i) => (
+            <mesh
+              key={`pipe-${i}`}
+              position={pp.center}
+              rotation={pp.rotation}
+              castShadow
+              receiveShadow
+            >
+              <cylinderGeometry args={[pp.radius, pp.radius, pp.length, 48]} />
+              <meshStandardMaterial color={0x7a8490} metalness={0.45} roughness={0.4} />
+            </mesh>
+          ))}
+        </>
+      )}
 
       {/* CAD seam highlight */}
-      <Line points={program.seam} color="#fb923c" lineWidth={3} />
+      {program.seam.length >= 2 && (
+        <Line points={program.seam} color="#fb923c" lineWidth={3} />
+      )}
 
       {/* Weld TCP — thick orange/red; zigzag when weave active */}
       {weldRuns.map((pts, i) => {
