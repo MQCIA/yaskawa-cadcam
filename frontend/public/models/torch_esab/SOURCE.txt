@@ -1,12 +1,5 @@
-Viewport torch mesh (rm62_36deg.stl)
-------------------------------------
-Converted from a Verbotics Weld example-cell PLY → STL (mm).
-Visual placeholder only — NOT official ESAB CAD and NOT the cell's OEM torch.
+Legacy Verbotics placeholder (rm62_36deg.stl)
+=============================================
 
-Production cell hardware (PDF, 2026-11-04):
-  ABICOR BINZEL iCAT mini (Yaskawa MA2010 mount) + ABIROB® G/W neck.
-  TCP / RPY come exclusively from DX200 TOOL.CND TOOL 0
-  (xyz -54.280, 1.052, 415.702 mm · RPY 1.3119, -42.6215, -6.8387 deg).
-
-When an ABIROB/iCAT STEP is available, convert with tools/convert_torch_cad.py
-into frontend/public/models/torch/ and switch WeldTorch3D to that asset.
+Superseded by ``../torch/abirob_a300_eco.stl`` (ABIROB A300 ECO from Marathon OS).
+Kept only for diff / rollback. Do not use as the default viewport torch.

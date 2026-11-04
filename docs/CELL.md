@@ -11,7 +11,7 @@ Parsed from `D:\YASKAWA\z robota` → `reference/robot-cell-dx200` (2026-09-15).
 | Base B1 | **RECT-X** (linear travel) → INFORM group **BS1** |
 | Station | S1–S4 **TURN** → INFORM group **ST1** |
 | Welder | **Lorch Tiptronic** via `MACRO1→LORCH` (`WELDER.DAT` still labelled Motoweld-E template) |
-| Torch mount | **ABICOR BINZEL iCAT mini** + ABIROB neck (PDF; no STEP in repo yet) |
+| Torch mount | **ABICOR BINZEL iCAT mini** + ABIROB neck (PDF); viewport mesh = ABIROB A300 ECO community STEP |
 | TOOL 0 TCP | `-54.280, 1.052, 415.702` mm |
 | TOOL 0 RPY | `1.3119, -42.6215, -6.8387` deg |
 
@@ -77,7 +77,7 @@ Full map: **[CELL_WELD_MAP.md](CELL_WELD_MAP.md)** · **[BACKUP_AND_LORCH_ANALYS
 - Torch in viewer: MotoROS2 chain `flange → tool0 → tcp_0` (`WeldUrdfRobot`
   portals `WeldTorch3D` into Motoman `tool0`). Live TOOL 0 + mount calibration
   UI (`frontend/lib/tool0.ts`). Default TCP from `TOOL.CND`. Viewport mesh:
-  Verbotics placeholder STL calibrated to TOOL 0 (OEM ABIROB STEP TBD).
+  `models/torch/abirob_a300_eco.stl` (Marathon OS ABIROB A300 ECO) tip-aligned to TOOL 0.
 - Robot link API: `GET /api/robot-link` · FK frames:
   `POST /api/forward-kinematics` → `{ flange, tool0, tcp_0 }`.
 - Golden poses (home C00000, `000.JBI`): [CELL_POSES.md](CELL_POSES.md)

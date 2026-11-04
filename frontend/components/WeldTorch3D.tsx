@@ -15,18 +15,18 @@ import {
   type TorchCalibration,
 } from "@/lib/tool0";
 import {
-  TORCH_ESAB_URL,
+  TORCH_MESH_URL,
   TORCH_MESH_ALIGN_QUAT,
   TORCH_MESH_TIP_MM,
 } from "@/lib/torchMesh";
 
 const deg2rad = (d: number) => (d * Math.PI) / 180;
 
-const ESAB_URL = withBase(TORCH_ESAB_URL);
+const TORCH_URL = withBase(TORCH_MESH_URL);
 
 // Warm the STL cache so Suspense resolves quickly inside the tool0 portal.
 if (typeof window !== "undefined") {
-  useLoader.preload(STLLoader, ESAB_URL);
+  useLoader.preload(STLLoader, TORCH_URL);
 }
 
 /**
@@ -60,7 +60,7 @@ function TorchBody({
   calib: TorchCalibration;
   arcOn: boolean;
 }) {
-  const esabGeo = useLoader(STLLoader, ESAB_URL);
+  const torchGeo = useLoader(STLLoader, TORCH_URL);
 
   if (calib.meshMode === "custom" && calib.customMeshUrl) {
     return (
@@ -78,7 +78,7 @@ function TorchBody({
 
   return (
     <group>
-      <VendorTorchAtTcp calib={calib} geometry={esabGeo} />
+      <VendorTorchAtTcp calib={calib} geometry={torchGeo} />
       {calib.showAxes && <Axes calib={calib} />}
       {arcOn && <ArcGlow tcp={tcpMetres(calib)} />}
     </group>
@@ -86,7 +86,7 @@ function TorchBody({
 }
 
 /**
- * ESAB STL is authored tip-at-origin / wire = +Z after ``torchMesh`` align.
+ * Vendor STL is tip-at-origin / wire = +Z after ``torchMesh`` align.
  * Place that tip exactly at Motoman ``tcp_0`` (TOOL.CND xyz + RPY).
  */
 function VendorTorchAtTcp({
