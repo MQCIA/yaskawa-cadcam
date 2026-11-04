@@ -112,6 +112,7 @@ function SelectedRobot({
   program,
   simT,
   manualJog,
+  pathJointsDeg,
   partPivot,
   partRotZ,
 }: {
@@ -121,13 +122,13 @@ function SelectedRobot({
   program: WeldProgram | null;
   simT: number;
   manualJog: boolean;
+  pathJointsDeg?: number[][] | null;
   partPivot?: [number, number, number];
   partRotZ?: number;
 }) {
   const model = ROBOT_MODELS.find((m) => m.id === modelId) ?? ROBOT_MODELS[0];
   if (model.kind === "urdf" && model.url) {
-    // Real Yaskawa model with a torch: IK-driven along the weld path, or driven
-    // by the manual jog sliders when there is no program / manual jog is on.
+    // Real Yaskawa model with a torch: backend-IK path, CCD fallback, or jog.
     return (
       <WeldUrdfRobot
         url={model.url}
@@ -137,6 +138,7 @@ function SelectedRobot({
         base={base}
         joints={joints}
         manual={manualJog}
+        pathJointsDeg={pathJointsDeg}
         partPivot={partPivot}
         partRotZ={partRotZ}
       />
@@ -194,6 +196,7 @@ export default function RobotWorkspace({
   program = null,
   simT = 0,
   manualJog = false,
+  pathJointsDeg = null,
 }: {
   modelId: string;
   joints: Joints;
@@ -204,6 +207,8 @@ export default function RobotWorkspace({
   program?: WeldProgram | null;
   simT?: number;
   manualJog?: boolean;
+  /** Per-waypoint [S,L,U,R,B,T] deg from `/api/calculate-ik`. */
+  pathJointsDeg?: number[][] | null;
 }) {
   const positioner = positionerId
     ? POSITIONER_MODELS.find((p) => p.id === positionerId)
@@ -269,11 +274,12 @@ export default function RobotWorkspace({
             program={program}
             simT={simT}
             manualJog={manualJog}
+            pathJointsDeg={pathJointsDeg}
             partPivot={partPivot}
             partRotZ={partRotZ}
           />
         </Suspense>
-        {/* Lorch S8 power source on the trailing dolly — rides with the robot */}
+        {/* MOTOWELD-E power source on the trailing dolly — rides with the robot */}
         <WeldPowerSource position={[DOLLY_X, 0, 0]} />
       </group>
 

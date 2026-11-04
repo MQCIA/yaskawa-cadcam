@@ -51,6 +51,12 @@ export type WeldProgram = {
   cycleSec: number;
   weldLenMm: number;
   schedule: WeldScheduleRow;
+  /**
+   * Outward fillet bisector ``normalize(n1+n2)`` when known (CAD or demo T-joint).
+   * Approach/retract offset along +bisector; wire aims along −bisector + travel tilt.
+   */
+  filletBisector?: Vec3;
+  filletNormals?: { n1: Vec3; n2: Vec3 };
   /** ArcNC-style planner metadata (demo / placeholder). */
   meta?: {
     collisionFree: boolean;
@@ -110,11 +116,68 @@ export const DEMO_MOUNT: Vec3 = [1.6, 0.98, -1.2];
 
 const add = (a: Vec3, b: Vec3): Vec3 => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
 const dist = (a: Vec3, b: Vec3) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+const cross = (a: Vec3, b: Vec3): Vec3 => [
+  a[1] * b[2] - a[2] * b[1],
+  a[2] * b[0] - a[0] * b[2],
+  a[0] * b[1] - a[1] * b[0],
+];
 const norm = (a: Vec3): Vec3 => {
   const l = Math.hypot(a[0], a[1], a[2]) || 1;
   return [a[0] / l, a[1] / l, a[2] / l];
 };
 const pad = (n: number) => `P${String(n).padStart(3, "0")}`;
+
+/** Rodrigues rotate ``v`` about unit ``axis`` by ``angleDeg``. */
+function rotateAbout(v: Vec3, axis: Vec3, angleDeg: number): Vec3 {
+  const a = norm(axis);
+  const rad = (angleDeg * Math.PI) / 180;
+  const c = Math.cos(rad);
+  const s = Math.sin(rad);
+  const dot = a[0] * v[0] + a[1] * v[1] + a[2] * v[2];
+  const cr = cross(a, v);
+  return [
+    v[0] * c + cr[0] * s + a[0] * dot * (1 - c),
+    v[1] * c + cr[1] * s + a[1] * dot * (1 - c),
+    v[2] * c + cr[2] * s + a[2] * dot * (1 - c),
+  ];
+}
+
+/**
+ * Fillet wire direction: into the joint along ``−bisector``, then tilted by a
+ * travel (push/pull) angle. Mirrors ``backend/app/path_planning.py``.
+ */
+export function torchWireDirection(
+  bisector: Vec3,
+  travel: Vec3,
+  travelAngleDeg = 12,
+  push = true,
+): Vec3 {
+  let wire = norm([-bisector[0], -bisector[1], -bisector[2]]);
+  const trav = norm(travel);
+  if (Math.abs(travelAngleDeg) < 1e-9 || Math.hypot(...trav) < 1e-9) return wire;
+  let axis = cross(wire, trav);
+  if (Math.hypot(...axis) < 1e-9) {
+    const helper: Vec3 = Math.abs(wire[2]) < 0.9 ? [0, 0, 1] : [1, 0, 0];
+    axis = cross(wire, helper);
+  }
+  const signed = push ? travelAngleDeg : -travelAngleDeg;
+  return norm(rotateAbout(wire, axis, signed));
+}
+
+/** Outward fillet bisector from face normals (or a provided bisector). */
+export function filletBisectorFromNormals(n1: Vec3, n2: Vec3): Vec3 {
+  return norm([n1[0] + n2[0], n1[1] + n2[1], n1[2] + n2[2]]);
+}
+
+/** Approach / retract standoff along +bisector (out of the joint). */
+export function offsetAlongBisector(
+  point: Vec3,
+  bisector: Vec3,
+  distance: number,
+): Vec3 {
+  const b = norm(bisector);
+  return add(point, [b[0] * distance, b[1] * distance, b[2] * distance]);
+}
 
 type Aabb = { min: Vec3; max: Vec3 };
 
@@ -255,14 +318,27 @@ export function buildDemoProgram(mount: Vec3 = DEMO_MOUNT, condition = 1): WeldP
     ]);
   }
 
-  const torchDir = norm([0, -1, -1]);
+  // Demo T-fillet: horizontal plate normal +Y, vertical wall normal +Z →
+  // bisector out of the joint; wire aims −bisector with ~12° push travel tilt.
+  const filletNormals = { n1: [0, 1, 0] as Vec3, n2: [0, 0, 1] as Vec3 };
+  const filletBisector = filletBisectorFromNormals(filletNormals.n1, filletNormals.n2);
+  const travel: Vec3 = [
+    seamEnd[0] - seamStart[0],
+    seamEnd[1] - seamStart[1],
+    seamEnd[2] - seamStart[2],
+  ];
+  const torchDir = torchWireDirection(filletBisector, travel, 12, true);
   const torchFrames = seam.map((pos) => ({ pos, dir: torchDir }));
 
-  const lift: Vec3 = [0, 0.12, 0.08];
-  const approach = add(seamStart, lift);
-  const sense1 = add(seamStart, [0, 0.04, 0.02]);
-  const sense2 = add(seamStart, [0.03, 0.04, 0.0]);
-  const retract = add(seamEnd, lift);
+  const approachDist = 0.14;
+  const approach = offsetAlongBisector(seamStart, filletBisector, approachDist);
+  const sense1 = offsetAlongBisector(seamStart, filletBisector, 0.05);
+  const sense2 = add(offsetAlongBisector(seamStart, filletBisector, 0.04), [
+    0.03 * Math.sign(travel[0] || 1),
+    0,
+    0,
+  ]);
+  const retract = offsetAlongBisector(seamEnd, filletBisector, approachDist);
 
   const weldLabel = `V=${sch.travelCmMin} cm/min`;
   const airLabel = "VJ=50%";
@@ -345,6 +421,8 @@ export function buildDemoProgram(mount: Vec3 = DEMO_MOUNT, condition = 1): WeldP
     cycleSec: 0,
     weldLenMm: dist(seamStart, seamEnd) * 1000,
     schedule: sch,
+    filletBisector,
+    filletNormals,
   };
   return refreshMeta(rebuildDurations(draft));
 }
@@ -357,8 +435,9 @@ export function ensureTouchSense(prog: WeldProgram): WeldProgram {
   if (firstWeld < 0) return refreshMeta(prog);
 
   const seamStart = prog.seam[0] ?? prog.waypoints[firstWeld].pos;
-  const sense1 = add(seamStart, [0, 0.04, 0.02]);
-  const sense2 = add(seamStart, [0.03, 0.04, 0.0]);
+  const bis = prog.filletBisector ?? ([0, 1, 0] as Vec3);
+  const sense1 = offsetAlongBisector(seamStart, bis, 0.05);
+  const sense2 = add(offsetAlongBisector(seamStart, bis, 0.04), [0.03, 0, 0]);
   const insertAt = Math.max(1, firstWeld);
   const senseLabel = `V=${TOUCH_SENSE.searchSpeedCmMin} cm/min`;
   const extra: Waypoint[] = [
@@ -433,9 +512,36 @@ export function optimizeSequence(prog: WeldProgram): WeldProgram {
   });
 }
 
-/** Re-run coarse motion checks and refresh planner flags. */
+/**
+ * Re-apply fillet bisector approach/retract + torch frames, then refresh planner flags.
+ * When ``filletBisector`` is missing, keeps existing poses (legacy demo).
+ */
 export function planMotions(prog: WeldProgram): WeldProgram {
-  const withSense = ensureTouchSense(prog);
+  let next = prog;
+  if (prog.filletBisector && prog.seam.length >= 2) {
+    const bis = prog.filletBisector;
+    const travel: Vec3 = [
+      prog.seam[prog.seam.length - 1][0] - prog.seam[0][0],
+      prog.seam[prog.seam.length - 1][1] - prog.seam[0][1],
+      prog.seam[prog.seam.length - 1][2] - prog.seam[0][2],
+    ];
+    const dir = torchWireDirection(bis, travel, 12, true);
+    const torchFrames = prog.seam.map((pos) => ({ pos, dir }));
+    const waypoints = prog.waypoints.map((w) => {
+      if (w.kind === "approach") {
+        return { ...w, pos: offsetAlongBisector(prog.seam[0], bis, 0.14) };
+      }
+      if (w.kind === "retract") {
+        return {
+          ...w,
+          pos: offsetAlongBisector(prog.seam[prog.seam.length - 1], bis, 0.14),
+        };
+      }
+      return w;
+    });
+    next = rebuildDurations({ ...prog, torchFrames, waypoints });
+  }
+  const withSense = ensureTouchSense(next);
   return refreshMeta(
     withMeta(withSense, {
       sequenceOptimized: withSense.meta?.sequenceOptimized ?? true,
@@ -471,6 +577,7 @@ export function sampleProgram(prog: WeldProgram, p: number) {
         pos,
         dir: torchDirAt(prog, i),
         wpIndex: i,
+        segLocal: local,
         arcOn: prog.waypoints[i].arc && prog.waypoints[i + 1].arc,
         elapsedSec: target,
       };
@@ -482,8 +589,95 @@ export function sampleProgram(prog: WeldProgram, p: number) {
     pos: last.pos,
     dir: torchDirAt(prog, prog.waypoints.length - 1),
     wpIndex: prog.waypoints.length - 1,
+    segLocal: 0,
     arcOn: false,
     elapsedSec: prog.cycleSec,
+  };
+}
+
+/**
+ * Linear joint-space interpolation along the same time base as `sampleProgram`.
+ * `jointAnglesDeg[i]` is [S,L,U,R,B,T] for waypoint i (from `/api/calculate-ik`).
+ */
+export function sampleJointPath(
+  jointAnglesDeg: number[][],
+  prog: WeldProgram,
+  p: number,
+): { q: number[]; wpIndex: number; segLocal: number } {
+  const n = prog.waypoints.length;
+  if (!jointAnglesDeg.length || n === 0) {
+    return { q: [0, 0, 0, 0, 0, 0], wpIndex: 0, segLocal: 0 };
+  }
+  if (jointAnglesDeg.length !== n) {
+    const i = Math.min(jointAnglesDeg.length - 1, Math.max(0, sampleProgram(prog, p).wpIndex));
+    return { q: [...jointAnglesDeg[i]], wpIndex: i, segLocal: 0 };
+  }
+  const sample = sampleProgram(prog, p);
+  const i = sample.wpIndex;
+  const local = sample.segLocal;
+  const a = jointAnglesDeg[i];
+  const b = jointAnglesDeg[Math.min(i + 1, n - 1)];
+  const q = a.map((va, k) => va + (b[k] - va) * local);
+  return { q, wpIndex: i, segLocal: local };
+}
+
+export type JbiPreviewSummary = {
+  npos: string | null;
+  pulse: boolean;
+  rectan: boolean;
+  group2: string | null;
+  macroArgs: number[];
+  weaveNos: number[];
+  bcMin: number | null;
+  bcMax: number | null;
+  ecSamples: string[];
+  seamCount: number;
+  lineCount: number;
+  homeBookend: boolean;
+};
+
+/** RECT-X home pulse (jobs taught near rail origin). */
+export const BC_HOME_PULSE = 570125;
+
+/** Parse generated INFORM text for the preview header strip. */
+export function summarizeJbi(text: string): JbiPreviewSummary {
+  const lines = text.replace(/\r\n/g, "\n").split("\n");
+  const npos = lines.find((l) => l.startsWith("///NPOS "))?.replace("///NPOS ", "") ?? null;
+  const pulse = lines.some((l) => l.includes("///POSTYPE PULSE"));
+  const rectan = lines.some((l) => l.includes("///RECTAN"));
+  const group2 =
+    lines.find((l) => l.startsWith("///GROUP2 "))?.replace("///GROUP2 ", "") ?? null;
+  const macroArgs = Array.from(
+    new Set(
+      Array.from(text.matchAll(/MACRO1\s+MJ#\(0\)\s+ARGF(\d+)/g)).map((m) =>
+        Number(m[1]),
+      ),
+    ),
+  ).sort((a, b) => a - b);
+  const weaveNos = Array.from(
+    new Set(
+      Array.from(text.matchAll(/WVON\s+WEV#\((\d+)\)/g)).map((m) => Number(m[1])),
+    ),
+  ).sort((a, b) => a - b);
+  const bcs = Array.from(text.matchAll(/^BC\d+=(-?\d+)/gm)).map((m) => Number(m[1]));
+  const ecs = Array.from(text.matchAll(/^EC\d+=(-?\d+,-?\d+)/gm)).map((m) => m[1]);
+  const seamCount = (text.match(/\bARCON\b/g) ?? []).length;
+  const homeBookend =
+    text.includes(`BC00000=${BC_HOME_PULSE}`) &&
+    /C00000=-?\d+,-?\d+,-?\d+,-?\d+,-?\d+,-?\d+/.test(text);
+  return {
+    npos,
+    pulse,
+    rectan,
+    group2,
+    macroArgs,
+    weaveNos,
+    bcMin: bcs.length ? Math.min(...bcs) : null,
+    bcMax: bcs.length ? Math.max(...bcs) : null,
+    ecSamples: ecs.slice(0, 3),
+    seamCount,
+    lineCount: lines.filter((l) => l.length > 0).length,
+    homeBookend,
   };
 }
 

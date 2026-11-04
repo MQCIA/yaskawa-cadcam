@@ -3,7 +3,7 @@
 import { Html } from "@react-three/drei";
 
 /**
- * Procedural Lorch S8 welding power source ("spawarka") on a travelling dolly.
+ * Procedural MOTOWELD-E Series 350A power source on a travelling dolly.
  *
  * In this cell it rides the same rail carriage as the robot, so it moves in
  * sync with the robot along the track. The model is an approximate stand-in
@@ -12,14 +12,14 @@ import { Html } from "@react-three/drei";
  */
 export default function WeldPowerSource({
   position = [0, 0, 0],
-  label = "LORCH S8",
+  label = "MOTOWELD-E",
 }: {
   position?: [number, number, number];
   label?: string;
 }) {
   const body = 0x2a2f36; // anthracite cabinet
   const panel = 0x3b424b;
-  const lorchBlue = 0x0072ce;
+  const accent = 0xc45c26;
   const cabW = 0.42;
   const cabH = 0.72;
   const cabD = 0.5;
@@ -50,10 +50,10 @@ export default function WeldPowerSource({
         <meshStandardMaterial color={body} metalness={0.35} roughness={0.55} />
       </mesh>
 
-      {/* Blue Lorch accent stripe near the top */}
+      {/* Accent stripe near the top */}
       <mesh position={[cabW / 2 + 0.001, cabCy + cabH / 2 - 0.11, 0]}>
         <boxGeometry args={[0.004, 0.09, cabD * 0.96]} />
-        <meshStandardMaterial color={lorchBlue} emissive={lorchBlue} emissiveIntensity={0.25} />
+        <meshStandardMaterial color={accent} emissive={accent} emissiveIntensity={0.2} />
       </mesh>
 
       {/* Front control panel (faces +X, toward the robot / camera) */}

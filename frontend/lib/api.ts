@@ -9,11 +9,25 @@ export type TcpPoint = {
   rz?: number;
 };
 
-export async function calculateIk(points: TcpPoint[], qSeedDeg?: number[]) {
+export async function calculateIk(
+  points: TcpPoint[],
+  qSeedDeg?: number[],
+  opts?: {
+    station?: string;
+    baseMm?: number | number[];
+    basePulse?: number | number[];
+  },
+) {
   const res = await fetch(`${BASE}/api/calculate-ik`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ points, q_seed_deg: qSeedDeg ?? null }),
+    body: JSON.stringify({
+      points,
+      q_seed_deg: qSeedDeg ?? null,
+      station: opts?.station ?? null,
+      base_mm: opts?.baseMm ?? null,
+      base_pulse: opts?.basePulse ?? null,
+    }),
   });
   if (!res.ok) throw new Error(`IK failed: ${res.status}`);
   return res.json();
