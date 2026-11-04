@@ -94,22 +94,6 @@ function Loading() {
   );
 }
 
-function StationLabel({
-  text,
-  position,
-}: {
-  text: string;
-  position: [number, number, number];
-}) {
-  return (
-    <Html position={position} center distanceFactor={8}>
-      <div className="whitespace-nowrap rounded border border-slate-200 bg-white/90 px-2 py-0.5 text-xs font-medium text-slate-700">
-        {text}
-      </div>
-    </Html>
-  );
-}
-
 function SelectedRobot({
   modelId,
   joints,
@@ -203,6 +187,9 @@ export default function RobotWorkspace({
   simT = 0,
   manualJog = false,
   torchCalib = DEFAULT_TORCH_CALIBRATION,
+  selectedWp = null,
+  onSelectWp,
+  weaveNo = 0,
 }: {
   modelId: string;
   joints: Joints;
@@ -214,6 +201,9 @@ export default function RobotWorkspace({
   simT?: number;
   manualJog?: boolean;
   torchCalib?: TorchCalibration;
+  selectedWp?: number | null;
+  onSelectWp?: (index: number) => void;
+  weaveNo?: number;
 }) {
   const positioner = positionerId
     ? POSITIONER_MODELS.find((p) => p.id === positionerId)
@@ -300,10 +290,6 @@ export default function RobotWorkspace({
                 rotate={stations[i]?.rotate ?? 0}
               />
             </Suspense>
-            <StationLabel
-              text={`Stół ${i + 1}`}
-              position={[pos[0], 1.7, pos[2]]}
-            />
           </group>
         ))}
 
@@ -313,7 +299,13 @@ export default function RobotWorkspace({
         <group position={partPivot}>
           <group rotation={[0, 0, partRotZ]}>
             <group position={[-partPivot[0], -partPivot[1], -partPivot[2]]}>
-              <WeldScene program={program} simT={simT} />
+              <WeldScene
+                program={program}
+                simT={simT}
+                selectedWp={selectedWp}
+                onSelectWp={onSelectWp}
+                weaveNo={weaveNo}
+              />
             </group>
           </group>
         </group>

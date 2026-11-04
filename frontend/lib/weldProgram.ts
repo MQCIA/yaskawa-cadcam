@@ -90,6 +90,10 @@ export type WeldProgram = {
     denseJointAnglesDeg?: number[][];
     /** Max consecutive joint step (deg) on the dense weld samples. */
     maxJointStepDeg?: number;
+    /** Per-seam inspector overrides (spin / travel / approach / weave / V). */
+    seamEdits?: import("@/lib/trajectoryViz").SeamEdit[];
+    /** Active WEV# for visualisation (0 = no weave / no zigzag). */
+    activeWeaveNo?: number;
   };
 };
 
@@ -316,10 +320,236 @@ function rebuildDurations(prog: WeldProgram): WeldProgram {
     const a = prog.waypoints[i];
     const b = prog.waypoints[i + 1];
     const welding = a.arc && b.arc;
-    segDurations.push(dist(a.pos, b.pos) / (welding ? weldSpeed : airSpeed));
+    segDurations.push(dist(a.pos, b.pos) / (welding ? Math.max(weldSpeed, 1e-6) : airSpeed));
   }
   const cycleSec = segDurations.reduce((s, d) => s + d, 0);
   return { ...prog, segDurations, cycleSec };
+}
+
+function renumberWaypoints(waypoints: Waypoint[]): Waypoint[] {
+  return waypoints.map((w, i) => ({ ...w, id: pad(i + 1) }));
+}
+
+/** Re-tag ARCON/ARCOF on each contiguous weld run after edits. */
+function retagWeldArcs(waypoints: Waypoint[]): Waypoint[] {
+  const out = waypoints.map((w) => {
+    if (w.kind === "weld" && (w.tag === "ARCON" || w.tag === "ARCOF")) {
+      return { ...w, tag: undefined };
+    }
+    if (w.kind !== "weld" && (w.tag === "ARCON" || w.tag === "ARCOF")) {
+      return { ...w, tag: undefined };
+    }
+    return w;
+  });
+  let i = 0;
+  while (i < out.length) {
+    if (out[i].kind !== "weld") {
+      i++;
+      continue;
+    }
+    const start = i;
+    while (i < out.length && out[i].kind === "weld") i++;
+    const end = i - 1;
+    out[start] = { ...out[start], tag: "ARCON", arc: true };
+    out[end] = { ...out[end], tag: "ARCOF", arc: true };
+    for (let j = start + 1; j < end; j++) {
+      out[j] = { ...out[j], arc: true, tag: undefined };
+    }
+  }
+  return out;
+}
+
+function finalizeWaypoints(prog: WeldProgram, waypoints: Waypoint[]): WeldProgram {
+  const cleaned = renumberWaypoints(retagWeldArcs(waypoints));
+  return refreshMeta(rebuildDurations({ ...prog, waypoints: cleaned }));
+}
+
+export type IdleInsertKind =
+  | "travel"
+  | "clearance"
+  | "approach"
+  | "retract"
+  | "index_safe";
+
+const IDLE_SPEED: Record<IdleInsertKind, string> = {
+  travel: "VJ=50.00",
+  clearance: "VJ=80.00",
+  approach: "VJ=80.00",
+  retract: "VJ=50.00",
+  index_safe: "VJ=50.00",
+};
+
+/** Midpoint between two poses, optionally lifted in world Y (metres). */
+function midLift(a: Vec3, b: Vec3, liftM: number): Vec3 {
+  return [
+    (a[0] + b[0]) / 2,
+    (a[1] + b[1]) / 2 + liftM,
+    (a[2] + b[2]) / 2,
+  ];
+}
+
+/**
+ * Delete a program waypoint by index. Keeps at least two points.
+ * Rebuilds C# order, ARCON/ARCOF tags, and segment durations.
+ */
+export function deleteWaypoint(prog: WeldProgram, index: number): WeldProgram {
+  if (prog.waypoints.length <= 2) return prog;
+  if (index < 0 || index >= prog.waypoints.length) return prog;
+  const waypoints = prog.waypoints.filter((_, i) => i !== index);
+  return finalizeWaypoints(prog, waypoints);
+}
+
+/**
+ * Insert an idle / via point after ``afterIndex`` (−1 = before first).
+ * Default pose is the midpoint to the next point, lifted ``liftMm`` (clearance).
+ */
+export function insertIdleWaypoint(
+  prog: WeldProgram,
+  afterIndex: number,
+  kind: IdleInsertKind = "clearance",
+  opts?: { liftMm?: number; pos?: Vec3; torchDir?: Vec3 },
+): WeldProgram {
+  const n = prog.waypoints.length;
+  if (n === 0) return prog;
+  const liftM = (opts?.liftMm ?? (kind === "clearance" || kind === "index_safe" ? 150 : 40)) / 1000;
+  const insertAt = Math.max(0, Math.min(n, afterIndex + 1));
+  const prev = prog.waypoints[Math.max(0, insertAt - 1)] ?? prog.waypoints[0];
+  const next = prog.waypoints[Math.min(n - 1, insertAt)] ?? prev;
+  const pos = opts?.pos ?? midLift(prev.pos, next.pos, liftM);
+  const wp: Waypoint = {
+    id: "tmp",
+    pos,
+    move: "MOVJ",
+    speedLabel: IDLE_SPEED[kind],
+    arc: false,
+    kind,
+    bc: prev.bc ?? next.bc,
+    ec: prev.ec ?? next.ec,
+  };
+  const waypoints = [
+    ...prog.waypoints.slice(0, insertAt),
+    wp,
+    ...prog.waypoints.slice(insertAt),
+  ];
+  let torchFrames = prog.torchFrames;
+  if (opts?.torchDir) {
+    const dir = norm(opts.torchDir);
+    torchFrames = [
+      ...torchFrames.slice(0, insertAt),
+      { pos, dir },
+      ...torchFrames.slice(insertAt),
+    ];
+  }
+  return finalizeWaypoints({ ...prog, torchFrames }, waypoints);
+}
+
+/** Insert a duplicate of the selected point offset slightly (manual tweak seed). */
+export function duplicateWaypoint(
+  prog: WeldProgram,
+  index: number,
+  kind: IdleInsertKind = "travel",
+): WeldProgram {
+  if (index < 0 || index >= prog.waypoints.length) return prog;
+  const src = prog.waypoints[index];
+  const pos: Vec3 = [src.pos[0], src.pos[1] + 0.05, src.pos[2]];
+  return insertIdleWaypoint(prog, index, kind, { pos, liftMm: 0 });
+}
+
+/**
+ * Motoman ``tcp_0`` wire / stick-out axis (+Z of TOOL.CND) from FK RPY (deg).
+ * Matches backend ``SE3.RPY(..., order='xyz')`` = Rx·Ry·Rz.
+ */
+export function motomanRpyToWireDir(rx: number, ry: number, rz: number): Vec3 {
+  const d = Math.PI / 180;
+  const cx = Math.cos(rx * d);
+  const sx = Math.sin(rx * d);
+  const cy = Math.cos(ry * d);
+  const sy = Math.sin(ry * d);
+  const cz = Math.cos(rz * d);
+  const sz = Math.sin(rz * d);
+  // R = Rx·Ry·Rz; wire = R·[0,0,1] = third column [sy, −sx·cy, cx·cy].
+  void cz;
+  void sz;
+  return norm([sy, -sx * cy, cx * cy]);
+}
+
+/** Rotate a direction by −table Z rotation (world → program frame). */
+export function rotateDirIntoProgramFrame(dir: Vec3, tableRotateDeg: number): Vec3 {
+  const partRotZ = (-tableRotateDeg * Math.PI) / 180;
+  const c = Math.cos(-partRotZ);
+  const s = Math.sin(-partRotZ);
+  return norm([dir[0] * c - dir[1] * s, dir[0] * s + dir[1] * c, dir[2]]);
+}
+
+/** Overwrite XYZ of an existing waypoint (metres) — torch tip / Motoman ``tcp_0``. */
+export function setWaypointPosition(
+  prog: WeldProgram,
+  index: number,
+  pos: Vec3,
+  opts?: { torchDir?: Vec3 },
+): WeldProgram {
+  if (index < 0 || index >= prog.waypoints.length) return prog;
+  const waypoints = prog.waypoints.map((w, i) =>
+    i === index ? { ...w, pos: [pos[0], pos[1], pos[2]] as Vec3 } : w,
+  );
+  let torchFrames = prog.torchFrames;
+  if (opts?.torchDir) {
+    const dir = norm(opts.torchDir);
+    // Keep frame count in sync with seam when possible; also stamp nearest frame.
+    if (torchFrames.length === 0) {
+      torchFrames = [{ pos, dir }];
+    } else {
+      const fi = Math.max(
+        0,
+        Math.min(torchFrames.length - 1, Math.round(
+          (index / Math.max(1, waypoints.length - 1)) * (torchFrames.length - 1),
+        )),
+      );
+      torchFrames = torchFrames.map((f, i) =>
+        i === fi ? { pos, dir } : f,
+      );
+    }
+  }
+  return finalizeWaypoints({ ...prog, torchFrames }, waypoints);
+}
+
+/** Change kind / move type of an existing waypoint (e.g. weld → travel). */
+export function setWaypointKind(
+  prog: WeldProgram,
+  index: number,
+  kind: Waypoint["kind"],
+): WeldProgram {
+  if (index < 0 || index >= prog.waypoints.length) return prog;
+  const waypoints: Waypoint[] = prog.waypoints.map((w, i) => {
+    if (i !== index) return w;
+    const isWeld = kind === "weld";
+    const isSense = kind === "sense";
+    const move: MoveType = isSense
+      ? "MOVS"
+      : isWeld
+        ? w.move === "MOVC"
+          ? "MOVC"
+          : "MOVL"
+        : "MOVJ";
+    const idleKey: IdleInsertKind = (
+      ["travel", "clearance", "approach", "retract", "index_safe"] as string[]
+    ).includes(kind)
+      ? (kind as IdleInsertKind)
+      : "travel";
+    return {
+      ...w,
+      kind,
+      move,
+      arc: isWeld,
+      speedLabel: isWeld
+        ? `V=${prog.schedule.travelCmMin.toFixed(1)}`
+        : isSense
+          ? `V=${TOUCH_SENSE.searchSpeedCmMin}`
+          : IDLE_SPEED[idleKey],
+      tag: isSense ? "TOUCH" : undefined,
+    };
+  });
+  return finalizeWaypoints(prog, waypoints);
 }
 
 function withMeta(
@@ -739,60 +969,138 @@ export function ensureTouchSense(prog: WeldProgram): WeldProgram {
   return refreshMeta(rebuildDurations({ ...prog, waypoints }));
 }
 
-/** Mark sequence optimized; optionally reverse seam if that shortens approach. */
+/** Contiguous weld runs as [start, end] inclusive waypoint indices. */
+function weldRuns(waypoints: Waypoint[]): Array<{ start: number; end: number }> {
+  const runs: Array<{ start: number; end: number }> = [];
+  let i = 0;
+  while (i < waypoints.length) {
+    if (waypoints[i].kind !== "weld") {
+      i++;
+      continue;
+    }
+    const start = i;
+    while (i < waypoints.length && waypoints[i].kind === "weld") i++;
+    runs.push({ start, end: i - 1 });
+  }
+  return runs;
+}
+
+/**
+ * Per-seam sequence optimize: reverse a weld run only when that shortens
+ * travel from the previous air point (or approach) to the run start.
+ * Never flattens multiple seams into one reverse (that broke hard-demo paths).
+ */
 export function optimizeSequence(prog: WeldProgram): WeldProgram {
-  const approach = prog.waypoints.find((w) => w.kind === "approach");
-  if (!approach || prog.seam.length < 2) {
+  if (!prog.waypoints.length) {
     return withMeta(prog, { sequenceOptimized: true });
   }
 
-  const start = prog.seam[0];
-  const end = prog.seam[prog.seam.length - 1];
-  const reverse = dist(approach.pos, end) + 0.001 < dist(approach.pos, start);
-  if (!reverse) return withMeta(prog, { sequenceOptimized: true });
+  const runs = weldRuns(prog.waypoints);
+  if (!runs.length) {
+    return withMeta(prog, { sequenceOptimized: true });
+  }
 
-  const seam = [...prog.seam].reverse();
-  const torchFrames = [...prog.torchFrames].reverse();
-  const firstWeld = prog.waypoints.findIndex((w) => w.kind === "weld");
-  const lastWeld = (() => {
-    for (let i = prog.waypoints.length - 1; i >= 0; i--) {
-      if (prog.waypoints[i].kind === "weld") return i;
-    }
-    return -1;
-  })();
-  if (firstWeld < 0 || lastWeld < 0) return withMeta(prog, { sequenceOptimized: true });
+  const waypoints = prog.waypoints.map((w) => ({
+    ...w,
+    pos: [...w.pos] as Vec3,
+  }));
+  let seam = prog.seam.map((p) => [...p] as Vec3);
+  let torchFrames = prog.torchFrames.map((f) => ({
+    pos: [...f.pos] as Vec3,
+    dir: [...f.dir] as Vec3,
+  }));
+  let reversedAny = false;
 
-  const weldCount = lastWeld - firstWeld + 1;
-  const weldWps = prog.waypoints.slice(firstWeld, lastWeld + 1).reverse();
-  const waypoints = [
-    ...prog.waypoints.slice(0, firstWeld),
-    ...weldWps.map((w, i) => {
-      const tag =
-        i === 0 ? ("ARCON" as const) : i === weldCount - 1 ? ("ARCOF" as const) : undefined;
-      return {
-        ...w,
-        pos: seam[Math.min(i, seam.length - 1)],
-        tag,
+  for (const run of runs) {
+    const n = run.end - run.start + 1;
+    if (n < 2) continue;
+    const prevIdx = run.start - 1;
+    const from =
+      prevIdx >= 0 ? waypoints[prevIdx].pos : waypoints[0].pos;
+    const startPos = waypoints[run.start].pos;
+    const endPos = waypoints[run.end].pos;
+    const reverse =
+      dist(from, endPos) + 1e-4 < dist(from, startPos);
+    if (!reverse) continue;
+    reversedAny = true;
+
+    const slice = waypoints.slice(run.start, run.end + 1).reverse();
+    for (let k = 0; k < slice.length; k++) {
+      waypoints[run.start + k] = {
+        ...slice[k],
+        kind: "weld",
         arc: true,
-        kind: "weld" as const,
+        move: slice[k].move === "MOVC" ? "MOVC" : "MOVL",
+        tag: undefined,
       };
-    }),
-    ...prog.waypoints.slice(lastWeld + 1),
-  ].map((w, i) => ({ ...w, id: pad(i + 1) }));
+    }
 
-  return withMeta(rebuildDurations({ ...prog, seam, torchFrames, waypoints }), {
-    sequenceOptimized: true,
-  });
+    // Best-effort: reverse matching seam / torch-frame span by equal count.
+    if (seam.length === n) {
+      seam = [...seam].reverse();
+      torchFrames = [...torchFrames].reverse();
+    } else if (seam.length >= n) {
+      // Reverse only the head span that matches this run (first seam) once.
+      // Subsequent runs leave geometry as-is if counts diverge.
+      if (run === runs[0]) {
+        const head = seam.slice(0, n).reverse();
+        seam = [...head, ...seam.slice(n)];
+        const th = torchFrames.slice(0, n).reverse();
+        torchFrames = [...th, ...torchFrames.slice(n)];
+      }
+    }
+  }
+
+  if (!reversedAny) {
+    return withMeta(prog, { sequenceOptimized: true });
+  }
+
+  // Reposition approach / retract standoffs near the (possibly reversed) tips.
+  const firstRun = runs[0];
+  const lastRun = runs[runs.length - 1];
+  const ap = waypoints.findIndex((w) => w.kind === "approach");
+  let rt = -1;
+  for (let i = waypoints.length - 1; i >= 0; i--) {
+    if (waypoints[i].kind === "retract") {
+      rt = i;
+      break;
+    }
+  }
+  if (ap >= 0 && firstRun) {
+    const tip = waypoints[firstRun.start].pos;
+    waypoints[ap] = {
+      ...waypoints[ap],
+      pos: [tip[0] + 0.05, tip[1] + 0.1, tip[2] + 0.08],
+    };
+  }
+  if (rt >= 0 && lastRun) {
+    const tip = waypoints[lastRun.end].pos;
+    waypoints[rt] = {
+      ...waypoints[rt],
+      pos: [tip[0] + 0.08, tip[1] + 0.1, tip[2] + 0.06],
+    };
+  }
+
+  return withMeta(
+    finalizeWaypoints({ ...prog, seam, torchFrames }, waypoints),
+    { sequenceOptimized: true },
+  );
 }
 
 /** Re-run coarse motion checks and refresh planner flags. */
 export function planMotions(prog: WeldProgram): WeldProgram {
-  const withSense = ensureTouchSense(prog);
-  return refreshMeta(
-    withMeta(withSense, {
-      sequenceOptimized: withSense.meta?.sequenceOptimized ?? true,
-    }),
-  );
+  try {
+    const withSense = ensureTouchSense(prog);
+    // Ensure durations / ARCON tags are consistent after edits.
+    const cleaned = finalizeWaypoints(withSense, withSense.waypoints);
+    return refreshMeta(
+      withMeta(cleaned, {
+        sequenceOptimized: withSense.meta?.sequenceOptimized ?? true,
+      }),
+    );
+  } catch {
+    return refreshMeta(withMeta(prog, { sequenceOptimized: false }));
+  }
 }
 
 const DEFAULT_TORCH_DIR: Vec3 = [0, -Math.SQRT1_2, -Math.SQRT1_2];
@@ -806,14 +1114,36 @@ function torchDirAt(prog: WeldProgram, wpIndex: number): Vec3 {
 
 /** Interpolate the TCP along the program at progress p in [0,1]. */
 export function sampleProgram(prog: WeldProgram, p: number) {
-  const target = Math.max(0, Math.min(1, p)) * prog.cycleSec;
+  const wps = prog.waypoints;
+  if (!wps.length) {
+    return {
+      pos: [0, 0, 0] as Vec3,
+      dir: DEFAULT_TORCH_DIR,
+      wpIndex: 0,
+      arcOn: false,
+      elapsedSec: 0,
+    };
+  }
+  const durations =
+    prog.segDurations.length === wps.length - 1
+      ? prog.segDurations
+      : rebuildDurations(prog).segDurations;
+  const cycle =
+    prog.cycleSec > 1e-9
+      ? prog.cycleSec
+      : Math.max(
+          1e-6,
+          durations.reduce((s, d) => s + d, 0),
+        );
+  const target = Math.max(0, Math.min(1, p)) * cycle;
   let acc = 0;
-  for (let i = 0; i < prog.segDurations.length; i++) {
-    const d = prog.segDurations[i];
-    if (target <= acc + d || i === prog.segDurations.length - 1) {
+  const nSeg = Math.min(durations.length, Math.max(0, wps.length - 1));
+  for (let i = 0; i < nSeg; i++) {
+    const d = Math.max(0, durations[i] ?? 0);
+    if (target <= acc + d || i === nSeg - 1) {
       const local = d > 0 ? (target - acc) / d : 0;
-      const a = prog.waypoints[i].pos;
-      const b = prog.waypoints[i + 1].pos;
+      const a = wps[i].pos;
+      const b = wps[i + 1]?.pos ?? a;
       const pos: Vec3 = [
         a[0] + (b[0] - a[0]) * local,
         a[1] + (b[1] - a[1]) * local,
@@ -823,19 +1153,19 @@ export function sampleProgram(prog: WeldProgram, p: number) {
         pos,
         dir: torchDirAt(prog, i),
         wpIndex: i,
-        arcOn: prog.waypoints[i].arc && prog.waypoints[i + 1].arc,
+        arcOn: Boolean(wps[i].arc && wps[i + 1]?.arc),
         elapsedSec: target,
       };
     }
     acc += d;
   }
-  const last = prog.waypoints[prog.waypoints.length - 1];
+  const last = wps[wps.length - 1];
   return {
     pos: last.pos,
-    dir: torchDirAt(prog, prog.waypoints.length - 1),
-    wpIndex: prog.waypoints.length - 1,
+    dir: torchDirAt(prog, wps.length - 1),
+    wpIndex: wps.length - 1,
     arcOn: false,
-    elapsedSec: prog.cycleSec,
+    elapsedSec: cycle,
   };
 }
 
