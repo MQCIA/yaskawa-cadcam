@@ -133,6 +133,22 @@ const pl: Dict = {
   "robot.help":
     "Przesuwaj S/L/U/R/B/T, żeby ręcznie ruszać AR2010 (jak panel Robot w Verbotics Weld). Odtwórz przełącza na IK ścieżki. Baza / Zero zerują osie.",
 
+  // Execution / MotoROS2 checklist
+  "exec.title": "Wykonanie na robocie",
+  "exec.summary":
+    "Spawanie: natywny .JBI (ARCON / WVON / MACRO1). MotoROS2 — opcjonalna telemetria i dojazdy po DN2.44+.",
+  "exec.checklistTitle": "Specyfikacja i Checklista DX200 (JBI vs MotoROS2)",
+  "exec.firmwareWarn":
+    "Dump komórki jest na DN2.27 — przed MotoROS2 wymagany upgrade do DN2.44.00-00 lub nowszego.",
+  "exec.firmwareOk": "Firmware zgodny z MotoROS2",
+  "exec.firmwareBad": "Firmware za stary na MotoROS2",
+  "exec.s2cTitle": "Parametry S2C (DX200)",
+  "exec.groupsTitle": "Mapowanie grup RB1/BS1/ST → r1/b1/s",
+  "exec.tfTitle": "Łańcuch TF",
+  "exec.limitsTitle": "Ograniczenia MotoROS2",
+  "exec.jbiNote":
+    "follow_joint_trajectory wymaga INIT_ROS i DN2.44+ — tylko telemetria/dojazdy. Spawanie zawsze przez .JBI.",
+
   // Torch / TOOL 0 calibration
   "torch.panelTitle": "Palnik (TOOL 0) — Lokalizacja i Model 3D",
   "torch.panelHelp":
@@ -311,6 +327,21 @@ const en: Dict = {
   "robot.statusIdle": "Valid",
   "robot.help":
     "Move S/L/U/R/B/T to jog the AR2010 by hand (like Verbotics Weld’s Robot panel). Play switches to path IK. Home / Zero reset the axes.",
+
+  "exec.title": "Robot execution",
+  "exec.summary":
+    "Welding: native .JBI (ARCON / WVON / MACRO1). MotoROS2 — optional telemetry and air moves after DN2.44+.",
+  "exec.checklistTitle": "DX200 Spec & Checklist (JBI vs MotoROS2)",
+  "exec.firmwareWarn":
+    "Cell dump is DN2.27 — upgrade to DN2.44.00-00 or newer before installing MotoROS2.",
+  "exec.firmwareOk": "Firmware OK for MotoROS2",
+  "exec.firmwareBad": "Firmware too old for MotoROS2",
+  "exec.s2cTitle": "S2C parameters (DX200)",
+  "exec.groupsTitle": "Group map RB1/BS1/ST → r1/b1/s",
+  "exec.tfTitle": "TF chain",
+  "exec.limitsTitle": "MotoROS2 limitations",
+  "exec.jbiNote":
+    "follow_joint_trajectory needs INIT_ROS and DN2.44+ — telemetry/air only. Welding always via .JBI.",
 
   // Torch / TOOL 0 calibration
   "torch.panelTitle": "Torch (TOOL 0) — Location & 3D Model",

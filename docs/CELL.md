@@ -73,14 +73,88 @@ Full map: **[CELL_WELD_MAP.md](CELL_WELD_MAP.md)** · code: `backend/app/welding
 - Default JBI profile: **`ma2010_cell`**
 - Pass IK `joint_angles_deg` into `generate_jbi` / `/api/generate-jbi` → full **PULSE** C#
 - Without joints: C# stays RECTAN; BC/EC still use pulse units
-- Torch in viewer: `createPortal` onto URDF `tool0` / `flange` (MA2010
-  `link_6_t` flange face at X≈0.100 m). Live TOOL 0 + mount calibration UI
-  (`frontend/lib/tool0.ts`, `WeldTorch3D`, panel in Robot dock). Default TCP
-  `xyz=(-54.280, 1.052, 415.702) mm` RPY `(1.3119, -42.6215, -6.8387)°`
-  from `TOOL.CND`. Default mesh: **ESAB `rm62_36deg.stl`**
-  (`frontend/public/models/torch_esab/`, alignment in `lib/torchMesh.ts`).
+- Torch in viewer: MotoROS2 chain `flange → tool0 → tcp_0` (`WeldUrdfRobot`
+  portals `WeldTorch3D` into Motoman `tool0`). Live TOOL 0 + mount calibration
+  UI (`frontend/lib/tool0.ts`). Default TCP from `TOOL.CND`. Default mesh:
+  **ESAB `rm62_36deg.stl`**.
+- Robot link API: `GET /api/robot-link` · FK frames:
+  `POST /api/forward-kinematics` → `{ flange, tool0, tcp_0 }`.
 
 Large binaries (`CMOS.BIN`, `ALL.PRM`, …) stay under `reference/` (gitignored).
+
+## MotoROS2 on this DX200 (optional telemetry)
+
+Official docs: [Yaskawa-Global/motoros2](https://github.com/Yaskawa-Global/motoros2)
+`README.md` + `doc/ros_api.md`. App welding path stays **native `.JBI`**
+(`ARCON` / `WVON` / `MACRO1`). MotoROS2 is for joint/TF stream and air moves
+after `start_traj_mode` / `INIT_ROS`.
+
+### Firmware
+
+| | Value |
+|--|--|
+| Cell dump (`SYSTEM.SYS`) | **`DN2.27.00A(US/PL)-00`** |
+| MotoROS2 minimum | **`DN2.44.00-00`** |
+| Status | **Upgrade required** before installing MotoROS2 |
+
+### Binaries (MotoROS2 **v0.2.1**)
+
+| Distro | File | MD5 |
+|--------|------|-----|
+| Humble | `mr2_dx2_h.out` | `6672e218b60c42f00ce335dc4a977ee9` |
+| Jazzy | `mr2_dx2_j.out` | `f31673a8559e331719f8b25f174419a3` |
+
+### Hardware / Maintenance
+
+- USB stick with `motoros2_config.yaml` must stay in cabinet port **`CN106`**
+  (missing → alarm **`8013 [0] Missing MotoROS2 cfg file`**).
+- Maintenance: `MotoPlus FUNC. = USED`, `MOTOMAN DRIVER = USED`.
+- Incompatible: **Simple Connect**.
+- With FSU: temporarily disable **`SAVE DATA CRC CHECK FUNC (FSU)`** during install.
+
+### Required `S2C` (DX200)
+
+| Param | Value | Note |
+|-------|-------|------|
+| `S2C541` | `0` | |
+| `S2C542` | `0` | |
+| `S2C1102` | `2` | |
+| `S2C1104` | `2` | |
+| `S2C1117` | `1` | DX200 Speed FB → alarm **`8001[10]`**, then reboot |
+| `S2C1250` | `1` | |
+| `S2C1402` | `3` | |
+
+### TF chain (`doc/ros_api.md`)
+
+```
+world → base → flange → tool0 → tcp_0
+```
+
+| Frame | Meaning |
+|-------|---------|
+| `flange` | REP-103: **X+** out of flange, Y+ left, Z+ up |
+| `tool0` | Yaskawa all-zeros tool: **Z+** out of flange (static `flange→tool0`) |
+| `tcp_0` | Active TOOL 0 from `TOOL.CND` in Motoman `tool0`: xyz `[-54.280, 1.052, 415.702]` mm, RPY `[1.3119, -42.6215, -6.8387]` deg |
+
+Also published: `flange → tcp_N` for the active tool (here N=0).
+
+### Group topics (this cell)
+
+| INFORM | ROS topic | Unit |
+|--------|-----------|------|
+| RB1 | `ctrl_groups/r1/joint_states` | rad |
+| BS1 | `ctrl_groups/b1/joint_states` | m |
+| ST1…ST4 | `ctrl_groups/s1…s4/joint_states` | rad |
+
+Plus `joint_states`, `robot_status`, `tf`.
+
+### Known limitations (README)
+
+- FastDDS only · no Cartesian motion · no Absolute Accuracy Compensation benefit
+- No asynchronous motion · no partial `FollowJointTrajectory` goals
+- Welding with `ARCON` / `WVON` / `MACRO1` → **native `.JBI` only**
+
+Code: `backend/app/robot_link.py` (`describe_robot_link`, `decode_motoros2_error`).
 
 ## Agent index
 

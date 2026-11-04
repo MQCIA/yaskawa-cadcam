@@ -14,11 +14,16 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel, Field
 
-from .kinematics_engine import forward_kinematics, get_robot, solve_ik_path
+from .kinematics_engine import (
+    forward_kinematics,
+    forward_kinematics_frames,
+    get_robot,
+    solve_ik_path,
+)
 from .dx200_postprocessor import PostprocessorConfig, WeldSegment, generate_jbi
 from .path_planning import plan_from_seams
 from .robot_config import ACTIVE_MODEL, ACTIVE_POSITIONER, AXIS_NAMES, MODELS
-from .robot_link import describe_robot_link
+from .robot_link import decode_motoros2_error, describe_robot_link
 from .welding_config import (
     ACTIVE_POWER_SOURCE,
     LORCH_S8_SCHEDULES,
@@ -233,10 +238,24 @@ def plan_path(req: PlanRequest):
 
 
 @app.post("/api/forward-kinematics")
-def fk(q_deg: list[float]):
+def fk(q_deg: list[float], all_frames: bool = True):
+    """FK for joint angles (deg).
+
+    By default returns MotoROS2 frames ``flange``, ``tool0``, and ``tcp_0``
+    (plus ``tcp`` alias) for ``/tf`` cross-checks. Pass ``all_frames=false``
+    for a single ``tcp`` pose (legacy flat dict).
+    """
     if len(q_deg) != get_robot().n:
         raise HTTPException(400, f"Expected {get_robot().n} joint values")
+    if all_frames:
+        return forward_kinematics_frames(q_deg)
     return forward_kinematics(q_deg)
+
+
+@app.get("/api/motoros2-error/{error_code}")
+def motoros2_error(error_code: int):
+    """Decode FollowJointTrajectory ``error_code`` (−ECCCCC)."""
+    return decode_motoros2_error(error_code)
 
 
 @app.post("/api/generate-jbi", response_class=PlainTextResponse)

@@ -9,11 +9,17 @@ from app.kinematics_engine import (
     flange_se3,
     flange_to_tool0_se3,
     forward_kinematics,
+    forward_kinematics_frames,
     tool_file_se3,
     tool0_se3,
 )
 from app.robot_config import TOOL0_RPY_DEG, TOOL0_XYZ_MM
-from app.robot_link import describe_robot_link
+from app.robot_link import (
+    CELL_FIRMWARE,
+    decode_motoros2_error,
+    describe_robot_link,
+    firmware_compatible,
+)
 
 
 def test_flange_to_tool0_maps_motoman_z_to_flange_x():
@@ -53,17 +59,48 @@ def test_tool0_legacy_helper_equals_composed_chain():
     assert TOOL0_RPY_DEG[1] == pytest.approx(-42.6215)
 
 
+def test_forward_kinematics_frames_bundle():
+    q = [10.0, -20.0, 15.0, 5.0, 30.0, 0.0]
+    bundle = forward_kinematics_frames(q)
+    assert bundle["tf_chain"].startswith("world")
+    for key in ("flange", "tool0", "tcp_0", "tcp"):
+        assert set(bundle[key]) >= {"x", "y", "z", "rx", "ry", "rz"}
+    assert bundle["tcp_0"] == bundle["tcp"]
+    assert bundle["tool_file_mm"]["xyz"][2] == pytest.approx(415.702)
+
+
+def test_decode_motoros2_error_minus_e_ccccc():
+    d = decode_motoros2_error(-100101)
+    assert d["parsed"]
+    assert d["ros_error"] == -1
+    assert d["ros_error_name"] == "INVALID_GOAL"
+    assert d["motoros2_code"] == 101
+    assert "alarm" in (d["motoros2_hint"] or "").lower()
+
+
+def test_firmware_dump_requires_upgrade():
+    fw = firmware_compatible()
+    assert CELL_FIRMWARE.startswith("DN2.27")
+    assert fw["compatible"] is False
+    assert "DN2.44" in (fw["action"] or "")
+
+
 def test_robot_link_exposes_motoros2_topics_and_jbi_weld_path():
     info = describe_robot_link()
     assert info["execution"] == "inform_jbi"
     ros = info["ros"]
+    assert ros["version"] == "0.2.1"
+    assert ros["binaries"]["humble"]["md5"].startswith("6672")
+    assert ros["hardware"]["usb_config_port"] == "CN106"
+    assert ros["s2c_parameters"]["S2C1117"] == 1
     assert ros["published_topics"]["ctrl_groups/r1/joint_states"]
     assert ros["published_topics"]["ctrl_groups/b1/joint_states"]
     assert ros["published_topics"]["ctrl_groups/s1/joint_states"]
-    assert "flange→tcp" in ros["published_topics"]["tf"] or "tcp" in ros["published_topics"]["tf"]
+    assert ros["published_topics"]["ctrl_groups/s4/joint_states"]
     assert "read_mregister" in ros["services"]
     assert "start_traj_mode" in ros["services"]
     assert "reset_error" in ros["services"]
-    assert "INIT_ROS" in ros["motion_role"] or "INIT_ROS" in str(ros["motion_prerequisites"])
+    assert any("Cartesian" in x or "cartesian" in x.lower() for x in ros["known_limitations"])
+    assert ros["firmware"]["compatible"] is False
     assert ".JBI" in info["native_program"]["note"]
-    assert "WVON" in info["native_program"]["note"] or "WVON" in info["native_program"]["arc"]
+    assert len(info["group_map"]) == 6

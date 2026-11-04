@@ -48,12 +48,14 @@ type URDFRobotLike = URDFRobot & {
 };
 
 /**
- * MA2010 / AR2010 URDF with torch on the MotoROS2 frame chain:
+ * MA2010 / AR2010 URDF with torch on the MotoROS2 TF chain
+ * (`doc/ros_api.md` — Provided TF transforms):
  *
- *   flange (REP-103, X+ out) → tool0 (Yaskawa Z+ out) → tcp_0 (TOOL.CND)
+ *   world → base → flange (REP-103, X+ out) → tool0 (Yaskawa Z+ out)
+ *     → tcp_0 (TOOL.CND in tool0)
  *
- * See MotoROS2 `doc/ros_api.md` (Provided TF transforms). Torch mesh and
- * `tcp_0` live in Motoman `tool0`; approach (+Z) leaves the flange face.
+ * Torch mesh and `tcp_0` live in Motoman `tool0`; approach (+Z) leaves the
+ * flange face straight out of the 6th-axis disc.
  */
 export default function WeldUrdfRobot({
   url,

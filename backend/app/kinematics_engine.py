@@ -159,11 +159,13 @@ def forward_kinematics(
     q_deg: list[float],
     frame: FrameName = "tcp",
 ) -> dict:
-    """FK: joint angles (deg) → pose.
+    """FK: joint angles (deg) → single-frame pose.
 
     ``frame="flange"`` — REP-103 mechanical interface (X+ out).
     ``frame="tool0"`` — Motoman all-zeros toolframe (Z+ out).
     ``frame="tcp"`` (default) — Tool No. 0 tip from ``TOOL.CND``.
+
+    Prefer :func:`forward_kinematics_frames` when comparing against MotoROS2 ``/tf``.
     """
     if frame == "flange":
         T = flange_se3(q_deg)
@@ -172,6 +174,31 @@ def forward_kinematics(
     else:
         T = tcp_se3(q_deg)
     return _se3_to_pose(T)
+
+
+def forward_kinematics_frames(q_deg: list[float]) -> dict:
+    """FK bundle for MotoROS2 TF verification.
+
+    Returns ``flange``, ``tool0``, and ``tcp_0`` (plus ``tcp`` alias) so a
+    client can diff against ``/tf``: ``world→base→flange→tool0`` and
+    ``flange→tcp_0`` (active TOOL 0 from ``TOOL.CND``).
+    """
+    flange = _se3_to_pose(flange_se3(q_deg))
+    tool0 = _se3_to_pose(motoman_tool0_se3(q_deg))
+    tcp = _se3_to_pose(tcp_se3(q_deg))
+    return {
+        "q_deg": [float(v) for v in q_deg],
+        "tf_chain": "world → base → flange → tool0 → tcp_0",
+        "flange": flange,
+        "tool0": tool0,
+        "tcp_0": tcp,
+        "tcp": tcp,
+        "tool_file_mm": {
+            "xyz": list(TOOL0_XYZ_MM),
+            "rpy_deg": list(TOOL0_RPY_DEG),
+            "relative_to": "tool0",
+        },
+    }
 
 
 def solve_ik_path(
