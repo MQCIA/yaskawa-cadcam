@@ -20,14 +20,24 @@ export type Waypoint = {
   move: MoveType;
   speedLabel: string;
   arc: boolean;
-  // ArcNC-style stages: sense = TouchSense search, travel = air move between seams
-  kind: "approach" | "sense" | "weld" | "travel" | "retract";
+  // ArcNC-style stages: sense = TouchSense; travel/clearance = air between seams;
+  // index_safe = parked torch while EC# indexes (02025 C00163–C00165).
+  kind:
+    | "approach"
+    | "sense"
+    | "weld"
+    | "travel"
+    | "retract"
+    | "clearance"
+    | "index_safe";
   tag?: "ARCON" | "ARCOF" | "TOUCH";
   /**
    * Optional per-point TURN EC#(ec1,ec2) pulses — enables ST3 circumferential
    * welding (1-DEFRO-5.JBI: fixed C#, rotating axis-2).
    */
   ec?: [number, number];
+  /** Optional RECT-X BS1 zone pulse (stable plateaus from 02025_KOSZ). */
+  bc?: number;
 };
 
 export type WeldScheduleRow = {
@@ -535,8 +545,12 @@ export function buildHardDemoProgram(
   ];
 
   const weldLabel = `V=${sch.travelCmMin} cm/min`;
-  const airLabel = "VJ=50%";
+  const airNearLabel = "VJ=50.00";
+  const airFarLabel = "VJ=80.00";
   const senseLabel = `V=${TOUCH_SENSE.searchSpeedCmMin} cm/min`;
+  // Demo BS1 zones — left fillet vs ring (02025-style plateaus).
+  const bcLeft = 124171;
+  const bcMid = 250331;
 
   const approach = add(vStart, [0.05, 0.1, 0.12]);
   const sense1 = add(vStart, [0.03, 0.05, 0.04]);
@@ -551,9 +565,10 @@ export function buildHardDemoProgram(
     id: pad(n++),
     pos: approach,
     move: "MOVJ",
-    speedLabel: airLabel,
+    speedLabel: airFarLabel,
     arc: false,
     kind: "approach",
+    bc: bcLeft,
   });
   waypoints.push({
     id: pad(n++),
@@ -563,6 +578,7 @@ export function buildHardDemoProgram(
     arc: false,
     kind: "sense",
     tag: "TOUCH",
+    bc: bcLeft,
   });
   waypoints.push({
     id: pad(n++),
@@ -572,6 +588,7 @@ export function buildHardDemoProgram(
     arc: false,
     kind: "sense",
     tag: "TOUCH",
+    bc: bcLeft,
   });
   waypoints.push({
     id: pad(n++),
@@ -581,6 +598,7 @@ export function buildHardDemoProgram(
     arc: true,
     kind: "weld",
     tag: "ARCON",
+    bc: bcLeft,
   });
   for (let i = 1; i < seamV.length - 1; i++) {
     waypoints.push({
@@ -590,6 +608,7 @@ export function buildHardDemoProgram(
       speedLabel: weldLabel,
       arc: true,
       kind: "weld",
+      bc: bcLeft,
     });
   }
   waypoints.push({
@@ -600,22 +619,26 @@ export function buildHardDemoProgram(
     arc: true,
     kind: "weld",
     tag: "ARCOF",
+    bc: bcLeft,
   });
+  // Clearance via between faces — VJ=80 DEC=20, BC indexes mid-air.
   waypoints.push({
     id: pad(n++),
     pos: midTravel,
     move: "MOVJ",
-    speedLabel: airLabel,
+    speedLabel: airFarLabel,
     arc: false,
-    kind: "travel",
+    kind: "clearance",
+    bc: bcMid,
   });
   waypoints.push({
     id: pad(n++),
     pos: ringApproach,
     move: "MOVJ",
-    speedLabel: airLabel,
+    speedLabel: airNearLabel,
     arc: false,
     kind: "travel",
+    bc: bcMid,
   });
   waypoints.push({
     id: pad(n++),
@@ -625,6 +648,7 @@ export function buildHardDemoProgram(
     arc: true,
     kind: "weld",
     tag: "ARCON",
+    bc: bcMid,
   });
   for (let i = 1; i < seamR.length - 1; i++) {
     waypoints.push({
@@ -634,6 +658,7 @@ export function buildHardDemoProgram(
       speedLabel: weldLabel,
       arc: true,
       kind: "weld",
+      bc: bcMid,
     });
   }
   waypoints.push({
@@ -644,14 +669,16 @@ export function buildHardDemoProgram(
     arc: true,
     kind: "weld",
     tag: "ARCOF",
+    bc: bcMid,
   });
   waypoints.push({
     id: pad(n++),
     pos: retract,
     move: "MOVJ",
-    speedLabel: airLabel,
+    speedLabel: airNearLabel,
     arc: false,
     kind: "retract",
+    bc: bcMid,
   });
 
   let weldLen = 0;
@@ -953,8 +980,12 @@ export function generateJbi(
     });
   }
 
-  lines.push(`' BC# RECT-X park pulse (${basePark})`);
-  pts.forEach((_, i) => lines.push(`BC${String(i).padStart(5, "0")}=${basePark}`));
+  lines.push(`' BC# RECT-X — per-point zone (park fallback ${basePark})`);
+  pts.forEach((p, i) => {
+    const bcPulse =
+      typeof p.bc === "number" && Number.isFinite(p.bc) ? Math.round(p.bc) : basePark;
+    lines.push(`BC${String(i).padStart(5, "0")}=${bcPulse}`);
+  });
 
   if (!usePulse) {
     lines.push("///POSTYPE PULSE");
@@ -981,12 +1012,23 @@ export function generateJbi(
     const c = `C${String(i).padStart(5, "0")}`;
     const bc = `BC${String(i).padStart(5, "0")}`;
     const ec = `EC${String(i).padStart(5, "0")}`;
-    const parsed = parseSpeed(p.speedLabel, p.kind === "weld" ? sch.travelCmMin : 80);
+    const defaultVj =
+      p.kind === "clearance" || p.kind === "index_safe" || p.kind === "approach"
+        ? 80
+        : p.kind === "travel" || p.kind === "retract"
+          ? 50
+          : 80;
+    const parsed = parseSpeed(
+      p.speedLabel,
+      p.kind === "weld" ? sch.travelCmMin : defaultVj,
+    );
     const useJoint =
       p.move === "MOVJ" ||
       p.kind === "approach" ||
       p.kind === "retract" ||
-      p.kind === "travel";
+      p.kind === "travel" ||
+      p.kind === "clearance" ||
+      p.kind === "index_safe";
 
     if (p.tag === "ARCON") {
       lines.push("TIMER T=0.50");
@@ -1009,7 +1051,7 @@ export function generateJbi(
       );
       lines.push(`' TouchSense search (${TOUCH_SENSE.referenceJob} pattern)`);
     } else if (useJoint && p.kind !== "weld") {
-      const vj = parsed.kind === "VJ" ? parsed.value : 80;
+      const vj = parsed.kind === "VJ" ? parsed.value : defaultVj;
       lines.push(`MOVJ ${c} ${bc} VJ=${f1(vj)} DEC=20  +MOVJ ${ec} VJ=${f1(vj)}`);
     } else {
       const v =

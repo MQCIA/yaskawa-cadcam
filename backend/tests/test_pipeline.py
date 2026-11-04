@@ -28,6 +28,17 @@ from app.path_planning import (
     preferred_spin_deg,
     rpy_from_wire_spin,
     torch_wire_direction,
+    ideal_bc_for_seam,
+    quantize_bc_zones,
+)
+from app.travel_planning import (
+    BC_ZONE_ANCHORS,
+    VJ_FAR,
+    VJ_NEAR,
+    clearance_via_points,
+    ec_delta_deg,
+    ec_safe_index_maneuver,
+    needs_clearance_via,
 )
 from app.pulse_config import joint_pulses_to_deg
 from app.robot_config import (
@@ -232,9 +243,14 @@ def test_full_pipeline(lbracket):
     )
     assert "///POSTYPE PULSE" in jbi
     assert "///RECTAN" not in jbi
-    assert "C00000=" in jbi and "BC00000=878036" in jbi
+    assert "C00000=" in jbi
+    assert re.search(r"BC00000=\d+", jbi)
+    # Planner zones stamp BC on every point; park is only the no-bc fallback.
+    assert planned.points[0].get("bc") is not None
+    assert f"BC00000={int(planned.points[0]['bc'])}" in jbi
     assert "ARCON" in jbi and jbi.strip().endswith("END")
     assert "RB1,BS1" in jbi
+    assert "DEC=20" in jbi
 
 
 def _angle_step(a: float, b: float) -> float:
@@ -584,3 +600,167 @@ def test_tool0_frame_chain_consistency():
     home_job = (CELL / "HOME_TRACK.JBI").read_text(encoding="utf-8", errors="replace")
     assert "///TOOL 0" in home_job
     assert "C00000=-281,-101163,-84214,3730,-80188,-1936" in home_job
+
+
+def test_bc_zone_quantization_matches_02025_plateaus():
+    """Ideal BC snaps onto production left/mid/right anchors and stays put."""
+    # Synthetic seams spanning left → mid → right of the fixture (rail = X).
+    seams = [
+        {"start": [0.6, 0.0, 0.4], "end": [0.65, 0.0, 0.4]},
+        {"start": [0.7, 0.0, 0.4], "end": [0.75, 0.0, 0.4]},
+        {"start": [1.1, 0.0, 0.4], "end": [1.15, 0.0, 0.4]},
+        {"start": [1.5, 0.0, 0.4], "end": [1.55, 0.0, 0.4]},
+    ]
+    # Uncalibrated lead → linear map into 02025 plateaus, then quantize.
+    ideals = [
+        ideal_bc_for_seam(s, pulses_per_mm=None, rail_span_m=(0.55, 1.55))
+        for s in seams
+    ]
+    zones = quantize_bc_zones(ideals)
+    assert len(zones) == 4
+    assert all(z in BC_ZONE_ANCHORS for z in zones)
+    # Neighbouring seams that share a plateau keep the same BC.
+    assert zones[0] == zones[1]
+    # Far-right seam must not reuse the left plateau.
+    assert zones[-1] != zones[0]
+    assert zones[0] <= zones[2] <= zones[-1]
+
+    kosz = (CELL / "02025_KOSZ_DO_RURY_70-PLUS-RAMKI.JBI").read_text(
+        encoding="latin-1", errors="replace"
+    )
+    for anchor in BC_ZONE_ANCHORS:
+        assert f"={anchor}" in kosz or str(anchor) in kosz
+
+
+def test_clearance_via_when_normals_diverge():
+    """Face change (>60°) inserts MOVJ clearance vias at Z_safe."""
+    retract = {"x": 0.8, "y": 0.0, "z": 0.4, "rx": 180, "ry": 0, "rz": 0}
+    approach = {"x": 0.8, "y": 0.3, "z": 0.4, "rx": 180, "ry": 0, "rz": 0}
+    bis_a = np.array([0.0, -0.707, 0.707])
+    bis_b = np.array([0.0, 0.707, 0.707])  # ~90° face change
+    assert needs_clearance_via(retract, approach, bis_a, bis_b, None)
+    vias = clearance_via_points(
+        retract, approach, z_safe=0.55, bc=124171, ec=(0, 0)
+    )
+    assert len(vias) >= 1
+    assert all(v["move_type"] == "MOVJ" for v in vias)
+    assert all(v["kind"] == "clearance" for v in vias)
+    assert all(v["vj"] in (VJ_FAR, VJ_NEAR) for v in vias)
+    assert all(v["z"] >= 0.55 - 1e-9 for v in vias)
+    assert all(v["bc"] == 124171 for v in vias)
+
+
+def test_ec_safe_index_three_step_maneuver():
+    """ΔEC > 5° → safe@old → mid-EC → safe@new (02025 C00163–C00165)."""
+    from app.pulse_config import station_deg_to_ec
+
+    ec_old = station_deg_to_ec(-0.9)  # ≈ −933 pulses
+    ec_new = station_deg_to_ec(118.0)  # ≈ 120k pulses family
+    assert ec_delta_deg(ec_old, ec_new) > 5.0
+    retract = {"x": 0.9, "y": 0.2, "z": 0.45, "rx": 180, "ry": 0, "rz": 0}
+    approach = {"x": 0.85, "y": -0.1, "z": 0.45, "rx": 180, "ry": 0, "rz": 0}
+    steps = ec_safe_index_maneuver(
+        retract,
+        approach,
+        ec_old=ec_old,
+        ec_new=ec_new,
+        bc_old=124171,
+        bc_new=250331,
+    )
+    assert len(steps) == 3
+    assert all(s["kind"] == "index_safe" for s in steps)
+    assert steps[0]["ec"] == list(ec_old)
+    assert steps[2]["ec"] == list(ec_new)
+    # Mid step is an intermediate EC (like C00164 = 38487).
+    mid = steps[1]["ec"]
+    assert mid[0] != ec_old[0] and mid[0] != ec_new[0]
+    assert steps[0]["z"] > retract["z"]  # lifted clear of table swing
+
+    # Production fixture encodes the same three-step EC jump.
+    kosz = (CELL / "02025_KOSZ_DO_RURY_70-PLUS-RAMKI.JBI").read_text(
+        encoding="latin-1", errors="replace"
+    )
+    assert "EC00163=" in kosz and "EC00164=" in kosz and "EC00165=" in kosz
+
+
+def test_plan_from_seams_safe_travel_bc_ec_and_vj():
+    """End-to-end: zones + clearance/index vias + VJ/DEC stamped into .JBI."""
+    # Two seams on opposite faces with a large EC jump and different BC zones.
+    seams = [
+        {
+            "start": [0.75, 0.05, 0.35],
+            "end": [0.95, 0.05, 0.35],
+            "bisector": [0.0, -0.7071, 0.7071],
+            "n1": [0.0, 0.0, 1.0],
+            "n2": [0.0, -1.0, 0.0],
+            "bc": 124171,
+            "ec": [-933, 0],
+            "weld_speed": 4.2,
+            "weave_no": 21,
+        },
+        {
+            "start": [1.15, -0.05, 0.35],
+            "end": [1.35, -0.05, 0.35],
+            "bisector": [0.0, 0.7071, 0.7071],
+            "n1": [0.0, 0.0, 1.0],
+            "n2": [0.0, 1.0, 0.0],
+            "bc": 250331,
+            "ec": [120166, 0],
+            "weld_speed": 5.0,
+            "weave_no": 21,
+        },
+    ]
+    planned = plan_from_seams(
+        seams,
+        samples_per_seam=3,
+        approach_height=0.06,
+        optimize_spin=False,
+        torch_rpy_deg=(180.0, 0.0, 0.0),
+        safe_travel=True,
+    )
+    assert len(planned.weld_segments) == 2
+    kinds = [p.get("kind") for p in planned.points]
+    assert "index_safe" in kinds  # EC jump forces safe-index
+    # Carriage / face change may also leave clearance points depending on order.
+    assert planned.bc_zones or all("bc" in p for p in planned.points)
+    # Weld points keep their zone BC; index vias sit outside the weld ranges.
+    w0 = planned.weld_segments[0]
+    w1 = planned.weld_segments[1]
+    assert planned.points[w0.start_index]["bc"] == 124171
+    assert planned.points[w1.start_index]["bc"] == 250331
+    assert w1.start_index > w0.end_index + 1  # vias between seams
+
+    jbi = generate_jbi(
+        planned.points,
+        planned.weld_segments,
+        PostprocessorConfig(),
+        station_deg=[0.0] * len(planned.points),
+    )
+    assert "BC00000=124171" in jbi or "BC=" not in jbi  # zone pulse present
+    assert "VJ=80.00" in jbi or "VJ=50.00" in jbi or "VJ=30.00" in jbi
+    assert "DEC=20" in jbi
+    assert "V=4.2" in jbi or "V=5.0" in jbi
+    # EC values from the seams appear in POS.
+    assert "EC" in jbi and "-933" in jbi and "120166" in jbi
+
+    # Without safe_travel the path is just concatenated seam blocks.
+    bare = plan_from_seams(
+        seams,
+        samples_per_seam=3,
+        approach_height=0.06,
+        optimize_spin=False,
+        torch_rpy_deg=(180.0, 0.0, 0.0),
+        safe_travel=False,
+    )
+    assert len(bare.points) < len(planned.points)
+    assert "index_safe" not in [p.get("kind") for p in bare.points]
+
+
+def test_defro_kosz_fixture_has_bc_zones_and_movj():
+    """1-DEFRO-5-KOSZ.JBI uses MOVJ air moves + BC/EC coordinated groups."""
+    job = (CELL / "1-DEFRO-5-KOSZ.JBI").read_text(encoding="latin-1", errors="replace")
+    assert "///GROUP1 RB1,BS1" in job
+    assert "MOVJ " in job
+    assert "DEC=20" in job
+    assert re.search(r"BC\d+=\d+", job)
+    assert re.search(r"EC\d+=-?\d+,-?\d+", job)

@@ -281,9 +281,17 @@ def _generate_ma2010_cell(
                 f"{_fmt(rx)},{_fmt(ry)},{_fmt(rz)}"
             )
 
-    lines.append(f"' BC# RECT-X park pulse ({cfg.base_park_pulse})")
-    for i in range(npos):
-        lines.append(f"BC{i:05d}={base_mm_to_bc(park_pulse=cfg.base_park_pulse)}")
+    lines.append(
+        f"' BC# RECT-X — per-point zone (park fallback {cfg.base_park_pulse})"
+    )
+    for i, p in enumerate(cartesian_points):
+        raw_bc = p.get("bc")
+        bc_pulse = (
+            int(raw_bc)
+            if raw_bc is not None
+            else base_mm_to_bc(park_pulse=cfg.base_park_pulse)
+        )
+        lines.append(f"BC{i:05d}={bc_pulse}")
 
     if not use_pulse:
         lines.append("///POSTYPE PULSE")
@@ -300,14 +308,16 @@ def _generate_ma2010_cell(
 
     weave_on = False
     for i in range(npos):
+        p = cartesian_points[i]
         c = f"C{i:05d}"
         bc = f"BC{i:05d}"
         ec = f"EC{i:05d}"
         use_joint = cfg.joint_approach and i == 0 and i not in arc_on_at
         in_weld = any(s.start_index <= i <= s.end_index for s in weld_segments)
-        opcode = _move_opcode_for_point(
-            cartesian_points[i], i, weld_segments, in_weld=in_weld
-        )
+        opcode = _move_opcode_for_point(p, i, weld_segments, in_weld=in_weld)
+        vj = float(p.get("vj", cfg.joint_speed_pct))
+        ec_vj = float(p.get("ec_vj", vj))
+        dec = int(p.get("dec", 20))
 
         if i in arc_on_at:
             seg = arc_on_at[i]
@@ -320,31 +330,32 @@ def _generate_ma2010_cell(
             weld_op = str(seg.move_type or opcode or "MOVL").upper()
             if weld_op not in ("MOVL", "MOVC"):
                 weld_op = "MOVL"
+            speed = float(p.get("v", seg.weld_speed))
             lines.append(
-                f"{weld_op} {c} {bc} V={_fmt1(seg.weld_speed)} DEC=20  "
-                f"+MOVJ {ec} VJ={_fmt(cfg.joint_speed_pct, 2)}"
+                f"{weld_op} {c} {bc} V={_fmt1(speed)} DEC={dec}  "
+                f"+MOVJ {ec} VJ={_fmt(ec_vj, 2)}"
             )
         elif use_joint or opcode == "MOVJ":
             lines.append(
-                f"MOVJ {c} {bc} VJ={_fmt(cfg.joint_speed_pct, 2)} DEC=20  "
-                f"+MOVJ {ec} VJ={_fmt(cfg.joint_speed_pct, 2)}"
+                f"MOVJ {c} {bc} VJ={_fmt(vj, 2)} DEC={dec}  "
+                f"+MOVJ {ec} VJ={_fmt(ec_vj, 2)}"
             )
         elif in_weld:
-            speed = cfg.weld_speed
+            speed = float(p.get("v", cfg.weld_speed))
             for s in weld_segments:
                 if s.start_index < i <= s.end_index:
-                    speed = s.weld_speed
+                    speed = float(p.get("v", s.weld_speed))
                     break
             op = opcode if opcode in ("MOVL", "MOVC") else "MOVL"
             lines.append(
-                f"{op} {c} {bc} V={_fmt1(speed)} DEC=20  "
-                f"+MOVJ {ec} VJ={_fmt(cfg.joint_speed_pct, 2)}"
+                f"{op} {c} {bc} V={_fmt1(speed)} DEC={dec}  "
+                f"+MOVJ {ec} VJ={_fmt(ec_vj, 2)}"
             )
         else:
             # Air move without explicit MOVJ — production uses MOVJ between seams.
             lines.append(
-                f"MOVJ {c} {bc} VJ={_fmt(cfg.joint_speed_pct, 2)} DEC=20  "
-                f"+MOVJ {ec} VJ={_fmt(cfg.joint_speed_pct, 2)}"
+                f"MOVJ {c} {bc} VJ={_fmt(vj, 2)} DEC={dec}  "
+                f"+MOVJ {ec} VJ={_fmt(ec_vj, 2)}"
             )
 
         if i in arc_off_at:
