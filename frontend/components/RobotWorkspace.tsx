@@ -17,6 +17,11 @@ import {
   type PositionerModel,
 } from "@/lib/models";
 import type { WeldProgram } from "@/lib/weldProgram";
+import {
+  DEFAULT_TORCH_CALIBRATION,
+  type TorchCalibration,
+} from "@/lib/tool0";
+import { TSL_CARRIAGE_TOP_Y } from "@/lib/trackMesh";
 
 export type SeamSegment = {
   start: [number, number, number];
@@ -25,8 +30,8 @@ export type SeamSegment = {
 
 export type StationState = { tilt: number; rotate: number };
 
-// Height of the rail carriage top the robot base mounts on.
-const CARRIAGE_TOP_Y = 0.26;
+// Height of the rail carriage top the robot base mounts on (TSL-600 STL).
+const CARRIAGE_TOP_Y = TSL_CARRIAGE_TOP_Y;
 // Height of the positioner rotation axis (matches H1000dPositioner.axisHeight).
 const AXLE_Y = 0.95;
 // X position of the trailing power-source dolly on the carriage (matches RobotTrack).
@@ -114,6 +119,7 @@ function SelectedRobot({
   manualJog,
   partPivot,
   partRotZ,
+  torchCalib,
 }: {
   modelId: string;
   joints: Joints;
@@ -123,6 +129,7 @@ function SelectedRobot({
   manualJog: boolean;
   partPivot?: [number, number, number];
   partRotZ?: number;
+  torchCalib: TorchCalibration;
 }) {
   const model = ROBOT_MODELS.find((m) => m.id === modelId) ?? ROBOT_MODELS[0];
   if (model.kind === "urdf" && model.url) {
@@ -139,6 +146,7 @@ function SelectedRobot({
         manual={manualJog}
         partPivot={partPivot}
         partRotZ={partRotZ}
+        torchCalib={torchCalib}
       />
     );
   }
@@ -194,6 +202,7 @@ export default function RobotWorkspace({
   program = null,
   simT = 0,
   manualJog = false,
+  torchCalib = DEFAULT_TORCH_CALIBRATION,
 }: {
   modelId: string;
   joints: Joints;
@@ -204,6 +213,7 @@ export default function RobotWorkspace({
   program?: WeldProgram | null;
   simT?: number;
   manualJog?: boolean;
+  torchCalib?: TorchCalibration;
 }) {
   const positioner = positionerId
     ? POSITIONER_MODELS.find((p) => p.id === positionerId)
@@ -271,6 +281,7 @@ export default function RobotWorkspace({
             manualJog={manualJog}
             partPivot={partPivot}
             partRotZ={partRotZ}
+            torchCalib={torchCalib}
           />
         </Suspense>
         {/* Lorch S8 power source on the trailing dolly — rides with the robot */}
