@@ -396,7 +396,7 @@ const en: Dict = {
   "robot.tool": "Tool",
   "robot.frame": "Frame",
   "robot.frameWorld": "World",
-  "robot.tcp": "Palnik tcp_0",
+  "robot.tcp": "Torch tip tcp_0",
   "robot.rail": "Rail",
   "robot.status": "Status",
   "robot.statusManual": "Valid (manual jog)",
