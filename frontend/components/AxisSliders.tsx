@@ -1,6 +1,7 @@
 "use client";
 
 import { useI18n } from "@/lib/i18n";
+import { cellHomeDeg } from "@/lib/weldProgram";
 
 export const AXES = ["S", "L", "U", "R", "B", "T"] as const;
 export type Joints = Record<(typeof AXES)[number], number>;
@@ -14,8 +15,15 @@ const LIMITS: Record<(typeof AXES)[number], [number, number]> = {
   T: [-360, 360],
 };
 
+/** Mechanical origin (all axes 0°) — jog zero, not production home. */
 export function defaultJoints(): Joints {
   return { S: 0, L: 0, U: 0, R: 0, B: 0, T: 0 };
+}
+
+/** Production C00000 home over the RECT-X track (DX200 dump TOOL 0 jobs). */
+export function cellHomeJoints(): Joints {
+  const [S, L, U, R, B, T] = cellHomeDeg();
+  return { S, L, U, R, B, T };
 }
 
 function clamp(axis: (typeof AXES)[number], v: number) {
@@ -104,7 +112,7 @@ export default function AxisSliders({
       {showHome && (
         <button
           type="button"
-          onClick={() => onChange(defaultJoints())}
+          onClick={() => onChange(cellHomeJoints())}
           className="mt-1 w-full rounded border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 hover:bg-slate-50"
         >
           {t("axis.home")}

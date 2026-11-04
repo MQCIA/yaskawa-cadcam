@@ -79,6 +79,7 @@ Full map: **[CELL_WELD_MAP.md](CELL_WELD_MAP.md)** · code: `backend/app/welding
   **ESAB `rm62_36deg.stl`**.
 - Robot link API: `GET /api/robot-link` · FK frames:
   `POST /api/forward-kinematics` → `{ flange, tool0, tcp_0 }`.
+- Golden poses (home C00000, `000.JBI`): [CELL_POSES.md](CELL_POSES.md)
 
 Large binaries (`CMOS.BIN`, `ALL.PRM`, …) stay under `reference/` (gitignored).
 

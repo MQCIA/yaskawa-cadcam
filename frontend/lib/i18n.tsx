@@ -173,7 +173,7 @@ const pl: Dict = {
   "axis.R": "Obrót ramienia",
   "axis.B": "Zgięcie nadgarstka",
   "axis.T": "Obrót uchwytu",
-  "axis.home": "Baza (0°)",
+  "axis.home": "Baza (C00000)",
 
   // Status messages
   "status.programReady":
@@ -184,7 +184,7 @@ const pl: Dict = {
     "Wykryj spoiny: spoina z {n} punktami już jest w projekcie.",
   "status.planNeedPart": "Zaimportuj / załaduj część przed planowaniem.",
   "status.planDone": "Plan ruchu gotowy · bez kolizji: {collision}. Otwórz Program i naciśnij Odtwórz.",
-  "status.home": "Robot → pozycja bazowa (wszystkie osie 0°).",
+  "status.home": "Robot → home C00000 nad szyną BS1 (TOOL 0).",
   "status.zero": "Robot → Zero (wszystkie wartości osi = 0°).",
   "status.jogOn": "Ręczny ruch osi WŁĄCZONY.",
   "status.importing": "Import CAD…",
@@ -366,7 +366,7 @@ const en: Dict = {
   "axis.R": "Arm roll",
   "axis.B": "Wrist bend",
   "axis.T": "Torch roll",
-  "axis.home": "Home (0°)",
+  "axis.home": "Home (C00000)",
 
   "status.programReady":
     "Program ready: T-fillet · {mm} mm · cycle ≈ {sec} s",
@@ -376,7 +376,7 @@ const en: Dict = {
     "Identify Welds: seam with {n} points already in project.",
   "status.planNeedPart": "Import / load a part before planning.",
   "status.planDone": "Motion plan ready · collision-free: {collision}. Open Program and press Play.",
-  "status.home": "Robot → Home pose (all axes 0°).",
+  "status.home": "Robot → home C00000 over RECT-X (TOOL 0).",
   "status.zero": "Robot → Zero (all joint values set to 0°).",
   "status.jogOn": "Manual joint jog ON.",
   "status.importing": "Importing CAD…",

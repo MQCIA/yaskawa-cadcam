@@ -1,93 +1,83 @@
 /**
- * Production DX200 TOOL 0 + MotoROS2 / ROS-Industrial frame chain.
+ * Torch calibration UI + Motoman frame helpers.
  *
- * Official MotoROS2 (`doc/ros_api.md` — Provided TF transforms):
- *
- *   flange  — REP-103 relative to the link: X+ forward (out of flange),
- *             Y+ left, Z+ up.
- *   tool0   — Yaskawa "all zeros toolframe": Z+ forward (out of flange).
- *             Static `flange → tool0` (never follows a configured tool file).
- *   tcp_0   — active Yaskawa Tool No. 0 from `TOOL.CND`, expressed in the
- *             Motoman / `tool0` frame (Z+ out).
- *
- * MA2010 URDF `joint_6_t-tool0` (0.100,0,0) places a flange-face frame with
- * approach = URDF +X (REP-103 `flange`). AR2010 already has `flange` +
- * `flange-tool0` with the Motoman rotation below.
+ * TOOL 0 numeric constants live in ``weldProgram.ts`` (single FE source of
+ * truth, mirrored from ``backend/app/robot_config.py``). This module adds
+ * live calibration state and ``T_flange_to_tool0`` / ``T_tool0_to_tcp0`` helpers
+ * used by ``WeldUrdfRobot`` / ``WeldTorch3D``.
  */
 
 import * as THREE from "three";
+import {
+  FLANGE_TO_TOOL0_R,
+  TOOL0_LENGTH_M,
+  TOOL0_RPY_DEG,
+  TOOL0_XYZ_M,
+  TOOL0_XYZ_MM,
+  TOOL_RPY_ORDER,
+} from "@/lib/weldProgram";
 
-export const TOOL0_XYZ_MM = [-54.28, 1.052, 415.702] as const;
-export const TOOL0_RPY_DEG = [1.3119, -42.6215, -6.8387] as const;
+export {
+  FLANGE_TO_TOOL0_R,
+  TOOL0_LENGTH_M,
+  TOOL0_RPY_DEG,
+  TOOL0_XYZ_M,
+  TOOL0_XYZ_MM,
+  TOOL_RPY_ORDER,
+};
 
-export const TOOL0_XYZ_M = [
-  TOOL0_XYZ_MM[0] / 1000,
-  TOOL0_XYZ_MM[1] / 1000,
-  TOOL0_XYZ_MM[2] / 1000,
-] as const;
+/** @deprecated use TOOL0_LENGTH_M */
+export const TOOL0_LENGTH_M_ALIAS = TOOL0_LENGTH_M;
 
-/** Straight-line tool0-origin → tip length (metres). */
-export const TOOL0_LENGTH_M = Math.hypot(...TOOL0_XYZ_M);
-
-/** Stick-out beyond copper nozzle (m). */
+/** Stick-out beyond copper nozzle for procedural mesh only (m). */
 export const TORCH_STICK_OUT_M = 0.018;
 
-/**
- * ROS-Industrial / Motoman `flange → tool0` (AR2010 `flange-tool0` URDF).
- * Motoman +Z = flange +X, Motoman +X = flange +Z, Motoman +Y = flange −Y.
- * Matches backend `flange_to_tool0_se3` (Three.js Matrix4 column-major).
- */
+/** Quaternion for ``T_flange_to_tool0`` (same matrix as backend). */
 export function flangeToTool0Quaternion(): THREE.Quaternion {
+  const R = FLANGE_TO_TOOL0_R;
+  // Three.js Matrix4.fromArray is column-major: col0, col1, col2, col3.
   const m = new THREE.Matrix4().fromArray([
-    0, 0, 1, 0, // col0 = tool0 +X = flange +Z
-    0, -1, 0, 0, // col1 = tool0 +Y = flange −Y
-    1, 0, 0, 0, // col2 = tool0 +Z = flange +X
+    R[0][0], R[1][0], R[2][0], 0,
+    R[0][1], R[1][1], R[2][1], 0,
+    R[0][2], R[1][2], R[2][2], 0,
     0, 0, 0, 1,
   ]);
   return new THREE.Quaternion().setFromRotationMatrix(m);
 }
 
+/** ``T_tool0_to_tcp0`` quaternion from TOOL.CND RPY. */
+export function tool0ToTcp0Quaternion(
+  rpyDeg: readonly [number, number, number] = TOOL0_RPY_DEG,
+): THREE.Quaternion {
+  const d = Math.PI / 180;
+  return new THREE.Quaternion().setFromEuler(
+    new THREE.Euler(rpyDeg[0] * d, rpyDeg[1] * d, rpyDeg[2] * d, TOOL_RPY_ORDER),
+  );
+}
+
 /**
- * @deprecated Prefer the explicit `flange → tool0` chain. Kept for the
- * calibration panel so an operator can force a raw axis mapping.
+ * @deprecated Prefer the explicit flange → tool0 chain.
  */
 export type FlangeAxisPreset = "plusZ_iso" | "plusX_raw" | "minusX" | "plusY";
 
 export type TorchCalibration = {
-  /** TOOL 0 TCP offset from Motoman `tool0`, millimetres. */
   tcpXmm: number;
   tcpYmm: number;
   tcpZmm: number;
-  /** TOOL 0 RPY, degrees (Motoman Rx, Ry, Rz) in `tool0`. */
   tcpRxDeg: number;
   tcpRyDeg: number;
   tcpRzDeg: number;
-  /** Extra mount offset on the Motoman `tool0` parent, millimetres. */
   mountXmm: number;
   mountYmm: number;
   mountZmm: number;
   mountRxDeg: number;
   mountRyDeg: number;
   mountRzDeg: number;
-  /**
-   * Override for the Motoman←flange map. Default `plusZ_iso` matches
-   * `flange → tool0` approach (Z_m ≡ X_flange); use only when skipping the
-   * explicit Motoman child (legacy).
-   */
   flangePreset: FlangeAxisPreset;
-  /** Show AxesHelper at tool0 origin and tcp_0. */
   showAxes: boolean;
-  /**
-   * Geometry mode.
-   * - `vendor` — bundled ESAB `rm62_36deg.stl` (Verbotics cell mesh)
-   * - `procedural` — simple CAD cylinders / swan-neck
-   * - `custom` — user-uploaded STL/GLB
-   */
   meshMode: "vendor" | "procedural" | "custom";
-  /** Object URL for uploaded STL/GLB (session-only). */
   customMeshUrl: string | null;
   customMeshKind: "stl" | "glb" | null;
-  /** Extra transform for a custom mesh in Motoman `tool0` (mm / deg). */
   customXmm: number;
   customYmm: number;
   customZmm: number;
@@ -124,10 +114,8 @@ export const DEFAULT_TORCH_CALIBRATION: TorchCalibration = {
   customScale: 1,
 };
 
-/** Bumped so previous "procedural" localStorage defaults pick up the ESAB mesh. */
-const STORAGE_KEY = "yaskawa-torch-calibration-v2";
+const STORAGE_KEY = "yaskawa-torch-calibration-v3";
 
-/** Persist numeric/settings fields (not blob object URLs). */
 export function saveTorchCalibration(c: TorchCalibration) {
   try {
     const { customMeshUrl: _u, customMeshKind: _k, ...rest } = c;
@@ -151,6 +139,13 @@ export function loadTorchCalibration(): TorchCalibration {
     return {
       ...DEFAULT_TORCH_CALIBRATION,
       ...parsed,
+      // Always re-seed dump TOOL 0 as defaults when keys missing.
+      tcpXmm: parsed.tcpXmm ?? TOOL0_XYZ_MM[0],
+      tcpYmm: parsed.tcpYmm ?? TOOL0_XYZ_MM[1],
+      tcpZmm: parsed.tcpZmm ?? TOOL0_XYZ_MM[2],
+      tcpRxDeg: parsed.tcpRxDeg ?? TOOL0_RPY_DEG[0],
+      tcpRyDeg: parsed.tcpRyDeg ?? TOOL0_RPY_DEG[1],
+      tcpRzDeg: parsed.tcpRzDeg ?? TOOL0_RPY_DEG[2],
       meshMode,
       customMeshUrl: null,
       customMeshKind: null,
@@ -169,20 +164,13 @@ export function tcpRpyRad(c: TorchCalibration): [number, number, number] {
   return [c.tcpRxDeg * d, c.tcpRyDeg * d, c.tcpRzDeg * d];
 }
 
-/** Motoman TOOL RPY Euler order used with the ESAB mesh / TOOL.CND mount. */
-export const TOOL_RPY_ORDER = "ZYX" as const;
-
-/**
- * Euler (XYZ) that maps Motoman flange (+Z out) onto a REP-103 parent (+X out).
- * Prefer parenting under an explicit Motoman `tool0` child instead.
- */
 export function flangePresetEuler(
   preset: FlangeAxisPreset,
 ): [number, number, number] {
   const h = Math.PI / 2;
   switch (preset) {
     case "plusZ_iso":
-      return [0, h, 0]; // Motoman Z → URDF +X (approach only; roll differs from ROS-I)
+      return [0, h, 0];
     case "plusX_raw":
       return [0, 0, 0];
     case "minusX":
@@ -203,3 +191,10 @@ export const FLANGE_PRESET_OPTIONS: {
   { id: "minusX", label: "−X" },
   { id: "plusY", label: "+Y" },
 ];
+
+/** Dump defaults for reset buttons. */
+export const DUMP_TOOL0 = {
+  xyzMm: TOOL0_XYZ_MM,
+  xyzM: TOOL0_XYZ_M,
+  rpyDeg: TOOL0_RPY_DEG,
+} as const;

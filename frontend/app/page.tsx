@@ -13,7 +13,11 @@
 
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import dynamic from "next/dynamic";
-import AxisSliders, { defaultJoints, type Joints } from "@/components/AxisSliders";
+import AxisSliders, {
+  cellHomeJoints,
+  defaultJoints,
+  type Joints,
+} from "@/components/AxisSliders";
 import TorchCalibrationPanel from "@/components/TorchCalibrationPanel";
 import Dx200MotorosChecklist from "@/components/Dx200MotorosChecklist";
 import { useI18n, LanguageToggle } from "@/lib/i18n";
@@ -63,7 +67,7 @@ const btnRibbon =
 export default function Home() {
   const { t } = useI18n();
   const [modelId, setModelId] = useState("ma2010");
-  const [joints, setJoints] = useState<Joints>(defaultJoints());
+  const [joints, setJoints] = useState<Joints>(cellHomeJoints());
   const [seams, setSeams] = useState<SeamSegment[]>([]);
   const [status, setStatus] = useState("");
 
@@ -265,12 +269,14 @@ export default function Home() {
   function homeJoints() {
     setSimPlaying(false);
     setManualJog(true);
-    setJoints(defaultJoints());
+    setJoints(cellHomeJoints());
     setStatus(t("status.home"));
   }
 
   function zeroJoints() {
-    homeJoints();
+    setSimPlaying(false);
+    setManualJog(true);
+    setJoints(defaultJoints());
     setStatus(t("status.zero"));
   }
 

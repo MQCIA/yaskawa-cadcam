@@ -11,6 +11,7 @@ import {
   TOOL_RPY_ORDER,
   tcpMetres,
   tcpRpyRad,
+  tool0ToTcp0Quaternion,
   type TorchCalibration,
 } from "@/lib/tool0";
 import {
@@ -23,15 +24,20 @@ const deg2rad = (d: number) => (d * Math.PI) / 180;
 
 const ESAB_URL = withBase(TORCH_ESAB_URL);
 
-// Warm the STL cache so Suspense resolves quickly inside the flange portal.
+// Warm the STL cache so Suspense resolves quickly inside the tool0 portal.
 if (typeof window !== "undefined") {
   useLoader.preload(STLLoader, ESAB_URL);
 }
 
 /**
- * MIG torch in the Motoman / MotoROS2 ``tool0`` frame (+Z out of flange).
- * Parent must be ``flange → tool0`` (REP-103 → Yaskawa); tip sits at ``tcp_0``
- * (TOOL.CND). Default mesh: ESAB ``rm62_36deg.stl``.
+ * MIG torch in Motoman / MotoROS2 ``tool0`` (Z+ out of flange).
+ *
+ * Geometry contract (identical to backend ``tool_file_se3``):
+ * * Anti-collision handle base at tool0 origin ``[0,0,0]``, body along ``+Z``.
+ * * Wire tip (= TCP gizmo) at TOOL.CND ``xyz`` in tool0.
+ * * Nozzle / wire axis rotated by TOOL.CND RPY (≈ −42.62° Ry gooseneck).
+ *
+ * Parent must already be Motoman ``tool0`` (``flange → tool0`` applied upstream).
  */
 export default function WeldTorch3D({
   calib,
@@ -54,7 +60,6 @@ function TorchBody({
   calib: TorchCalibration;
   arcOn: boolean;
 }) {
-  // Always load the vendor STL (cached) so hooks stay unconditional.
   const esabGeo = useLoader(STLLoader, ESAB_URL);
 
   if (calib.meshMode === "custom" && calib.customMeshUrl) {
@@ -80,7 +85,10 @@ function TorchBody({
   );
 }
 
-/** Place the tip-at-origin ESAB mesh at the Motoman TOOL 0 pose. */
+/**
+ * ESAB STL is authored tip-at-origin / wire = +Z after ``torchMesh`` align.
+ * Place that tip exactly at Motoman ``tcp_0`` (TOOL.CND xyz + RPY).
+ */
 function VendorTorchAtTcp({
   calib,
   geometry,
@@ -89,18 +97,16 @@ function VendorTorchAtTcp({
   geometry: THREE.BufferGeometry;
 }) {
   const tcp = tcpMetres(calib);
-  const [rx, ry, rz] = tcpRpyRad(calib);
   const quat = useMemo(
     () =>
-      new THREE.Quaternion().setFromEuler(
-        new THREE.Euler(rx, ry, rz, TOOL_RPY_ORDER),
-      ),
-    [rx, ry, rz],
+      tool0ToTcp0Quaternion([
+        calib.tcpRxDeg,
+        calib.tcpRyDeg,
+        calib.tcpRzDeg,
+      ]),
+    [calib.tcpRxDeg, calib.tcpRyDeg, calib.tcpRzDeg],
   );
 
-  // Clone once per loader geometry. Do NOT dispose in an effect — React
-  // Strict Mode remounts would reuse a disposed BufferGeometry and the torch
-  // disappears from the flange.
   const geo = useMemo(() => {
     const g = geometry.clone();
     g.computeVertexNormals();
@@ -112,7 +118,7 @@ function VendorTorchAtTcp({
 
   return (
     <group position={tcp} quaternion={quat}>
-      {/* mm → m after tip→origin and wire→+Z (lib/torchMesh.ts). */}
+      {/* Mesh-local tip → origin + wire → +Z (lib/torchMesh.ts), then mm→m. */}
       <group scale={[0.001, 0.001, 0.001]}>
         <group quaternion={[qx, qy, qz, qw]}>
           <mesh geometry={geo} position={[-tx, -ty, -tz]} castShadow receiveShadow>
@@ -148,6 +154,7 @@ function ProceduralTorch({
 
   return (
     <group>
+      {/* Anti-collision mount: base exactly at tool0 [0,0,0], along +Z. */}
       <mesh position={[0, 0, 0.006]} rotation={[Math.PI / 2, 0, 0]} castShadow>
         <cylinderGeometry args={[0.0375, 0.0375, 0.012, 28]} />
         <meshStandardMaterial color={0x2a3038} metalness={0.55} roughness={0.4} />
@@ -181,6 +188,7 @@ function ProceduralTorch({
         <meshStandardMaterial color={0xe8b060} metalness={0.85} roughness={0.2} />
       </mesh>
 
+      {/* Physical wire tip ≡ Motoman tcp_0. */}
       <mesh position={g.tcp.toArray()}>
         <sphereGeometry args={[0.0035, 14, 14]} />
         <meshStandardMaterial
@@ -202,6 +210,7 @@ function buildTorchGeom(calib: TorchCalibration) {
   const qTool = new THREE.Quaternion().setFromEuler(
     new THREE.Euler(rx, ry, rz, TOOL_RPY_ORDER),
   );
+  // Wire / nozzle axis = tcp_0 +Z in tool0.
   const wireDir = new THREE.Vector3(0, 0, 1).applyQuaternion(qTool).normalize();
 
   const stick = TORCH_STICK_OUT_M;
@@ -211,6 +220,7 @@ function buildTorchGeom(calib: TorchCalibration) {
   const nozzleMid = nozzleBase.clone().addScaledVector(wireDir, nozzleLen / 2);
   const wireMid = tcp.clone().addScaledVector(wireDir, -stick / 2);
 
+  // Gooseneck: from handle (+Z tool0) into nozzle base (TOOL.CND bend ~−42.6° Ry).
   const p2 = new THREE.Vector3(0, 0, 0.24);
   const p3 = nozzleBase.clone();
   const bend = p2
@@ -228,17 +238,20 @@ function buildTorchGeom(calib: TorchCalibration) {
 
 function Axes({ calib }: { calib: TorchCalibration }) {
   const tcp = tcpMetres(calib);
-  const [rx, ry, rz] = tcpRpyRad(calib);
   const quat = useMemo(
     () =>
-      new THREE.Quaternion().setFromEuler(
-        new THREE.Euler(rx, ry, rz, TOOL_RPY_ORDER),
-      ),
-    [rx, ry, rz],
+      tool0ToTcp0Quaternion([
+        calib.tcpRxDeg,
+        calib.tcpRyDeg,
+        calib.tcpRzDeg,
+      ]),
+    [calib.tcpRxDeg, calib.tcpRyDeg, calib.tcpRzDeg],
   );
   return (
     <group>
+      {/* tool0 axes at origin */}
       <axesHelper args={[0.08]} />
+      {/* tcp_0 axes at TOOL.CND tip */}
       <group position={tcp} quaternion={quat}>
         <axesHelper args={[0.05]} />
       </group>

@@ -6,6 +6,10 @@ or ``gmsh`` is installed) and looks for candidate fillet-weld seams: internal
 edges whose dihedral angle is close to 90 degrees AND concave -- the classic
 signature of a T / lap fillet joint.
 
+For each kept edge we also return the two adjacent face normals and their
+normalized sum (fillet bisector pointing *out* of the joint). Path planning
+uses that bisector for torch work-angle and approach/retract offset.
+
 Post-processing:
 * ``merge_collinear_seams`` — glue consecutive straight edges into one linear seam
 * ``group_constant_radius_arcs`` — chain short edges that share a constant
@@ -123,15 +127,23 @@ def merge_collinear_seams(
         used[i] = True
         pts = [_as_vec(seg["start"]), _as_vec(seg["end"])]
         direction = _normalize(pts[1] - pts[0])
+        def _with_normals(payload: dict) -> dict:
+            for key in ("n1", "n2", "bisector", "face_indices"):
+                if key in seg and seg[key] is not None:
+                    payload[key] = seg[key]
+            return payload
+
         if float(np.linalg.norm(direction)) < 1e-12:
             merged.append(
-                {
-                    "start": _tolist3(pts[0]),
-                    "end": _tolist3(pts[1]),
-                    "length": float(seg.get("length", 0.0)),
-                    "dihedral_deg": seg.get("dihedral_deg"),
-                    "type": "line",
-                }
+                _with_normals(
+                    {
+                        "start": _tolist3(pts[0]),
+                        "end": _tolist3(pts[1]),
+                        "length": float(seg.get("length", 0.0)),
+                        "dihedral_deg": seg.get("dihedral_deg"),
+                        "type": "line",
+                    }
+                )
             )
             continue
         # Grow forward then backward.
@@ -143,13 +155,15 @@ def merge_collinear_seams(
             direction_rev = _normalize(pts_rev[-1] - pts_rev[0])
         pts = list(reversed(pts_rev))
         length = _polyline_length(pts)
-        out = {
-            "start": _tolist3(pts[0]),
-            "end": _tolist3(pts[-1]),
-            "length": length,
-            "dihedral_deg": seg.get("dihedral_deg"),
-            "type": "line",
-        }
+        out = _with_normals(
+            {
+                "start": _tolist3(pts[0]),
+                "end": _tolist3(pts[-1]),
+                "length": length,
+                "dihedral_deg": seg.get("dihedral_deg"),
+                "type": "line",
+            }
+        )
         if len(pts) > 2:
             out["points"] = [_tolist3(p) for p in pts]
         merged.append(out)
@@ -340,6 +354,11 @@ def group_constant_radius_arcs(
                 "type": "arc",
                 "move_type": "MOVC",
                 "dihedral_deg": segments[i].get("dihedral_deg"),
+                **{
+                    k: segments[i][k]
+                    for k in ("n1", "n2", "bisector", "face_indices")
+                    if k in segments[i] and segments[i][k] is not None
+                },
             }
         )
 
@@ -362,15 +381,18 @@ def detect_seams(
 
     A face-adjacency edge is kept when its dihedral angle is within
     ``angle_tol_deg`` of ``target_angle_deg`` and the joint is concave.
-    Consecutive kept edges are merged into collinear polylines; short edges
-    that share a constant curvature radius become ``type="arc"`` seams for
-    ``MOVC`` postprocessing.
+    Each segment includes averaged adjacent face normals ``n1`` / ``n2`` and
+    ``bisector = normalize(n1 + n2)`` (outward from the fillet). Consecutive
+    kept edges are merged into collinear polylines; short edges that share a
+    constant curvature radius become ``type="arc"`` seams for ``MOVC``.
     """
     mesh = _as_single_mesh(trimesh.load(file_path, force="mesh"))
 
     angles = mesh.face_adjacency_angles  # radians, unsigned
     edges = mesh.face_adjacency_edges  # vertex-index pairs
     convex = mesh.face_adjacency_convex  # True=convex, False=concave
+    face_pairs = mesh.face_adjacency  # face-index pairs
+    normals = mesh.face_normals
 
     target = math.radians(target_angle_deg)
     tol = math.radians(angle_tol_deg)
@@ -378,7 +400,9 @@ def detect_seams(
     verts = mesh.vertices
     segments: list[dict] = []
 
-    for a_ang, (vi, vj), is_convex in zip(angles, edges, convex):
+    for a_ang, (vi, vj), is_convex, (f0, f1) in zip(
+        angles, edges, convex, face_pairs
+    ):
         if abs(a_ang - target) > tol:
             continue
         if is_convex:  # fillet welds sit in concave corners
@@ -387,13 +411,24 @@ def detect_seams(
         length = float(np.linalg.norm(p1 - p0))
         if length < min_length:
             continue
+
+        n1 = _normalize(np.asarray(normals[f0], dtype=float))
+        n2 = _normalize(np.asarray(normals[f1], dtype=float))
+        bis = _normalize(n1 + n2)
+        if float(np.linalg.norm(bis)) < 1e-9:
+            bis = np.array([0.0, 0.0, 1.0])
+
         segments.append(
             {
-                "start": [float(p0[0]), float(p0[1]), float(p0[2])],
-                "end": [float(p1[0]), float(p1[1]), float(p1[2])],
+                "start": _tolist3(p0),
+                "end": _tolist3(p1),
                 "length": length,
                 "dihedral_deg": float(math.degrees(a_ang)),
                 "type": "line",
+                "n1": _tolist3(n1),
+                "n2": _tolist3(n2),
+                "bisector": _tolist3(bis),
+                "face_indices": [int(f0), int(f1)],
             }
         )
 
@@ -415,6 +450,8 @@ def detect_seams(
         "note": (
             "Heuristic result from tessellated geometry. Confirm visually and "
             "against the B-Rep before generating a weld path. "
+            "bisector = normalize(n1+n2) points out of the fillet; torch wire "
+            "aims along −bisector with an optional travel (push/pull) tilt. "
             "type=arc seams (constant radius) map to INFORM MOVC (≥3 points), "
             "as in production 12.JBI / 123.JBI pipe welds."
         ),

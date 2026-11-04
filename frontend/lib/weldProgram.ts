@@ -119,6 +119,84 @@ export const TOUCH_SENSE = {
   referenceJob: "123123.JBI",
 };
 
+// ---------------------------------------------------------------------------
+// TOOL 0 — single frontend source of truth (DX200 dump TOOL.CND / ///TOOL 0)
+// Must match backend/app/robot_config.py exactly.
+// ---------------------------------------------------------------------------
+
+/** Motoman tcp_0 translation relative to Motoman tool0 (mm). */
+export const TOOL0_XYZ_MM: readonly [number, number, number] = [
+  -54.280, 1.052, 415.702,
+];
+/** Motoman tcp_0 RPY (Rx, Ry, Rz) degrees in tool0. */
+export const TOOL0_RPY_DEG: readonly [number, number, number] = [
+  1.3119, -42.6215, -6.8387,
+];
+export const TOOL0_XYZ_M: readonly [number, number, number] = [
+  TOOL0_XYZ_MM[0] / 1000,
+  TOOL0_XYZ_MM[1] / 1000,
+  TOOL0_XYZ_MM[2] / 1000,
+];
+/** Euclidean tool0 → tcp_0 length (mm) ≈ 419.232. */
+export const TOOL0_LENGTH_MM = Math.hypot(...TOOL0_XYZ_MM);
+export const TOOL0_LENGTH_M = TOOL0_LENGTH_MM / 1000;
+
+/**
+ * Flange (REP-103) → Motoman tool0 rotation matrix (row-major 3×3).
+ * Columns = tool0 basis in flange — same as backend FLANGE_TO_TOOL0_R.
+ */
+export const FLANGE_TO_TOOL0_R: readonly (readonly [number, number, number])[] = [
+  [0, 0, 1],
+  [0, -1, 0],
+  [1, 0, 0],
+];
+
+/** Motoman TOOL RPY Euler order (matches kinematics_engine tool_file_se3). */
+export const TOOL_RPY_ORDER = "ZYX" as const;
+
+/**
+ * Production home C00000 pulses (DEFRO / cell jobs).
+ * Deg ≈ S=-0.21, L=-53.03, U=-52.87, R=+3.65, B=-81.80, T=-4.26.
+ */
+export const CELL_HOME_PULSES: readonly [
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+] = [-281, -101163, -84214, 3730, -80188, -1936];
+
+/** MA2010 pulses/deg (RC1G softlimits) — same as backend pulse_config. */
+export const MA2010_PULSES_PER_DEGREE: readonly [
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+] = [
+  1341.3833333333334,
+  1907.6768049155146,
+  1592.8945494186046,
+  1022.8666666666667,
+  980.2444444444444,
+  454.75714285714287,
+];
+
+export function cellHomeDeg(): [
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+] {
+  return CELL_HOME_PULSES.map(
+    (p, i) => p / MA2010_PULSES_PER_DEGREE[i],
+  ) as [number, number, number, number, number, number];
+}
+
 // Mount point on work-station 1's positioner faceplate (world coords, metres).
 export const DEMO_MOUNT: Vec3 = [1.6, 0.98, -1.2];
 /** Hard demo (90° fillet + pipe) on station 2 — forces rail travel to +Z. */
@@ -271,6 +349,7 @@ export function buildDemoProgram(mount: Vec3 = DEMO_MOUNT, condition = 1): WeldP
     ]);
   }
 
+  // Fillet approach: tcp_0 +Z into the T-joint (−bisector of floor/wall normals).
   const torchDir = norm([0, -1, -1]);
   const torchFrames = seam.map((pos) => ({ pos, dir: torchDir }));
 

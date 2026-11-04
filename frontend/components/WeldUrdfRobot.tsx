@@ -12,7 +12,7 @@ import {
   DEFAULT_TORCH_CALIBRATION,
   flangeToTool0Quaternion,
   tcpMetres,
-  tcpRpyRad,
+  tool0ToTcp0Quaternion,
   type TorchCalibration,
 } from "@/lib/tool0";
 
@@ -54,8 +54,8 @@ type URDFRobotLike = URDFRobot & {
  *   world → base → flange (REP-103, X+ out) → tool0 (Yaskawa Z+ out)
  *     → tcp_0 (TOOL.CND in tool0)
  *
- * Torch mesh and `tcp_0` live in Motoman `tool0`; approach (+Z) leaves the
- * flange face straight out of the 6th-axis disc.
+ * Torch mesh and `tcp_0` live in Motoman `tool0`. Wire approach is `tcp_0`
+ * +Z (= TOOL.CND RPY applied to tool0 +Z), not raw flange +X / tool0 +Z.
  */
 export default function WeldUrdfRobot({
   url,
@@ -224,8 +224,16 @@ export default function WeldUrdfRobot({
     [torchCalib],
   );
 
-  const [tcpRx, tcpRy, tcpRz] = tcpRpyRad(torchCalib);
   const tcpPos = tcpMetres(torchCalib);
+  const tcpQuat = useMemo(
+    () =>
+      tool0ToTcp0Quaternion([
+        torchCalib.tcpRxDeg,
+        torchCalib.tcpRyDeg,
+        torchCalib.tcpRzDeg,
+      ]),
+    [torchCalib.tcpRxDeg, torchCalib.tcpRyDeg, torchCalib.tcpRzDeg],
+  );
 
   const target = useRef(new THREE.Vector3()).current;
   const desiredDir = useRef(new THREE.Vector3()).current;
@@ -249,14 +257,13 @@ export default function WeldUrdfRobot({
   }
 
   function readToolDir(out: THREE.Vector3) {
-    // Motoman tool0 +Z (out of flange). Ignore TOOL 0 RPY in CCD — that only
-    // tilts the wire for mesh/export; using it here made the arm dive.
-    const t0 = tool0Ref.current;
-    if (!t0) {
+    // tcp_0 +Z = wire stick-out / fillet approach (TOOL.CND RPY in tool0).
+    const tcp = tcpRef.current;
+    if (!tcp) {
       out.set(0, -1, 0);
       return out;
     }
-    t0.getWorldQuaternion(qWorld);
+    tcp.getWorldQuaternion(qWorld);
     return out.set(0, 0, 1).applyQuaternion(qWorld).normalize();
   }
 
@@ -372,7 +379,7 @@ export default function WeldUrdfRobot({
             tcpRef.current = node;
           }}
           position={tcpPos}
-          rotation={[tcpRx, tcpRy, tcpRz]}
+          quaternion={tcpQuat}
           name="tcp_0"
         />
       </group>,

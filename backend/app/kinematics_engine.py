@@ -23,7 +23,9 @@ from spatialmath import SE3
 from .robot_config import (
     ACTIVE_MODEL,
     AXIS_NAMES,
+    FLANGE_TO_TOOL0_R,
     TOOL0_RPY_DEG,
+    TOOL0_XYZ_M,
     TOOL0_XYZ_MM,
     RobotModel,
 )
@@ -48,37 +50,23 @@ def get_robot() -> rtb.DHRobot:
 
 
 def flange_to_tool0_se3() -> SE3:
-    """Static ROS-Industrial ``flange → tool0`` (Motoman / MotoROS2).
+    """Static ``T_flange_to_tool0`` — identical to frontend ``flangeToTool0*``.
 
-    Matches AR2010 URDF ``flange-tool0`` (columns = tool0 basis in flange):
-
-    * Motoman +Z (out of flange) = flange +X (REP-103 forward)
-    * Motoman +X = flange +Z (up)
-    * Motoman +Y = flange −Y
+    Motoman +Z (out) = flange +X; Motoman +X = flange +Z; Motoman +Y = flange −Y.
     """
-    # Explicit matrix — avoids Euler-order ambiguity across libraries.
-    return SE3(
-        np.array(
-            [
-                [0.0, 0.0, 1.0, 0.0],
-                [0.0, -1.0, 0.0, 0.0],
-                [1.0, 0.0, 0.0, 0.0],
-                [0.0, 0.0, 0.0, 1.0],
-            ],
-            dtype=float,
-        )
-    )
+    R = np.array(FLANGE_TO_TOOL0_R, dtype=float)
+    T = np.eye(4)
+    T[:3, :3] = R
+    return SE3(T)
 
 
 def tool_file_se3() -> SE3:
-    """Yaskawa Tool No. 0 from ``TOOL.CND``, expressed in Motoman ``tool0``.
+    """``T_tool0_to_tcp0`` from ``TOOL.CND`` (metres + Motoman Rx,Ry,Rz).
 
-    Translation metres; RPY degrees as Motoman Rx,Ry,Rz. Order matches the
-    frontend ``TOOL_RPY_ORDER = ZYX`` (Three.js Euler → R = Rx·Ry·Rz ≡
-    spatialmath ``order='xyz'``).
+    Order matches frontend ``TOOL_RPY_ORDER = ZYX``
+    (Three.js Euler → R = Rx·Ry·Rz ≡ spatialmath ``order='xyz'``).
     """
-    xyz_m = [v / 1000.0 for v in TOOL0_XYZ_MM]
-    return SE3(xyz_m[0], xyz_m[1], xyz_m[2]) * SE3.RPY(
+    return SE3(*TOOL0_XYZ_M) * SE3.RPY(
         list(TOOL0_RPY_DEG), unit="deg", order="xyz"
     )
 
