@@ -57,6 +57,19 @@ const pl: Dict = {
   "left.welds": "Spoiny",
   "left.program": "Program",
 
+  // Mobile bottom navigation
+  "mobile.scene": "Scena 3D",
+  "mobile.cad": "CAD i Spoiny",
+  "mobile.robot": "Robot i Jog",
+  "mobile.jbi": "Kod .JBI",
+  "mobile.jbiEmpty": "Brak programu — załaduj demo lub zaimportuj CAD.",
+  "mobile.jbiDownload": "Pobierz .JBI",
+  "mobile.argf": "Motoweld ARGF",
+  "mobile.wev": "WEV# (weave)",
+  "mobile.stStation": "Stacja ST{n}",
+  "mobile.railBs1": "Tor BS1",
+  "arcnc.jbi": "7. Kod .JBI",
+
   // Workspace
   "workspace.cell": "Komórka",
   "workspace.robot": "Robot",
@@ -96,7 +109,6 @@ const pl: Dict = {
   "jbi.ikStatus": "IK / PULSE",
   "jbi.ikOk": "Wszystkie punkty z IK → PULSE",
   "jbi.ikMissing": "Brak pełnego IK — eksport RECTAN",
-  "arcnc.jbi": "7. .JBI",
   "status.ikReady": "IK OK ({n} punktów) · spoina {mm} mm — Odtwórz napędza URDF.",
   "robot.statusIkPath": "Ścieżka IK (S…T z /api/calculate-ik)",
   "robot.statusIkPartial": "IK częściowe — CCD fallback",
@@ -234,6 +246,19 @@ const en: Dict = {
   "left.welds": "Welds",
   "left.program": "Program",
 
+  // Mobile bottom navigation
+  "mobile.scene": "3D Scene",
+  "mobile.cad": "CAD & Welds",
+  "mobile.robot": "Robot & Jog",
+  "mobile.jbi": ".JBI Code",
+  "mobile.jbiEmpty": "No program — load demo or import CAD.",
+  "mobile.jbiDownload": "Download .JBI",
+  "mobile.argf": "Motoweld ARGF",
+  "mobile.wev": "WEV# (weave)",
+  "mobile.stStation": "Station ST{n}",
+  "mobile.railBs1": "Track BS1",
+  "arcnc.jbi": "7. .JBI Code",
+
   "workspace.cell": "Cell",
   "workspace.robot": "Robot",
   "workspace.rail": "Rail travel",
@@ -270,7 +295,6 @@ const en: Dict = {
   "jbi.ikStatus": "IK / PULSE",
   "jbi.ikOk": "All points from IK → PULSE",
   "jbi.ikMissing": "No full IK — RECTAN export",
-  "arcnc.jbi": "7. .JBI",
   "status.ikReady": "IK OK ({n} points) · weld {mm} mm — Play drives the URDF.",
   "robot.statusIkPath": "IK path (S…T from /api/calculate-ik)",
   "robot.statusIkPartial": "Partial IK — CCD fallback",

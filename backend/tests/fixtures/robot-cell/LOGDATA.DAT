@@ -1,0 +1,5539 @@
+//LOGDATA
+///INDEX 1
+DATA              :2026/09/15 09:47:25
+ZDARZENIE         :ZAK. ZAPISU PLIKU
+LOGIN             :
+NAZWA PLIKU       :TRQDAT.DAT
+
+///INDEX 2
+DATA              :2026/09/15 09:47:25
+ZDARZENIE         :ZAK. ZAPISU PLIKU
+LOGIN             :
+NAZWA PLIKU       :IPNETCFG.DAT
+
+///INDEX 3
+DATA              :2026/09/15 09:47:25
+ZDARZENIE         :ZAK. ZAPISU PLIKU
+LOGIN             :
+NAZWA PLIKU       :EIOALLOC.DAT
+
+///INDEX 4
+DATA              :2026/09/15 09:47:24
+ZDARZENIE         :ZAK. ZAPISU PLIKU
+LOGIN             :
+NAZWA PLIKU       :IFPANEL.DAT
+
+///INDEX 5
+DATA              :2026/09/15 09:47:24
+ZDARZENIE         :ZAK. ZAPISU PLIKU
+LOGIN             :
+NAZWA PLIKU       :IOAXIS.DAT
+
+///INDEX 6
+DATA              :2026/09/15 09:47:24
+ZDARZENIE         :ZAK. ZAPISU PLIKU
+LOGIN             :
+NAZWA PLIKU       :MACRO.DAT
+
+///INDEX 7
+DATA              :2026/09/15 09:47:23
+ZDARZENIE         :ZAK. ZAPISU PLIKU
+LOGIN             :
+NAZWA PLIKU       :KEYALLOC.DAT
+
+///INDEX 8
+DATA              :2026/09/15 09:47:22
+ZDARZENIE         :ZAK. ZAPISU PLIKU
+LOGIN             :
+NAZWA PLIKU       :IOMSGHST.DAT
+
+///INDEX 9
+DATA              :2026/09/15 09:47:21
+ZDARZENIE         :ZAK. ZAPISU PLIKU
+LOGIN             :
+NAZWA PLIKU       :RBCALIB.DAT
+
+///INDEX 10
+DATA              :2026/09/15 09:47:21
+ZDARZENIE         :ZAK. ZAPISU PLIKU
+LOGIN             :
+NAZWA PLIKU       :OPEORG.DAT
+
+///INDEX 11
+DATA              :2026/09/15 09:47:21
+ZDARZENIE         :ZAK. ZAPISU PLIKU
+LOGIN             :
+NAZWA PLIKU       :PANELBOX.LOG
+
+///INDEX 12
+DATA              :2026/09/15 09:47:20
+ZDARZENIE         :ZAK. ZAPISU PLIKU
+LOGIN             :
+NAZWA PLIKU       :SYSTEM.SYS
+
+///INDEX 13
+DATA              :2026/09/15 09:47:20
+ZDARZENIE         :ZAK. ZAPISU PLIKU
+LOGIN             :
+NAZWA PLIKU       :ABSO.DAT
+
+///INDEX 14
+DATA              :2026/09/15 09:47:20
+ZDARZENIE         :ZAK. ZAPISU PLIKU
+LOGIN             :
+NAZWA PLIKU       :ALMHIST.DAT
+
+///INDEX 15
+DATA              :2026/09/15 09:47:18
+ZDARZENIE         :ZAK. ZAPISU PLIKU
+LOGIN             :
+NAZWA PLIKU       :HOME2.DAT
+
+///INDEX 16
+DATA              :2026/09/15 09:47:18
+ZDARZENIE         :ZAK. ZAPISU PLIKU
+LOGIN             :
+NAZWA PLIKU       :VARNAME.DAT
+
+///INDEX 17
+DATA              :2026/09/15 09:47:17
+ZDARZENIE         :ZAK. ZAPISU PLIKU
+LOGIN             :
+NAZWA PLIKU       :SVMON.DAT
+
+///INDEX 18
+DATA              :2026/09/15 09:47:16
+ZDARZENIE         :ZAK. ZAPISU PLIKU
+LOGIN             :
+NAZWA PLIKU       :UWORD.DAT
+
+///INDEX 19
+DATA              :2026/09/15 09:46:51
+ZDARZENIE         :TRYB ODTW.
+LOGIN             :
+
+///INDEX 20
+DATA              :2026/09/15 09:45:44
+ZDARZENIE         :TRYB PROGR.
+LOGIN             :
+
+///INDEX 21
+DATA              :2026/09/15 09:45:43
+ZDARZENIE         :TRYB ZDALNY
+LOGIN             :
+
+///INDEX 22
+DATA              :2026/09/15 09:40:45
+ZDARZENIE         :EDYCJA PARAMETRU
+LOGIN             :
+RODZ. PARAMETRU   :RS
+NUMER PARAMETRU   :3
+PRZED EDYCJA      :6
+PO EDYCJI         :9
+
+///INDEX 23
+DATA              :2026/09/15 09:39:53
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 24
+DATA              :2026/09/15 09:35:27
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 25
+DATA              :2026/09/15 09:31:41
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 26
+DATA              :2026/09/15 09:31:39
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 27
+DATA              :2026/09/15 09:27:13
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 28
+DATA              :2026/09/15 09:13:00
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 29
+DATA              :2026/09/15 09:12:55
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 30
+DATA              :2026/09/15 09:08:28
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 31
+DATA              :2026/09/15 09:03:07
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 32
+DATA              :2026/09/15 09:00:30
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 33
+DATA              :2026/09/15 08:56:04
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 34
+DATA              :2026/09/15 08:43:00
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 35
+DATA              :2026/09/15 08:42:58
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 36
+DATA              :2026/09/15 08:39:39
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0066
+
+///INDEX 37
+DATA              :2026/09/15 08:38:31
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 38
+DATA              :2026/09/15 08:38:31
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0066
+WSPӣCZYNNIK KROKU:SERVO WYL
+SZCZ. WSP1        :BARIERKI OCHR.
+
+///INDEX 39
+DATA              :2026/09/15 08:37:23
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 40
+DATA              :2026/09/15 08:32:54
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 41
+DATA              :2026/09/15 08:31:45
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 42
+DATA              :2026/09/15 08:30:08
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0168
+
+///INDEX 43
+DATA              :2026/09/15 08:30:00
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 44
+DATA              :2026/09/15 08:30:00
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0168
+WSPӣCZYNNIK KROKU:SERVO WYL
+SZCZ. WSP1        :KOLEJKA ZATRZ ALARMU
+SZCZ. WSP2        :BARIERKI OCHR.
+
+///INDEX 45
+DATA              :2026/09/15 08:29:49
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0165
+
+///INDEX 46
+DATA              :2026/09/15 08:17:13
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 47
+DATA              :2026/09/15 08:14:41
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 48
+DATA              :2026/09/15 08:13:13
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0165
+WSPӣCZYNNIK KROKU:SERVO WYL
+SZCZ. WSP1        :KOLEJKA ZATRZ ALARMU
+
+///INDEX 49
+DATA              :2026/09/15 08:10:31
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 50
+DATA              :2026/09/15 08:05:45
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 51
+DATA              :2026/09/15 07:36:20
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 52
+DATA              :2026/09/15 07:31:53
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 53
+DATA              :2026/09/15 07:27:19
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 54
+DATA              :2026/09/15 07:25:04
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 55
+DATA              :2026/09/15 07:20:37
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 56
+DATA              :2026/09/15 07:15:46
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 57
+DATA              :2026/09/15 07:15:45
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 58
+DATA              :2026/09/15 07:11:17
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 59
+DATA              :2026/09/15 07:05:11
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 60
+DATA              :2026/09/15 07:05:09
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 61
+DATA              :2026/09/15 07:00:42
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 62
+DATA              :2026/09/15 06:53:12
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 63
+DATA              :2026/09/15 06:52:58
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 64
+DATA              :2026/09/15 06:48:32
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 65
+DATA              :2026/09/15 06:42:58
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 66
+DATA              :2026/09/15 06:42:56
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 67
+DATA              :2026/09/15 06:38:29
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 68
+DATA              :2026/09/15 06:30:34
+ZDARZENIE         :TRYB ODTW.
+LOGIN             :
+
+///INDEX 69
+DATA              :2026/09/15 06:30:30
+ZDARZENIE         :TRYB PROGR.
+LOGIN             :
+
+///INDEX 70
+DATA              :2026/09/15 06:26:15
+ZDARZENIE         :TRYB ODTW.
+LOGIN             :
+
+///INDEX 71
+DATA              :2026/09/15 06:25:22
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 72
+DATA              :2026/09/15 06:25:22
+ZDARZENIE         :ZASIL. WL
+LOGIN             :
+
+///INDEX 73
+DATA              :2026/09/14 22:39:26
+ZDARZENIE         :ZASIL. WYL.
+LOGIN             :
+
+///INDEX 74
+DATA              :2026/09/14 22:20:17
+ZDARZENIE         :EDYCJA INNEGO PLIKU
+LOGIN             :
+NAZWA PLIKU       :
+NUMER ELEMENTU    :1-3-0
+PRZED EDYCJA      :1
+PO EDYCJI         :0
+
+///INDEX 75
+DATA              :2026/09/14 22:20:12
+ZDARZENIE         :EDYCJA INNEGO PLIKU
+LOGIN             :
+NAZWA PLIKU       :
+NUMER ELEMENTU    :1-3-0
+PRZED EDYCJA      :0
+PO EDYCJI         :1
+
+///INDEX 76
+DATA              :2026/09/14 22:00:11
+ZDARZENIE         :EDYCJA PARAMETRU
+LOGIN             :
+RODZ. PARAMETRU   :RS
+NUMER PARAMETRU   :3
+PRZED EDYCJA      :9
+PO EDYCJI         :6
+
+///INDEX 77
+DATA              :2026/09/14 21:46:05
+ZDARZENIE         :EDYCJA PARAMETRU
+LOGIN             :
+RODZ. PARAMETRU   :RS
+NUMER PARAMETRU   :3
+PRZED EDYCJA      :7
+PO EDYCJI         :9
+
+///INDEX 78
+DATA              :2026/09/14 21:45:55
+ZDARZENIE         :EDYCJA PARAMETRU
+LOGIN             :
+RODZ. PARAMETRU   :RS
+NUMER PARAMETRU   :3
+PRZED EDYCJA      :9
+PO EDYCJI         :7
+
+///INDEX 79
+DATA              :2026/09/14 21:45:41
+ZDARZENIE         :EDYCJA PARAMETRU
+LOGIN             :
+RODZ. PARAMETRU   :RS
+NUMER PARAMETRU   :3
+PRZED EDYCJA      :8
+PO EDYCJI         :9
+
+///INDEX 80
+DATA              :2026/09/14 21:43:27
+ZDARZENIE         :EDYCJA PARAMETRU
+LOGIN             :
+RODZ. PARAMETRU   :RS
+NUMER PARAMETRU   :3
+PRZED EDYCJA      :7
+PO EDYCJI         :8
+
+///INDEX 81
+DATA              :2026/09/14 21:43:08
+ZDARZENIE         :EDYCJA PARAMETRU
+LOGIN             :
+RODZ. PARAMETRU   :RS
+NUMER PARAMETRU   :3
+PRZED EDYCJA      :8
+PO EDYCJI         :7
+
+///INDEX 82
+DATA              :2026/09/14 21:42:43
+ZDARZENIE         :EDYCJA PARAMETRU
+LOGIN             :
+RODZ. PARAMETRU   :RS
+NUMER PARAMETRU   :3
+PRZED EDYCJA      :7
+PO EDYCJI         :8
+
+///INDEX 83
+DATA              :2026/09/14 21:42:13
+ZDARZENIE         :EDYCJA PARAMETRU
+LOGIN             :
+RODZ. PARAMETRU   :RS
+NUMER PARAMETRU   :3
+PRZED EDYCJA      :9
+PO EDYCJI         :7
+
+///INDEX 84
+DATA              :2026/09/14 21:42:09
+ZDARZENIE         :EDYCJA PARAMETRU
+LOGIN             :
+RODZ. PARAMETRU   :RS
+NUMER PARAMETRU   :3
+PRZED EDYCJA      :8
+PO EDYCJI         :9
+
+///INDEX 85
+DATA              :2026/09/14 21:42:00
+ZDARZENIE         :EDYCJA PARAMETRU
+LOGIN             :
+RODZ. PARAMETRU   :RS
+NUMER PARAMETRU   :3
+PRZED EDYCJA      :7
+PO EDYCJI         :8
+
+///INDEX 86
+DATA              :2026/09/14 21:41:57
+ZDARZENIE         :EDYCJA PARAMETRU
+LOGIN             :
+RODZ. PARAMETRU   :RS
+NUMER PARAMETRU   :3
+PRZED EDYCJA      :8
+PO EDYCJI         :7
+
+///INDEX 87
+DATA              :2026/09/14 21:41:46
+ZDARZENIE         :TRYB PROGR.
+LOGIN             :
+
+///INDEX 88
+DATA              :2026/09/14 21:41:44
+ZDARZENIE         :TRYB ZDALNY
+LOGIN             :
+
+///INDEX 89
+DATA              :2026/09/14 21:41:44
+ZDARZENIE         :TRYB ODTW.
+LOGIN             :
+
+///INDEX 90
+DATA              :2026/09/14 21:41:36
+ZDARZENIE         :TWORZ. ZAD.
+LOGIN             :
+NAZWA ZADANIA     :-DEFRO-70-PRZYLACZE-70-KOPIA-
+
+///INDEX 91
+DATA              :2026/09/14 21:40:11
+ZDARZENIE         :WYBIERZ ZADANIE
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :-DEFRO-70-PRZYLACZE-70-KOPIA
+
+///INDEX 92
+DATA              :2026/09/14 21:40:02
+ZDARZENIE         :EDYCJA PARAMETRU
+LOGIN             :
+RODZ. PARAMETRU   :RS
+NUMER PARAMETRU   :3
+PRZED EDYCJA      :7
+PO EDYCJI         :8
+
+///INDEX 93
+DATA              :2026/09/14 21:40:00
+ZDARZENIE         :EDYCJA PARAMETRU
+LOGIN             :
+RODZ. PARAMETRU   :RS
+NUMER PARAMETRU   :3
+PRZED EDYCJA      :9
+PO EDYCJI         :7
+
+///INDEX 94
+DATA              :2026/09/14 21:39:56
+ZDARZENIE         :EDYCJA PARAMETRU
+LOGIN             :
+RODZ. PARAMETRU   :RS
+NUMER PARAMETRU   :3
+PRZED EDYCJA      :7
+PO EDYCJI         :9
+
+///INDEX 95
+DATA              :2026/09/14 21:39:39
+ZDARZENIE         :EDYCJA PARAMETRU
+LOGIN             :
+RODZ. PARAMETRU   :RS
+NUMER PARAMETRU   :3
+PRZED EDYCJA      :8
+PO EDYCJI         :7
+
+///INDEX 96
+DATA              :2026/09/14 21:39:37
+ZDARZENIE         :EDYCJA PARAMETRU
+LOGIN             :
+RODZ. PARAMETRU   :RS
+NUMER PARAMETRU   :3
+PRZED EDYCJA      :7
+PO EDYCJI         :8
+
+///INDEX 97
+DATA              :2026/09/14 21:39:35
+ZDARZENIE         :EDYCJA PARAMETRU
+LOGIN             :
+RODZ. PARAMETRU   :RS
+NUMER PARAMETRU   :3
+PRZED EDYCJA      :5
+PO EDYCJI         :7
+
+///INDEX 98
+DATA              :2026/09/14 21:39:32
+ZDARZENIE         :EDYCJA PARAMETRU
+LOGIN             :
+RODZ. PARAMETRU   :RS
+NUMER PARAMETRU   :3
+PRZED EDYCJA      :9
+PO EDYCJI         :5
+
+///INDEX 99
+DATA              :2026/09/14 21:39:30
+ZDARZENIE         :EDYCJA PARAMETRU
+LOGIN             :
+RODZ. PARAMETRU   :RS
+NUMER PARAMETRU   :3
+PRZED EDYCJA      :3
+PO EDYCJI         :9
+
+///INDEX 100
+DATA              :2026/09/14 21:39:28
+ZDARZENIE         :EDYCJA PARAMETRU
+LOGIN             :
+RODZ. PARAMETRU   :RS
+NUMER PARAMETRU   :3
+PRZED EDYCJA      :6
+PO EDYCJI         :3
+
+///INDEX 101
+DATA              :2026/09/14 21:39:25
+ZDARZENIE         :EDYCJA PARAMETRU
+LOGIN             :
+RODZ. PARAMETRU   :RS
+NUMER PARAMETRU   :3
+PRZED EDYCJA      :7
+PO EDYCJI         :6
+
+///INDEX 102
+DATA              :2026/09/14 21:39:22
+ZDARZENIE         :EDYCJA PARAMETRU
+LOGIN             :
+RODZ. PARAMETRU   :RS
+NUMER PARAMETRU   :3
+PRZED EDYCJA      :8
+PO EDYCJI         :7
+
+///INDEX 103
+DATA              :2026/09/14 21:39:17
+ZDARZENIE         :EDYCJA PARAMETRU
+LOGIN             :
+RODZ. PARAMETRU   :RS
+NUMER PARAMETRU   :3
+PRZED EDYCJA      :7
+PO EDYCJI         :8
+
+///INDEX 104
+DATA              :2026/09/14 21:39:14
+ZDARZENIE         :EDYCJA PARAMETRU
+LOGIN             :
+RODZ. PARAMETRU   :RS
+NUMER PARAMETRU   :3
+PRZED EDYCJA      :9
+PO EDYCJI         :7
+
+///INDEX 105
+DATA              :2026/09/14 21:38:40
+ZDARZENIE         :EDYCJA PARAMETRU
+LOGIN             :
+RODZ. PARAMETRU   :RS
+NUMER PARAMETRU   :3
+PRZED EDYCJA      :7
+PO EDYCJI         :9
+
+///INDEX 106
+DATA              :2026/09/14 21:38:35
+ZDARZENIE         :EDYCJA PARAMETRU
+LOGIN             :
+RODZ. PARAMETRU   :RS
+NUMER PARAMETRU   :3
+PRZED EDYCJA      :8
+PO EDYCJI         :7
+
+///INDEX 107
+DATA              :2026/09/14 21:38:06
+ZDARZENIE         :TRYB PROGR.
+LOGIN             :
+
+///INDEX 108
+DATA              :2026/09/14 21:38:04
+ZDARZENIE         :TRYB ZDALNY
+LOGIN             :
+
+///INDEX 109
+DATA              :2026/09/14 21:38:03
+ZDARZENIE         :TRYB ODTW.
+LOGIN             :
+
+///INDEX 110
+DATA              :2026/09/14 21:37:44
+ZDARZENIE         :EDYCJA PARAMETRU
+LOGIN             :
+RODZ. PARAMETRU   :RS
+NUMER PARAMETRU   :3
+PRZED EDYCJA      :7
+PO EDYCJI         :8
+
+///INDEX 111
+DATA              :2026/09/14 21:37:41
+ZDARZENIE         :EDYCJA PARAMETRU
+LOGIN             :
+RODZ. PARAMETRU   :RS
+NUMER PARAMETRU   :3
+PRZED EDYCJA      :6
+PO EDYCJI         :7
+
+///INDEX 112
+DATA              :2026/09/14 21:37:38
+ZDARZENIE         :EDYCJA PARAMETRU
+LOGIN             :
+RODZ. PARAMETRU   :RS
+NUMER PARAMETRU   :3
+PRZED EDYCJA      :3
+PO EDYCJI         :6
+
+///INDEX 113
+DATA              :2026/09/14 21:37:36
+ZDARZENIE         :EDYCJA PARAMETRU
+LOGIN             :
+RODZ. PARAMETRU   :RS
+NUMER PARAMETRU   :3
+PRZED EDYCJA      :9
+PO EDYCJI         :3
+
+///INDEX 114
+DATA              :2026/09/14 21:37:30
+ZDARZENIE         :TRYB PROGR.
+LOGIN             :
+
+///INDEX 115
+DATA              :2026/09/14 21:37:24
+ZDARZENIE         :EDYCJA PARAMETRU
+LOGIN             :
+RODZ. PARAMETRU   :RS
+NUMER PARAMETRU   :3
+PRZED EDYCJA      :5
+PO EDYCJI         :9
+
+///INDEX 116
+DATA              :2026/09/14 21:36:37
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 117
+DATA              :2026/09/14 21:36:36
+ZDARZENIE         :TRYB ZDALNY
+LOGIN             :
+
+///INDEX 118
+DATA              :2026/09/14 21:36:36
+ZDARZENIE         :ZASIL. WL
+LOGIN             :
+
+///INDEX 119
+DATA              :2026/09/14 21:35:32
+ZDARZENIE         :ZASIL. WYL.
+LOGIN             :
+
+///INDEX 120
+DATA              :2026/09/14 21:31:00
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 121
+DATA              :2026/09/14 21:30:59
+ZDARZENIE         :TRYB ZDALNY
+LOGIN             :
+
+///INDEX 122
+DATA              :2026/09/14 21:30:59
+ZDARZENIE         :ZASIL. WL
+LOGIN             :
+
+///INDEX 123
+DATA              :2026/09/14 21:29:48
+ZDARZENIE         :ZASIL. WYL.
+LOGIN             :
+
+///INDEX 124
+DATA              :2026/09/14 21:29:11
+ZDARZENIE         :EDYCJA PARAMETRU
+LOGIN             :
+RODZ. PARAMETRU   :RS
+NUMER PARAMETRU   :3
+PRZED EDYCJA      :9
+PO EDYCJI         :5
+
+///INDEX 125
+DATA              :2026/09/14 21:28:58
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 126
+DATA              :2026/09/14 21:28:58
+ZDARZENIE         :TRYB ZDALNY
+LOGIN             :
+
+///INDEX 127
+DATA              :2026/09/14 21:28:58
+ZDARZENIE         :ZASIL. WL
+LOGIN             :
+
+///INDEX 128
+DATA              :2026/09/14 21:27:49
+ZDARZENIE         :ZASIL. WYL.
+LOGIN             :
+
+///INDEX 129
+DATA              :2026/09/14 21:26:47
+ZDARZENIE         :EDYCJA PARAMETRU
+LOGIN             :
+RODZ. PARAMETRU   :RS
+NUMER PARAMETRU   :3
+PRZED EDYCJA      :8
+PO EDYCJI         :9
+
+///INDEX 130
+DATA              :2026/09/14 21:26:10
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 131
+DATA              :2026/09/14 21:26:10
+ZDARZENIE         :TRYB ZDALNY
+LOGIN             :
+
+///INDEX 132
+DATA              :2026/09/14 21:26:10
+ZDARZENIE         :ZASIL. WL
+LOGIN             :
+
+///INDEX 133
+DATA              :2026/09/14 21:25:03
+ZDARZENIE         :ZASIL. WYL.
+LOGIN             :
+
+///INDEX 134
+DATA              :2026/09/14 21:22:55
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 135
+DATA              :2026/09/14 21:22:55
+ZDARZENIE         :TRYB ZDALNY
+LOGIN             :
+
+///INDEX 136
+DATA              :2026/09/14 21:22:55
+ZDARZENIE         :ZASIL. WL
+LOGIN             :
+
+///INDEX 137
+DATA              :2026/09/14 21:21:43
+ZDARZENIE         :ZASIL. WYL.
+LOGIN             :
+
+///INDEX 138
+DATA              :2026/09/14 21:20:54
+ZDARZENIE         :EDYCJA PARAMETRU
+LOGIN             :
+RODZ. PARAMETRU   :RS
+NUMER PARAMETRU   :3
+PRZED EDYCJA      :9
+PO EDYCJI         :8
+
+///INDEX 139
+DATA              :2026/09/14 21:19:58
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 140
+DATA              :2026/09/14 21:19:58
+ZDARZENIE         :TRYB ZDALNY
+LOGIN             :
+
+///INDEX 141
+DATA              :2026/09/14 21:19:58
+ZDARZENIE         :ZASIL. WL
+LOGIN             :
+
+///INDEX 142
+DATA              :2026/09/14 21:18:32
+ZDARZENIE         :ZASIL. WYL.
+LOGIN             :
+
+///INDEX 143
+DATA              :2026/09/14 21:15:58
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 144
+DATA              :2026/09/14 21:15:57
+ZDARZENIE         :TRYB ZDALNY
+LOGIN             :
+
+///INDEX 145
+DATA              :2026/09/14 21:15:57
+ZDARZENIE         :ZASIL. WL
+LOGIN             :
+
+///INDEX 146
+DATA              :2026/09/14 21:14:07
+ZDARZENIE         :ZASIL. WYL.
+LOGIN             :
+
+///INDEX 147
+DATA              :2026/09/14 21:13:22
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 148
+DATA              :2026/09/14 21:13:22
+ZDARZENIE         :TRYB ZDALNY
+LOGIN             :
+
+///INDEX 149
+DATA              :2026/09/14 21:13:22
+ZDARZENIE         :ZASIL. WL
+LOGIN             :
+
+///INDEX 150
+DATA              :2026/09/14 21:12:15
+ZDARZENIE         :ZASIL. WYL.
+LOGIN             :
+
+///INDEX 151
+DATA              :2026/09/14 21:06:33
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 152
+DATA              :2026/09/14 21:06:33
+ZDARZENIE         :TRYB ZDALNY
+LOGIN             :
+
+///INDEX 153
+DATA              :2026/09/14 21:06:33
+ZDARZENIE         :ZASIL. WL
+LOGIN             :
+
+///INDEX 154
+DATA              :2026/09/14 21:05:25
+ZDARZENIE         :ZASIL. WYL.
+LOGIN             :
+
+///INDEX 155
+DATA              :2026/09/14 21:04:20
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 156
+DATA              :2026/09/14 21:04:20
+ZDARZENIE         :TRYB ZDALNY
+LOGIN             :
+
+///INDEX 157
+DATA              :2026/09/14 21:04:20
+ZDARZENIE         :ZASIL. WL
+LOGIN             :
+
+///INDEX 158
+DATA              :2026/09/14 21:03:13
+ZDARZENIE         :ZASIL. WYL.
+LOGIN             :
+
+///INDEX 159
+DATA              :2026/09/14 21:03:12
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 160
+DATA              :2026/09/14 20:57:12
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 161
+DATA              :2026/09/14 20:57:10
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 162
+DATA              :2026/09/14 20:57:09
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 163
+DATA              :2026/09/14 20:57:07
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 164
+DATA              :2026/09/14 20:56:57
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 165
+DATA              :2026/09/14 20:56:52
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 166
+DATA              :2026/09/14 20:56:48
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 167
+DATA              :2026/09/14 20:50:14
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 168
+DATA              :2026/09/14 20:50:14
+ZDARZENIE         :TRYB ZDALNY
+LOGIN             :
+
+///INDEX 169
+DATA              :2026/09/14 20:50:14
+ZDARZENIE         :ZASIL. WL
+LOGIN             :
+
+///INDEX 170
+DATA              :2026/09/14 20:49:00
+ZDARZENIE         :ZASIL. WYL.
+LOGIN             :
+
+///INDEX 171
+DATA              :2026/09/14 20:46:51
+ZDARZENIE         :TRYB ZDALNY
+LOGIN             :
+
+///INDEX 172
+DATA              :2026/09/14 19:57:33
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 173
+DATA              :2026/09/14 19:57:33
+ZDARZENIE         :ZASIL. WL
+LOGIN             :
+
+///INDEX 174
+DATA              :2026/09/14 19:55:59
+ZDARZENIE         :ZASIL. WYL.
+LOGIN             :
+
+///INDEX 175
+DATA              :2026/09/14 19:55:39
+ZDARZENIE         :TRYB ZDALNY
+LOGIN             :
+
+///INDEX 176
+DATA              :2026/09/14 19:55:18
+ZDARZENIE         :TRYB ODTW.
+LOGIN             :
+
+///INDEX 177
+DATA              :2026/09/14 19:55:05
+ZDARZENIE         :TRYB PROGR.
+LOGIN             :
+
+///INDEX 178
+DATA              :2026/09/14 19:48:10
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 179
+DATA              :2026/09/14 19:48:10
+ZDARZENIE         :ZASIL. WL
+LOGIN             :
+
+///INDEX 180
+DATA              :2026/09/14 13:35:53
+ZDARZENIE         :ZASIL. WYL.
+LOGIN             :
+
+///INDEX 181
+DATA              :2026/09/14 13:32:29
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 182
+DATA              :2026/09/14 13:32:28
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 183
+DATA              :2026/09/14 13:28:01
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 184
+DATA              :2026/09/14 13:20:54
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 185
+DATA              :2026/09/14 13:20:51
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 186
+DATA              :2026/09/14 13:16:23
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 187
+DATA              :2026/09/14 13:03:20
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 188
+DATA              :2026/09/14 13:01:07
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 189
+DATA              :2026/09/14 12:56:41
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 190
+DATA              :2026/09/14 12:52:35
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 191
+DATA              :2026/09/14 12:52:28
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 192
+DATA              :2026/09/14 12:48:01
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 193
+DATA              :2026/09/14 12:42:41
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 194
+DATA              :2026/09/14 12:41:21
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 195
+DATA              :2026/09/14 12:36:54
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 196
+DATA              :2026/09/14 12:31:59
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 197
+DATA              :2026/09/14 12:31:49
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 198
+DATA              :2026/09/14 12:31:20
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 199
+DATA              :2026/09/14 12:30:51
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 200
+DATA              :2026/09/14 12:29:42
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0182
+
+///INDEX 201
+DATA              :2026/09/14 12:29:16
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 202
+DATA              :2026/09/14 12:29:00
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0182
+WSPӣCZYNNIK KROKU:SERVO WYL
+SZCZ. WSP1        :G��WNY CPU ALARMU
+SZCZ. WSP2        :RDY0 WY�.
+
+///INDEX 203
+DATA              :2026/09/14 12:25:42
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 204
+DATA              :2026/09/14 12:19:20
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 205
+DATA              :2026/09/14 12:08:48
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 206
+DATA              :2026/09/14 12:04:22
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 207
+DATA              :2026/09/14 11:59:59
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 208
+DATA              :2026/09/14 11:59:57
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 209
+DATA              :2026/09/14 11:55:31
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 210
+DATA              :2026/09/14 11:50:59
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 211
+DATA              :2026/09/14 11:49:02
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 212
+DATA              :2026/09/14 11:44:36
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 213
+DATA              :2026/09/14 11:40:06
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 214
+DATA              :2026/09/14 11:40:04
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 215
+DATA              :2026/09/14 11:35:38
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 216
+DATA              :2026/09/14 11:31:48
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 217
+DATA              :2026/09/14 11:14:52
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 218
+DATA              :2026/09/14 11:10:26
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 219
+DATA              :2026/09/14 11:06:00
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 220
+DATA              :2026/09/14 11:05:59
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 221
+DATA              :2026/09/14 11:01:32
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 222
+DATA              :2026/09/14 10:53:40
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 223
+DATA              :2026/09/14 10:51:24
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 224
+DATA              :2026/09/14 10:46:57
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 225
+DATA              :2026/09/14 10:41:54
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 226
+DATA              :2026/09/14 10:41:53
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 227
+DATA              :2026/09/14 10:37:27
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 228
+DATA              :2026/09/14 10:32:23
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 229
+DATA              :2026/09/14 10:32:21
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 230
+DATA              :2026/09/14 10:27:54
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 231
+DATA              :2026/09/14 10:22:42
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 232
+DATA              :2026/09/14 10:22:36
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 233
+DATA              :2026/09/14 10:18:11
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 234
+DATA              :2026/09/14 10:14:37
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 235
+DATA              :2026/09/14 10:14:36
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 236
+DATA              :2026/09/14 10:10:10
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 237
+DATA              :2026/09/14 10:05:49
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 238
+DATA              :2026/09/14 10:05:46
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 239
+DATA              :2026/09/14 10:01:20
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 240
+DATA              :2026/09/14 09:56:15
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 241
+DATA              :2026/09/14 09:56:12
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 242
+DATA              :2026/09/14 09:55:42
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0206
+
+///INDEX 243
+DATA              :2026/09/14 09:55:23
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0206
+WSPӣCZYNNIK KROKU:SERVO WYL
+SZCZ. WSP1        :KOLEJKA ZATRZ ALARMU
+
+///INDEX 244
+DATA              :2026/09/14 09:51:24
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 245
+DATA              :2026/09/14 09:51:14
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 246
+DATA              :2026/09/14 09:51:09
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 247
+DATA              :2026/09/14 09:50:03
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 248
+DATA              :2026/09/14 09:50:01
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 249
+DATA              :2026/09/14 09:50:00
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 250
+DATA              :2026/09/14 09:45:14
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 251
+DATA              :2026/09/14 09:45:13
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 252
+DATA              :2026/09/14 09:40:45
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 253
+DATA              :2026/09/14 09:24:18
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 254
+DATA              :2026/09/14 09:24:17
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 255
+DATA              :2026/09/14 09:19:51
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 256
+DATA              :2026/09/14 09:13:18
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 257
+DATA              :2026/09/14 09:13:16
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 258
+DATA              :2026/09/14 09:08:51
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 259
+DATA              :2026/09/14 09:02:38
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 260
+DATA              :2026/09/14 09:02:36
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 261
+DATA              :2026/09/14 08:58:08
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 262
+DATA              :2026/09/14 08:45:37
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 263
+DATA              :2026/09/14 08:45:36
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 264
+DATA              :2026/09/14 08:44:27
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0181
+
+///INDEX 265
+DATA              :2026/09/14 08:44:08
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 266
+DATA              :2026/09/14 08:43:52
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0181
+WSPӣCZYNNIK KROKU:SERVO WYL
+SZCZ. WSP1        :G��WNY CPU ALARMU
+SZCZ. WSP2        :RDY0 WY�.
+
+///INDEX 267
+DATA              :2026/09/14 08:40:33
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 268
+DATA              :2026/09/14 08:34:46
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 269
+DATA              :2026/09/14 08:34:41
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 270
+DATA              :2026/09/14 08:34:00
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0199
+
+///INDEX 271
+DATA              :2026/09/14 08:33:53
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0199
+WSPӣCZYNNIK KROKU:SERVO WYL
+SZCZ. WSP1        :KOLEJKA ZATRZ ALARMU
+
+///INDEX 272
+DATA              :2026/09/14 08:30:04
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 273
+DATA              :2026/09/14 08:23:57
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 274
+DATA              :2026/09/14 08:23:55
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 275
+DATA              :2026/09/14 08:19:28
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 276
+DATA              :2026/09/14 08:14:34
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 277
+DATA              :2026/09/14 08:14:32
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 278
+DATA              :2026/09/14 08:12:39
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0157
+
+///INDEX 279
+DATA              :2026/09/14 08:12:27
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0157
+WSPӣCZYNNIK KROKU:SERVO WYL
+SZCZ. WSP1        :G��WNY CPU ALARMU
+SZCZ. WSP2        :RDY0 WY�.
+
+///INDEX 280
+DATA              :2026/09/14 08:09:54
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 281
+DATA              :2026/09/14 08:04:00
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 282
+DATA              :2026/09/14 08:03:58
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 283
+DATA              :2026/09/14 08:00:03
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0029
+
+///INDEX 284
+DATA              :2026/09/14 07:59:48
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 285
+DATA              :2026/09/14 07:59:33
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0029
+WSPӣCZYNNIK KROKU:SERVO WYL
+SZCZ. WSP1        :G��WNY CPU ALARMU
+SZCZ. WSP2        :STYCZN. LUB STO OFF2 SV#1
+
+///INDEX 286
+DATA              :2026/09/14 07:59:01
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 287
+DATA              :2026/09/14 07:53:59
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 288
+DATA              :2026/09/14 07:53:45
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 289
+DATA              :2026/09/14 07:49:49
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0029
+
+///INDEX 290
+DATA              :2026/09/14 07:49:19
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 291
+DATA              :2026/09/14 07:48:51
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0029
+WSPӣCZYNNIK KROKU:SERVO WYL
+SZCZ. WSP1        :G��WNY CPU ALARMU
+SZCZ. WSP2        :STYCZN. LUB STO OFF2 SV#1
+
+///INDEX 292
+DATA              :2026/09/14 07:48:19
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 293
+DATA              :2026/09/14 07:40:01
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 294
+DATA              :2026/09/14 07:39:55
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 295
+DATA              :2026/09/14 07:35:28
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 296
+DATA              :2026/09/14 07:06:02
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 297
+DATA              :2026/09/14 06:43:49
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 298
+DATA              :2026/09/14 06:39:23
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 299
+DATA              :2026/09/14 06:32:40
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 300
+DATA              :2026/09/14 06:32:40
+ZDARZENIE         :ZASIL. WL
+LOGIN             :
+
+///INDEX 301
+DATA              :2026/09/11 10:37:20
+ZDARZENIE         :ZASIL. WYL.
+LOGIN             :
+
+///INDEX 302
+DATA              :2026/09/11 10:36:11
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 303
+DATA              :2026/09/11 10:36:10
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 304
+DATA              :2026/09/11 10:31:43
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 305
+DATA              :2026/09/11 10:27:06
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 306
+DATA              :2026/09/11 10:27:01
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 307
+DATA              :2026/09/11 10:22:33
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 308
+DATA              :2026/09/11 09:35:51
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 309
+DATA              :2026/09/11 09:35:22
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 310
+DATA              :2026/09/11 09:34:41
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0199
+
+///INDEX 311
+DATA              :2026/09/11 09:34:38
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0199
+WSPӣCZYNNIK KROKU:SERVO WYL
+SZCZ. WSP1        :KOLEJKA ZATRZ ALARMU
+
+///INDEX 312
+DATA              :2026/09/11 09:34:34
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0199
+
+///INDEX 313
+DATA              :2026/09/11 09:34:22
+ZDARZENIE         :ZASIL. WL
+LOGIN             :
+
+///INDEX 314
+DATA              :2026/09/11 09:33:16
+ZDARZENIE         :ZASIL. WYL.
+LOGIN             :
+
+///INDEX 315
+DATA              :2026/09/11 09:32:38
+ZDARZENIE         :TRYB ZDALNY
+LOGIN             :
+
+///INDEX 316
+DATA              :2026/09/11 09:32:36
+ZDARZENIE         :TRYB ZDALNY
+LOGIN             :
+
+///INDEX 317
+DATA              :2026/09/11 09:32:36
+ZDARZENIE         :TRYB ODTW.
+LOGIN             :
+
+///INDEX 318
+DATA              :2026/09/11 09:32:24
+ZDARZENIE         :TRYB PROGR.
+LOGIN             :
+
+///INDEX 319
+DATA              :2026/09/11 09:30:20
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 320
+DATA              :2026/09/11 09:30:02
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 321
+DATA              :2026/09/11 09:28:49
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 322
+DATA              :2026/09/11 09:28:32
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0199
+WSPӣCZYNNIK KROKU:SERVO WYL
+SZCZ. WSP1        :KOLEJKA ZATRZ ALARMU
+
+///INDEX 323
+DATA              :2026/09/11 09:25:48
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0061
+
+///INDEX 324
+DATA              :2026/09/11 09:25:30
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 325
+DATA              :2026/09/11 09:25:30
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0061
+WSPӣCZYNNIK KROKU:SERVO WYL
+SZCZ. WSP1        :BARIERKI OCHR.
+
+///INDEX 326
+DATA              :2026/09/11 09:24:55
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0029
+
+///INDEX 327
+DATA              :2026/09/11 09:24:35
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 328
+DATA              :2026/09/11 09:23:57
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0029
+WSPӣCZYNNIK KROKU:SERVO WYL
+SZCZ. WSP1        :G��WNY CPU ALARMU
+SZCZ. WSP2        :STYCZN. LUB STO OFF2 SV#1
+
+///INDEX 329
+DATA              :2026/09/11 09:23:24
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 330
+DATA              :2026/09/11 09:18:37
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 331
+DATA              :2026/09/11 09:18:34
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 332
+DATA              :2026/09/11 09:14:06
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 333
+DATA              :2026/09/11 09:09:34
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 334
+DATA              :2026/09/11 09:09:32
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 335
+DATA              :2026/09/11 09:05:06
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 336
+DATA              :2026/09/11 08:59:38
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 337
+DATA              :2026/09/11 08:59:36
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 338
+DATA              :2026/09/11 08:55:10
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 339
+DATA              :2026/09/11 08:47:14
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 340
+DATA              :2026/09/11 08:43:15
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 341
+DATA              :2026/09/11 08:39:20
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0029
+
+///INDEX 342
+DATA              :2026/09/11 08:39:04
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 343
+DATA              :2026/09/11 08:38:29
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0029
+WSPӣCZYNNIK KROKU:SERVO WYL
+SZCZ. WSP1        :G��WNY CPU ALARMU
+SZCZ. WSP2        :STYCZN. LUB STO OFF2 SV#1
+
+///INDEX 344
+DATA              :2026/09/11 08:37:56
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 345
+DATA              :2026/09/11 08:29:39
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 346
+DATA              :2026/09/11 08:29:03
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 347
+DATA              :2026/09/11 08:24:36
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 348
+DATA              :2026/09/11 08:18:26
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 349
+DATA              :2026/09/11 08:18:15
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 350
+DATA              :2026/09/11 08:13:47
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 351
+DATA              :2026/09/11 08:08:49
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 352
+DATA              :2026/09/11 08:08:45
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 353
+DATA              :2026/09/11 08:04:19
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 354
+DATA              :2026/09/11 07:54:30
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 355
+DATA              :2026/09/11 07:54:27
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 356
+DATA              :2026/09/11 07:50:01
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 357
+DATA              :2026/09/11 07:44:14
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 358
+DATA              :2026/09/11 07:44:11
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 359
+DATA              :2026/09/11 07:39:46
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 360
+DATA              :2026/09/11 07:29:39
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 361
+DATA              :2026/09/11 07:29:33
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 362
+DATA              :2026/09/11 07:25:05
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 363
+DATA              :2026/09/11 06:57:23
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 364
+DATA              :2026/09/11 06:57:18
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 365
+DATA              :2026/09/11 06:52:51
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 366
+DATA              :2026/09/11 06:47:13
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 367
+DATA              :2026/09/11 06:46:43
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 368
+DATA              :2026/09/11 06:42:16
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 369
+DATA              :2026/09/11 06:31:00
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 370
+DATA              :2026/09/11 06:29:59
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 371
+DATA              :2026/09/11 06:25:33
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 372
+DATA              :2026/09/11 06:19:42
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 373
+DATA              :2026/09/11 06:19:03
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 374
+DATA              :2026/09/11 06:14:36
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 375
+DATA              :2026/09/11 06:02:10
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 376
+DATA              :2026/09/11 06:02:10
+ZDARZENIE         :ZASIL. WL
+LOGIN             :
+
+///INDEX 377
+DATA              :2026/09/10 13:35:58
+ZDARZENIE         :ZASIL. WYL.
+LOGIN             :
+
+///INDEX 378
+DATA              :2026/09/10 13:35:32
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 379
+DATA              :2026/09/10 13:35:28
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 380
+DATA              :2026/09/10 13:31:03
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 381
+DATA              :2026/09/10 13:25:39
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 382
+DATA              :2026/09/10 13:18:46
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 383
+DATA              :2026/09/10 13:14:20
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 384
+DATA              :2026/09/10 13:08:44
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 385
+DATA              :2026/09/10 13:08:33
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 386
+DATA              :2026/09/10 13:07:24
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0182
+
+///INDEX 387
+DATA              :2026/09/10 13:07:01
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 388
+DATA              :2026/09/10 13:06:38
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0182
+WSPӣCZYNNIK KROKU:SERVO WYL
+SZCZ. WSP1        :G��WNY CPU ALARMU
+SZCZ. WSP2        :RDY0 WY�.
+
+///INDEX 389
+DATA              :2026/09/10 13:03:19
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 390
+DATA              :2026/09/10 12:57:53
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 391
+DATA              :2026/09/10 12:57:51
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 392
+DATA              :2026/09/10 12:53:24
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 393
+DATA              :2026/09/10 12:47:57
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 394
+DATA              :2026/09/10 12:44:57
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 395
+DATA              :2026/09/10 12:40:30
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 396
+DATA              :2026/09/10 12:35:25
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 397
+DATA              :2026/09/10 12:34:55
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 398
+DATA              :2026/09/10 12:30:29
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 399
+DATA              :2026/09/10 12:23:39
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 400
+DATA              :2026/09/10 12:23:18
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 401
+DATA              :2026/09/10 12:18:52
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 402
+DATA              :2026/09/10 12:18:14
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 403
+DATA              :2026/09/10 12:17:58
+ZDARZENIE         :OTW. BARIERKI OCHR.
+LOGIN             :
+
+///INDEX 404
+DATA              :2026/09/10 12:11:50
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 405
+DATA              :2026/09/10 12:07:24
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 406
+DATA              :2026/09/10 11:57:27
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 407
+DATA              :2026/09/10 11:54:58
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0117
+
+///INDEX 408
+DATA              :2026/09/10 11:53:31
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0117
+WSPӣCZYNNIK KROKU:SERVO WYL
+SZCZ. WSP1        :G��WNY CPU ALARMU
+SZCZ. WSP2        :RDY0 WY�.
+
+///INDEX 409
+DATA              :2026/09/10 11:51:33
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 410
+DATA              :2026/09/10 11:38:59
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 411
+DATA              :2026/09/10 11:34:32
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 412
+DATA              :2026/09/10 11:28:47
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 413
+DATA              :2026/09/10 11:24:21
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 414
+DATA              :2026/09/10 11:17:40
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 415
+DATA              :2026/09/10 11:13:14
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 416
+DATA              :2026/09/10 11:03:49
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 417
+DATA              :2026/09/10 11:02:13
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0170
+
+///INDEX 418
+DATA              :2026/09/10 10:59:11
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0170
+WSPӣCZYNNIK KROKU:SERVO WYL
+SZCZ. WSP1        :BARIERKI OCHR.
+
+///INDEX 419
+DATA              :2026/09/10 10:56:19
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 420
+DATA              :2026/09/10 10:50:09
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 421
+DATA              :2026/09/10 10:47:24
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0101
+
+///INDEX 422
+DATA              :2026/09/10 10:46:56
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0101
+WSPӣCZYNNIK KROKU:SERVO WYL
+SZCZ. WSP1        :BARIERKI OCHR.
+
+///INDEX 423
+DATA              :2026/09/10 10:45:12
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 424
+DATA              :2026/09/10 10:40:44
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 425
+DATA              :2026/09/10 10:36:16
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 426
+DATA              :2026/09/10 10:32:52
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 427
+DATA              :2026/09/10 10:28:28
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 428
+DATA              :2026/09/10 10:23:18
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 429
+DATA              :2026/09/10 10:18:51
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 430
+DATA              :2026/09/10 10:10:07
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 431
+DATA              :2026/09/10 10:06:18
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0035
+
+///INDEX 432
+DATA              :2026/09/10 10:05:54
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0035
+WSPӣCZYNNIK KROKU:SERVO WYL
+SZCZ. WSP1        :G��WNY CPU ALARMU
+SZCZ. WSP2        :BARIERKI OCHR.
+
+///INDEX 433
+DATA              :2026/09/10 10:05:16
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 434
+DATA              :2026/09/10 08:24:50
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 435
+DATA              :2026/09/10 08:20:23
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 436
+DATA              :2026/09/10 08:10:54
+ZDARZENIE         :STOP
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0025
+WSPӣCZYNNIK KROKU:KONIEC
+
+///INDEX 437
+DATA              :2026/09/10 08:06:27
+ZDARZENIE         :START
+LOGIN             :
+PRACA             :#00
+NAZWA ZADANIA     :STACJA_2
+LINIA             :0000
+
+///INDEX 438
+DATA              :2026/09/09 13:38:06
+ZDARZENIE         :EDYCJA WE/WY
+LOGIN             :
+NUMER WE/WY       :61
+PO EDYCJI         :OFF
+
+///INDEX 439
+DATA              :2026/09/09 13:38:05
+ZDARZENIE         :EDYCJA WE/WY
+LOGIN             :
+NUMER WE/WY       :61
+PO EDYCJI         :ON
+
+///INDEX 440
+DATA              :2026/09/09 13:38:03
+ZDARZENIE         :EDYCJA WE/WY
+LOGIN             :
+NUMER WE/WY       :62
+PO EDYCJI         :OFF
+
+///INDEX 441
+DATA              :2026/09/09 13:38:02
+ZDARZENIE         :EDYCJA WE/WY
+LOGIN             :
+NUMER WE/WY       :62
+PO EDYCJI         :ON
+
+///INDEX 442
+DATA              :2026/09/09 13:38:00
+ZDARZENIE         :EDYCJA WE/WY
+LOGIN             :
+NUMER WE/WY       :61
+PO EDYCJI         :OFF
+
+///INDEX 443
+DATA              :2026/09/09 13:37:58
+ZDARZENIE         :EDYCJA WE/WY
+LOGIN             :
+NUMER WE/WY       :61
+PO EDYCJI         :ON
+
+///INDEX 444
+DATA              :2026/09/09 13:37:55
+ZDARZENIE         :EDYCJA WE/WY
+LOGIN             :
+NUMER WE/WY       :61
+PO EDYCJI         :OFF
+
+///INDEX 445
+DATA              :2026/09/09 13:37:53
+ZDARZENIE         :EDYCJA WE/WY
+LOGIN             :
+NUMER WE/WY       :60
+PO EDYCJI         :OFF
+
+///INDEX 446
+DATA              :2026/09/09 13:37:50
+ZDARZENIE         :EDYCJA WE/WY
+LOGIN             :
+NUMER WE/WY       :60
+PO EDYCJI         :ON
+
+///INDEX 447
+DATA              :2026/09/09 13:37:11
+ZDARZENIE         :EDYCJA WE/WY
+LOGIN             :
+NUMER WE/WY       :62
+PO EDYCJI         :OFF
+
+///INDEX 448
+DATA              :2026/09/09 13:37:09
+ZDARZENIE         :EDYCJA WE/WY
+LOGIN             :
+NUMER WE/WY       :61
+PO EDYCJI         :ON
+
+///INDEX 449
+DATA              :2026/09/09 13:36:59
+ZDARZENIE         :EDYCJA WE/WY
+LOGIN             :
+NUMER WE/WY       :62
+PO EDYCJI         :ON
+
+///INDEX 450
+DATA              :2026/09/09 13:36:54
+ZDARZENIE         :EDYCJA WE/WY
+LOGIN             :
+NUMER WE/WY       :59
+PO EDYCJI         :OFF
+
+///INDEX 451
+DATA              :2026/09/09 13:36:52
+ZDARZENIE         :EDYCJA WE/WY
+LOGIN             :
+NUMER WE/WY       :60
+PO EDYCJI         :OFF
+
+///INDEX 452
+DATA              :2026/09/09 13:36:50
+ZDARZENIE         :EDYCJA WE/WY
+LOGIN             :
+NUMER WE/WY       :60
+PO EDYCJI         :ON
+
+///INDEX 453
+DATA              :2026/09/09 13:36:46
+ZDARZENIE         :EDYCJA WE/WY
+LOGIN             :
+NUMER WE/WY       :59
+PO EDYCJI         :ON
+
+///INDEX 454
+DATA              :2026/09/09 13:36:45
+ZDARZENIE         :EDYCJA WE/WY
+LOGIN             :
+NUMER WE/WY       :59
+PO EDYCJI         :OFF
+
+///INDEX 455
+DATA              :2026/09/09 13:36:36
+ZDARZENIE         :EDYCJA WE/WY
+LOGIN             :
+NUMER WE/WY       :59
+PO EDYCJI         :ON
+
+///INDEX 456
+DATA              :2026/09/09 07:39:58
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :KANON-RAMKA120-60
+LINIA             :0134
+BIEZACA WARTOSC
+     R1 :S     116235
+         L     114020
+         U      62994
+         R      13856
+         B     -91794
+         T      20960
+     B1 :1     901020
+     S1 :1      -3737
+
+///INDEX 457
+DATA              :2026/09/09 07:39:40
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :KANON-RAMKA120-60
+LINIA             :0132
+BIEZACA WARTOSC
+     R1 :S     116235
+         L     113409
+         U      63575
+         R      13869
+         B     -92446
+         T      21033
+     B1 :1     901020
+     S1 :1      -3737
+
+///INDEX 458
+DATA              :2026/09/09 07:25:33
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0039
+BIEZACA WARTOSC
+     R1 :S     124050
+         L      57315
+         U     -15767
+         R     -60326
+         B     -22100
+         T     -38026
+     B1 :1     227797
+     S2 :1       -988
+
+///INDEX 459
+DATA              :2026/09/09 07:25:22
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0037
+BIEZACA WARTOSC
+     R1 :S     124050
+         L      56286
+         U     -15568
+         R     -58945
+         B     -22442
+         T     -38692
+     B1 :1     227797
+     S2 :1       -988
+
+///INDEX 460
+DATA              :2026/09/09 07:18:29
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :KANON-RAMKA120-60
+LINIA             :0147
+BIEZACA WARTOSC
+     R1 :S     116152
+         L      55884
+         U      -4757
+         R      18175
+         B     -54765
+         T      65526
+     B1 :1     901020
+     S1 :1      -3737
+
+///INDEX 461
+DATA              :2026/09/09 07:18:12
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :KANON-RAMKA120-60
+LINIA             :0145
+BIEZACA WARTOSC
+     R1 :S     116152
+         L      55172
+         U      -4372
+         R      18047
+         B     -55338
+         T      65629
+     B1 :1     901020
+     S1 :1      -3737
+
+///INDEX 462
+DATA              :2026/09/08 08:42:50
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :KANON-RAMKA120-60
+LINIA             :0120
+BIEZACA WARTOSC
+     R1 :S     123939
+         L     119458
+         U      63879
+         R     -32187
+         B     -35838
+         T     -50726
+     B1 :1     901020
+     S1 :1      -3737
+
+///INDEX 463
+DATA              :2026/09/08 08:42:42
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :KANON-RAMKA120-60
+LINIA             :0118
+BIEZACA WARTOSC
+     R1 :S     123939
+         L     118786
+         U      64197
+         R     -31795
+         B     -36300
+         T     -50944
+     B1 :1     901020
+     S1 :1      -3737
+
+///INDEX 464
+DATA              :2026/09/08 08:39:28
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :KANON-RAMKA120-60
+LINIA             :0056
+BIEZACA WARTOSC
+     R1 :S     115136
+         L     123404
+         U      73577
+         R     -16167
+         B     -42658
+         T     -49173
+     B1 :1     985922
+     S1 :1      -3737
+
+///INDEX 465
+DATA              :2026/09/08 08:39:15
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :KANON-RAMKA120-60
+LINIA             :0054
+BIEZACA WARTOSC
+     R1 :S     115136
+         L     122861
+         U      74126
+         R     -15985
+         B     -43252
+         T     -49285
+     B1 :1     985922
+     S1 :1      -3737
+
+///INDEX 466
+DATA              :2026/09/08 08:26:58
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0157
+BIEZACA WARTOSC
+     R1 :S     122597
+         L      46100
+         U      -8069
+         R      16619
+         B     -38693
+         T      21501
+     B1 :1     371513
+     S2 :1     120166
+
+///INDEX 467
+DATA              :2026/09/08 08:26:15
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0155
+BIEZACA WARTOSC
+     R1 :S     122617
+         L      43982
+         U      -9821
+         R      16621
+         B     -38709
+         T      21498
+     B1 :1     371513
+     S2 :1     120166
+
+///INDEX 468
+DATA              :2026/09/08 08:25:36
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0148
+BIEZACA WARTOSC
+     R1 :S     121205
+         L      46213
+         U      -9116
+         R      16288
+         B     -37768
+         T      21990
+     B1 :1     250331
+     S2 :1     120166
+
+///INDEX 469
+DATA              :2026/09/08 08:24:50
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0141
+BIEZACA WARTOSC
+     R1 :S     131110
+         L      57093
+         U       3582
+         R     -20190
+         B     -44657
+         T     -16696
+     B1 :1     363077
+     S2 :1     120166
+
+///INDEX 470
+DATA              :2026/09/08 08:24:38
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0141
+BIEZACA WARTOSC
+     R1 :S     131110
+         L      57093
+         U       3582
+         R     -20190
+         B     -44657
+         T     -16696
+
+///INDEX 471
+DATA              :2026/09/08 08:24:21
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0139
+BIEZACA WARTOSC
+     R1 :S     131130
+         L      55235
+         U       2078
+         R     -20178
+         B     -44677
+         T     -16707
+     B1 :1     363077
+     S2 :1     120166
+
+///INDEX 472
+DATA              :2026/09/08 08:23:34
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0133
+BIEZACA WARTOSC
+     R1 :S     133638
+         L      52835
+         U      -2287
+         R     -16139
+         B     -38892
+         T     -20687
+     B1 :1     250331
+     S2 :1     120166
+
+///INDEX 473
+DATA              :2026/09/08 08:23:09
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0131
+BIEZACA WARTOSC
+     R1 :S     133736
+         L      50843
+         U      -3934
+         R     -16097
+         B     -38887
+         T     -20733
+     B1 :1     250331
+     S2 :1     120166
+
+///INDEX 474
+DATA              :2026/09/08 08:15:30
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0086
+BIEZACA WARTOSC
+     R1 :S     132517
+         L      51154
+         U     -15046
+         R     -22393
+         B     -71895
+         T     -20105
+     B1 :1     250331
+     S2 :1       -934
+
+///INDEX 475
+DATA              :2026/09/08 08:15:07
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0084
+BIEZACA WARTOSC
+     R1 :S     132542
+         L      50173
+         U     -14671
+         R     -22317
+         B     -72571
+         T     -20244
+     B1 :1     250331
+     S2 :1       -934
+
+///INDEX 476
+DATA              :2026/09/08 08:14:10
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0077
+BIEZACA WARTOSC
+     R1 :S     118036
+         L     154994
+         U     110331
+         R       1139
+         B     -27503
+         T      52598
+     B1 :1     363627
+     S2 :1       -933
+
+///INDEX 477
+DATA              :2026/09/08 08:13:58
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0075
+BIEZACA WARTOSC
+     R1 :S     118030
+         L     154747
+         U     111216
+         R       1107
+         B     -28176
+         T      52614
+     B1 :1     363627
+     S2 :1       -933
+
+///INDEX 478
+DATA              :2026/09/08 08:13:18
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0068
+BIEZACA WARTOSC
+     R1 :S     136052
+         L     159116
+         U     113371
+         R      23321
+         B     -26476
+         T      43806
+     B1 :1     324388
+     S2 :1       -933
+
+///INDEX 479
+DATA              :2026/09/08 08:13:09
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0066
+BIEZACA WARTOSC
+     R1 :S     136052
+         L     158738
+         U     114063
+         R      22840
+         B     -27048
+         T      44046
+     B1 :1     324388
+     S2 :1       -933
+
+///INDEX 480
+DATA              :2026/09/08 08:12:24
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0061
+BIEZACA WARTOSC
+     R1 :S     113137
+         L      56837
+         U     -14091
+         R      37174
+         B     -15528
+         T      47699
+     B1 :1     338634
+     S2 :1       -933
+
+///INDEX 481
+DATA              :2026/09/08 08:12:08
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0059
+BIEZACA WARTOSC
+     R1 :S     113137
+         L      55769
+         U     -13834
+         R      35690
+         B     -16103
+         T      48385
+     B1 :1     338634
+     S2 :1       -933
+
+///INDEX 482
+DATA              :2026/09/08 08:11:30
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0053
+BIEZACA WARTOSC
+     R1 :S     115698
+         L      55450
+         U     -15908
+         R      44442
+         B     -17109
+         T      43158
+     B1 :1     227798
+     S2 :1       -933
+
+///INDEX 483
+DATA              :2026/09/08 08:11:15
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0051
+BIEZACA WARTOSC
+     R1 :S     115698
+         L      54464
+         U     -15678
+         R      43006
+         B     -17585
+         T      43828
+     B1 :1     227798
+     S2 :1       -933
+
+///INDEX 484
+DATA              :2026/09/08 08:10:37
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0046
+BIEZACA WARTOSC
+     R1 :S     125392
+         L      59228
+         U     -13736
+         R     -60273
+         B     -22206
+         T     -38044
+     B1 :1     349704
+     S2 :1       -935
+
+///INDEX 485
+DATA              :2026/09/08 08:10:25
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0044
+BIEZACA WARTOSC
+     R1 :S     125392
+         L      58160
+         U     -13530
+         R     -58852
+         B     -22561
+         T     -38731
+     B1 :1     349704
+     S2 :1       -935
+
+///INDEX 486
+DATA              :2026/09/08 08:09:47
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0039
+BIEZACA WARTOSC
+     R1 :S     124157
+         L      57345
+         U     -15757
+         R     -60320
+         B     -22043
+         T     -38055
+     B1 :1     227797
+     S2 :1       -988
+
+///INDEX 487
+DATA              :2026/09/08 08:09:32
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0037
+BIEZACA WARTOSC
+     R1 :S     124157
+         L      56298
+         U     -15555
+         R     -58912
+         B     -22392
+         T     -38733
+     B1 :1     227797
+     S2 :1       -988
+
+///INDEX 488
+DATA              :2026/09/08 08:08:54
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0031
+BIEZACA WARTOSC
+     R1 :S     120339
+         L     155267
+         U     104517
+         R     -48100
+         B     -27811
+         T     -40421
+     B1 :1     331582
+     S2 :1       -932
+
+///INDEX 489
+DATA              :2026/09/08 08:08:42
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0029
+BIEZACA WARTOSC
+     R1 :S     120339
+         L     154511
+         U     104642
+         R     -47450
+         B     -28130
+         T     -40750
+     B1 :1     331582
+     S2 :1       -932
+
+///INDEX 490
+DATA              :2026/09/08 08:08:01
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0031
+BIEZACA WARTOSC
+     R1 :S     120316
+         L     155317
+         U     104515
+         R     -48154
+         B     -27805
+         T     -40392
+     B1 :1     331582
+     S2 :1       -932
+
+///INDEX 491
+DATA              :2026/09/08 08:07:49
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0029
+BIEZACA WARTOSC
+     R1 :S     120316
+         L     154513
+         U     104645
+         R     -47466
+         B     -28142
+         T     -40740
+     B1 :1     331582
+     S2 :1       -932
+
+///INDEX 492
+DATA              :2026/09/08 08:06:41
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0023
+BIEZACA WARTOSC
+     R1 :S     124852
+         L     157690
+         U     111804
+         R     -25727
+         B     -29624
+         T     -49241
+     B1 :1     227797
+     S2 :1       -932
+
+///INDEX 493
+DATA              :2026/09/08 08:06:23
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0021
+BIEZACA WARTOSC
+     R1 :S     124871
+         L     157307
+         U     112537
+         R     -25226
+         B     -30206
+         T     -49499
+     B1 :1     227797
+     S2 :1       -932
+
+///INDEX 494
+DATA              :2026/09/08 08:05:37
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0016
+BIEZACA WARTOSC
+     R1 :S      81049
+         L      68661
+         U       8253
+         R      24524
+         B     -62827
+         T      31482
+     B1 :1     228820
+     S2 :1       -933
+
+///INDEX 495
+DATA              :2026/09/08 08:05:32
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0016
+BIEZACA WARTOSC
+     R1 :S      81049
+         L      68661
+         U       8253
+         R      24524
+         B     -62827
+         T      31482
+
+///INDEX 496
+DATA              :2026/09/08 08:05:17
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0014
+BIEZACA WARTOSC
+     R1 :S      81049
+         L      67859
+         U       8680
+         R      24387
+         B     -63444
+         T      31623
+     B1 :1     228820
+     S2 :1       -933
+
+///INDEX 497
+DATA              :2026/09/07 07:30:57
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0183
+BIEZACA WARTOSC
+     R1 :S     116601
+         L      28969
+         U     -17467
+         R       6044
+         B      12181
+         T      69346
+     B1 :1     360504
+     S2 :1     120165
+
+///INDEX 498
+DATA              :2026/09/07 07:30:05
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0177
+BIEZACA WARTOSC
+     R1 :S     135708
+         L      33554
+         U      -5405
+         R      55284
+         B      -6400
+         T      65496
+     B1 :1     360505
+     S2 :1     120165
+
+///INDEX 499
+DATA              :2026/09/07 07:28:25
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0165
+BIEZACA WARTOSC
+     R1 :S     118840
+         L      29477
+         U      -8756
+         R      12476
+         B      -5549
+         T      66506
+     B1 :1     250331
+     S2 :1     120166
+
+///INDEX 500
+DATA              :2026/09/07 07:27:32
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0157
+BIEZACA WARTOSC
+     R1 :S     122526
+         L      46188
+         U      -7995
+         R      16589
+         B     -38682
+         T      21531
+     B1 :1     371513
+     S2 :1     120166
+
+///INDEX 501
+DATA              :2026/09/07 07:27:19
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0155
+BIEZACA WARTOSC
+     R1 :S     122562
+         L      43958
+         U      -9809
+         R      16592
+         B     -38720
+         T      21525
+     B1 :1     371513
+     S2 :1     120166
+
+///INDEX 502
+DATA              :2026/09/07 07:26:29
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0148
+BIEZACA WARTOSC
+     R1 :S     121219
+         L      46214
+         U      -9115
+         R      16294
+         B     -37771
+         T      21983
+     B1 :1     250331
+     S2 :1     120166
+
+///INDEX 503
+DATA              :2026/09/07 07:26:13
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0146
+BIEZACA WARTOSC
+     R1 :S     121147
+         L      44133
+         U     -10817
+         R      16255
+         B     -37780
+         T      22019
+     B1 :1     250331
+     S2 :1     120166
+
+///INDEX 504
+DATA              :2026/09/07 07:23:18
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0046
+BIEZACA WARTOSC
+     R1 :S     125471
+         L      59286
+         U     -13729
+         R     -60312
+         B     -22153
+         T     -38047
+     B1 :1     349704
+     S2 :1       -935
+
+///INDEX 505
+DATA              :2026/09/07 07:23:06
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0044
+BIEZACA WARTOSC
+     R1 :S     125471
+         L      58172
+         U     -13516
+         R     -58826
+         B     -22524
+         T     -38763
+     B1 :1     349704
+     S2 :1       -935
+
+///INDEX 506
+DATA              :2026/09/07 07:22:26
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0039
+BIEZACA WARTOSC
+     R1 :S     124148
+         L      57398
+         U     -15766
+         R     -60395
+         B     -22029
+         T     -38017
+     B1 :1     227797
+     S2 :1       -988
+
+///INDEX 507
+DATA              :2026/09/07 07:22:16
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0037
+BIEZACA WARTOSC
+     R1 :S     124131
+         L      56254
+         U     -15549
+         R     -58864
+         B     -22417
+         T     -38750
+     B1 :1     227797
+     S2 :1       -988
+
+///INDEX 508
+DATA              :2026/09/03 11:50:32
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :KANON-RAMKA120-60
+LINIA             :0147
+BIEZACA WARTOSC
+     R1 :S     116059
+         L      56134
+         U      -4565
+         R      18196
+         B     -54740
+         T      65558
+     B1 :1     901020
+     S1 :1      -3737
+
+///INDEX 509
+DATA              :2026/09/03 11:50:09
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :KANON-RAMKA120-60
+LINIA             :0145
+BIEZACA WARTOSC
+     R1 :S     116058
+         L      55368
+         U      -4149
+         R      18038
+         B     -55355
+         T      65666
+     B1 :1     901020
+     S1 :1      -3737
+
+///INDEX 510
+DATA              :2026/09/03 11:49:45
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :KANON-RAMKA120-60
+LINIA             :0140
+BIEZACA WARTOSC
+     R1 :S     120477
+         L      84984
+         U      24432
+         R     -33053
+         B     -68618
+         T     -10049
+     B1 :1     901020
+     S1 :1      -3737
+
+///INDEX 511
+DATA              :2026/09/03 11:49:31
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :KANON-RAMKA120-60
+LINIA             :0138
+BIEZACA WARTOSC
+     R1 :S     120477
+         L      84251
+         U      24776
+         R     -32935
+         B     -69116
+         T     -10204
+     B1 :1     901020
+     S1 :1      -3737
+
+///INDEX 512
+DATA              :2026/09/03 11:49:13
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :KANON-RAMKA120-60
+LINIA             :0134
+BIEZACA WARTOSC
+     R1 :S     116142
+         L     113546
+         U      62422
+         R      13886
+         B     -91674
+         T      20977
+     B1 :1     901020
+     S1 :1      -3737
+
+///INDEX 513
+DATA              :2026/09/03 11:48:49
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :KANON-RAMKA120-60
+LINIA             :0134
+BIEZACA WARTOSC
+     R1 :S     116142
+         L     113514
+         U      62450
+         R      13886
+         B     -91707
+         T      20981
+     B1 :1     901020
+     S1 :1      -3737
+
+///INDEX 514
+DATA              :2026/09/03 11:48:37
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :KANON-RAMKA120-60
+LINIA             :0132
+BIEZACA WARTOSC
+     R1 :S     116142
+         L     112959
+         U      62974
+         R      13896
+         B     -92297
+         T      21047
+     B1 :1     901020
+     S1 :1      -3737
+
+///INDEX 515
+DATA              :2026/09/03 11:46:59
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :KANON-RAMKA120-60
+LINIA             :0115
+BIEZACA WARTOSC
+     R1 :S     125194
+         L      43003
+         U     -23193
+         R     -30650
+         B     -37414
+         T     -52489
+     B1 :1     901020
+     S1 :1      -3737
+
+///INDEX 516
+DATA              :2026/09/03 11:46:44
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :KANON-RAMKA120-60
+LINIA             :0113
+BIEZACA WARTOSC
+     R1 :S     125194
+         L      42093
+         U     -22856
+         R     -30210
+         B     -38000
+         T     -52738
+     B1 :1     901020
+     S1 :1      -3737
+
+///INDEX 517
+DATA              :2026/09/03 11:46:11
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :KANON-RAMKA120-60
+LINIA             :0113
+BIEZACA WARTOSC
+     R1 :S     125169
+         L      42163
+         U     -22888
+         R     -30233
+         B     -37956
+         T     -52705
+     B1 :1     901020
+     S1 :1      -3737
+
+///INDEX 518
+DATA              :2026/09/03 11:44:09
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :KANON-RAMKA120-60
+LINIA             :0067
+BIEZACA WARTOSC
+     R1 :S     109849
+         L      82473
+         U      19853
+         R      42074
+         B     -59858
+         T       7668
+     B1 :1     985922
+     S1 :1      -3737
+
+///INDEX 519
+DATA              :2026/09/03 11:43:57
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :KANON-RAMKA120-60
+LINIA             :0065
+BIEZACA WARTOSC
+     R1 :S     109849
+         L      81683
+         U      20167
+         R      41849
+         B     -60311
+         T       7876
+     B1 :1     985922
+     S1 :1      -3737
+
+///INDEX 520
+DATA              :2026/09/03 11:43:09
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :KANON-RAMKA120-60
+LINIA             :0065
+BIEZACA WARTOSC
+     R1 :S     109803
+         L      81729
+         U      20182
+         R      41860
+         B     -60280
+         T       7883
+     B1 :1     985922
+     S1 :1      -3737
+
+///INDEX 521
+DATA              :2026/09/03 11:42:39
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :KANON-RAMKA120-60
+LINIA             :0062
+BIEZACA WARTOSC
+     R1 :S     103240
+         L      85495
+         U      20134
+         R     -45259
+         B     -71329
+         T       6781
+     B1 :1     985922
+     S1 :1      -3737
+
+///INDEX 522
+DATA              :2026/09/03 11:42:00
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :KANON-RAMKA120-60
+LINIA             :0060
+BIEZACA WARTOSC
+     R1 :S     103240
+         L      84707
+         U      20361
+         R     -45137
+         B     -71720
+         T       6596
+     B1 :1     985922
+     S1 :1      -3737
+
+///INDEX 523
+DATA              :2026/09/03 11:41:48
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :KANON-RAMKA120-60
+LINIA             :0062
+BIEZACA WARTOSC
+     R1 :S     103240
+         L      85428
+         U      20152
+         R     -45248
+         B     -71362
+         T       6765
+     B1 :1     985922
+     S1 :1      -3737
+
+///INDEX 524
+DATA              :2026/09/03 11:40:21
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :KANON-RAMKA120-60
+LINIA             :0045
+BIEZACA WARTOSC
+     R1 :S      96115
+         L      35800
+         U     -40708
+         R     -13944
+         B      -1861
+         T     -90691
+     B1 :1     985922
+     S1 :1      -3737
+
+///INDEX 525
+DATA              :2026/09/03 11:40:02
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :KANON-RAMKA120-60
+LINIA             :0043
+BIEZACA WARTOSC
+     R1 :S      96115
+         L      34488
+         U     -40501
+         R      -9760
+         B      -2647
+         T     -92552
+     B1 :1     985922
+     S1 :1      -3737
+
+///INDEX 526
+DATA              :2026/09/03 11:38:24
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :KANON-RAMKA120-60
+LINIA             :0038
+BIEZACA WARTOSC
+     R1 :S     105836
+         L      41192
+         U     -30711
+         R     -51783
+         B     -38153
+         T     -38296
+     B1 :1     985922
+     S1 :1      -3737
+
+///INDEX 527
+DATA              :2026/09/03 11:38:14
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :KANON-RAMKA120-60
+LINIA             :0036
+BIEZACA WARTOSC
+     R1 :S     105836
+         L      40126
+         U     -30457
+         R     -51089
+         B     -38603
+         T     -38694
+     B1 :1     985922
+     S1 :1      -3737
+
+///INDEX 528
+DATA              :2026/09/02 07:51:36
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :KANON-RAMKA120-60
+LINIA             :0050
+BIEZACA WARTOSC
+     R1 :S     104651
+         L     110537
+         U      40175
+         R     -77358
+         B       6013
+         T     -65320
+     B1 :1     985922
+     S1 :1      -3737
+
+///INDEX 529
+DATA              :2026/09/02 07:51:19
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :KANON-RAMKA120-60
+LINIA             :0048
+BIEZACA WARTOSC
+     R1 :S     104651
+         L     109770
+         U      40163
+         R     -81051
+         B       5928
+         T     -63668
+     B1 :1     985922
+     S1 :1      -3737
+
+///INDEX 530
+DATA              :2026/08/31 07:13:53
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :KANON-RAMKA120-60
+LINIA             :0028
+BIEZACA WARTOSC
+     R1 :S      56990
+         L      19769
+         U     -34953
+         R     129388
+         B      81884
+         T      48364
+     B1 :1     985922
+     S1 :1     -57686
+
+///INDEX 531
+DATA              :2026/08/27 08:21:36
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :KANON-RAMKA120-60
+LINIA             :0022
+BIEZACA WARTOSC
+     R1 :S      53480
+         L      29354
+         U     -25767
+         R     130732
+         B      84059
+         T      48702
+     B1 :1     837691
+     S1 :1     -57687
+
+///INDEX 532
+DATA              :2026/08/27 08:16:46
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :KANON-RAMKA120-60
+LINIA             :0173
+BIEZACA WARTOSC
+     R1 :S      70784
+         L      17776
+         U     -70117
+         R     -73405
+         B     -42651
+         T      62724
+     B1 :1     996724
+     S1 :1    -358103
+
+///INDEX 533
+DATA              :2026/08/27 08:16:36
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :KANON-RAMKA120-60
+LINIA             :0171
+BIEZACA WARTOSC
+     R1 :S      69356
+         L      19633
+         U     -68240
+         R     -72539
+         B     -43306
+         T      62718
+     B1 :1     996724
+     S1 :1    -358103
+
+///INDEX 534
+DATA              :2026/08/27 08:16:10
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :KANON-RAMKA120-60
+LINIA             :0167
+BIEZACA WARTOSC
+     R1 :S      67840
+         L      21672
+         U     -65639
+         R     -71309
+         B     -44126
+         T      62534
+     B1 :1     901020
+     S1 :1    -358103
+
+///INDEX 535
+DATA              :2026/08/27 08:15:57
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :KANON-RAMKA120-60
+LINIA             :0165
+BIEZACA WARTOSC
+     R1 :S      69171
+         L      19976
+         U     -67557
+         R     -72213
+         B     -43462
+         T      62594
+     B1 :1     901020
+     S1 :1    -358103
+
+///INDEX 536
+DATA              :2026/08/27 08:15:27
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :KANON-RAMKA120-60
+LINIA             :0161
+BIEZACA WARTOSC
+     R1 :S      86246
+         L        367
+         U     -85203
+         R     -81230
+         B     -36062
+         T      61758
+     B1 :1     901020
+     S1 :1    -358103
+
+///INDEX 537
+DATA              :2026/08/27 08:14:39
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :KANON-RAMKA120-60
+LINIA             :0155
+BIEZACA WARTOSC
+     R1 :S     131905
+         L     -11951
+         U     -95209
+         R    -112587
+         B     -16496
+         T      63250
+     B1 :1     901020
+     S1 :1    -358103
+
+///INDEX 538
+DATA              :2026/08/27 08:13:47
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :KANON-RAMKA120-60
+LINIA             :0147
+BIEZACA WARTOSC
+     R1 :S     116081
+         L      56161
+         U      -4582
+         R      18181
+         B     -54718
+         T      65544
+     B1 :1     901020
+     S1 :1      -3737
+
+///INDEX 539
+DATA              :2026/08/27 08:13:37
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :KANON-RAMKA120-60
+LINIA             :0145
+BIEZACA WARTOSC
+     R1 :S     116081
+         L      55364
+         U      -4153
+         R      18038
+         B     -55359
+         T      65658
+     B1 :1     901020
+     S1 :1      -3737
+
+///INDEX 540
+DATA              :2026/08/27 08:13:10
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :KANON-RAMKA120-60
+LINIA             :0140
+BIEZACA WARTOSC
+     R1 :S     120430
+         L      84898
+         U      24471
+         R     -33032
+         B     -68691
+         T     -10053
+     B1 :1     901020
+     S1 :1      -3737
+
+///INDEX 541
+DATA              :2026/08/27 08:12:57
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :KANON-RAMKA120-60
+LINIA             :0138
+BIEZACA WARTOSC
+     R1 :S     120430
+         L      84252
+         U      24776
+         R     -32928
+         B     -69131
+         T     -10191
+     B1 :1     901020
+     S1 :1      -3737
+
+///INDEX 542
+DATA              :2026/08/27 08:12:28
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :KANON-RAMKA120-60
+LINIA             :0134
+BIEZACA WARTOSC
+     R1 :S     116154
+         L     113513
+         U      62444
+         R      13881
+         B     -91704
+         T      20977
+     B1 :1     901020
+     S1 :1      -3737
+
+///INDEX 543
+DATA              :2026/08/27 08:12:18
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :KANON-RAMKA120-60
+LINIA             :0132
+BIEZACA WARTOSC
+     R1 :S     116154
+         L     113007
+         U      62918
+         R      13890
+         B     -92240
+         T      21037
+     B1 :1     901020
+     S1 :1      -3737
+
+///INDEX 544
+DATA              :2026/08/27 08:11:46
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :KANON-RAMKA120-60
+LINIA             :0127
+BIEZACA WARTOSC
+     R1 :S     115076
+         L     112484
+         U      55243
+         R      10864
+         B     -26436
+         T      53193
+     B1 :1     901020
+     S1 :1      -3737
+
+///INDEX 545
+DATA              :2026/08/27 08:11:37
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :KANON-RAMKA120-60
+LINIA             :0125
+BIEZACA WARTOSC
+     R1 :S     115076
+         L     111814
+         U      55539
+         R      10669
+         B     -26954
+         T      53291
+     B1 :1     901020
+     S1 :1      -3737
+
+///INDEX 546
+DATA              :2026/08/27 08:11:02
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :KANON-RAMKA120-60
+LINIA             :0120
+BIEZACA WARTOSC
+     R1 :S     123921
+         L     119476
+         U      63863
+         R     -32209
+         B     -35827
+         T     -50711
+     B1 :1     901020
+     S1 :1      -3737
+
+///INDEX 547
+DATA              :2026/08/27 08:10:45
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :KANON-RAMKA120-60
+LINIA             :0118
+BIEZACA WARTOSC
+     R1 :S     123921
+         L     118781
+         U      64191
+         R     -31804
+         B     -36305
+         T     -50936
+     B1 :1     901020
+     S1 :1      -3737
+
+///INDEX 548
+DATA              :2026/08/27 08:10:13
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :KANON-RAMKA120-60
+LINIA             :0115
+BIEZACA WARTOSC
+     R1 :S     125139
+         L      42996
+         U     -23201
+         R     -30644
+         B     -37426
+         T     -52465
+     B1 :1     901020
+     S1 :1      -3737
+
+///INDEX 549
+DATA              :2026/08/27 08:10:01
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :KANON-RAMKA120-60
+LINIA             :0113
+BIEZACA WARTOSC
+     R1 :S     125139
+         L      42159
+         U     -22893
+         R     -30239
+         B     -37964
+         T     -52694
+     B1 :1     901020
+     S1 :1      -3737
+
+///INDEX 550
+DATA              :2026/08/27 07:55:58
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :KANON-RAMKA120-60
+LINIA             :0056
+BIEZACA WARTOSC
+     R1 :S     115095
+         L     123443
+         U      73585
+         R     -16191
+         B     -42651
+         T     -49152
+     B1 :1     985922
+     S1 :1      -3737
+
+///INDEX 551
+DATA              :2026/08/27 07:55:48
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :KANON-RAMKA120-60
+LINIA             :0054
+BIEZACA WARTOSC
+     R1 :S     115095
+         L     122881
+         U      74153
+         R     -16003
+         B     -43266
+         T     -49268
+     B1 :1     985922
+     S1 :1      -3737
+
+///INDEX 552
+DATA              :2026/08/27 07:52:10
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :KANON-RAMKA120-60
+LINIA             :0024
+BIEZACA WARTOSC
+     R1 :S      53142
+         L      29369
+         U     -26884
+         R     130813
+         B      83798
+         T      49021
+     B1 :1     837691
+     S1 :1     -57687
+
+///INDEX 553
+DATA              :2026/08/27 07:51:56
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :KANON-RAMKA120-60
+LINIA             :0022
+BIEZACA WARTOSC
+     R1 :S      53480
+         L      29222
+         U     -25672
+         R     130739
+         B      84136
+         T      48656
+     B1 :1     837691
+     S1 :1     -57687
+
+///INDEX 554
+DATA              :2026/08/27 07:47:16
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :KANON-RAMKA120-60
+LINIA             :0011
+BIEZACA WARTOSC
+     R1 :S     145668
+         L     -42272
+         U     -88012
+         R      76217
+         B     -56855
+         T      32347
+     B1 :1     837691
+     S1 :1     -57686
+
+///INDEX 555
+DATA              :2026/08/27 07:46:46
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :KANON-RAMKA120-60
+LINIA             :0008
+BIEZACA WARTOSC
+     R1 :S     145557
+         L     -42136
+         U     -86764
+         R      75817
+         B     -56980
+         T      32726
+     B1 :1     837691
+     S1 :1     -57686
+
+///INDEX 556
+DATA              :2026/08/26 08:38:45
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0148
+BIEZACA WARTOSC
+     R1 :S     121184
+         L      46214
+         U      -9115
+         R      16279
+         B     -37765
+         T      22000
+     B1 :1     250331
+     S2 :1     120166
+
+///INDEX 557
+DATA              :2026/08/26 08:38:36
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0146
+BIEZACA WARTOSC
+     R1 :S     121179
+         L      44133
+         U     -10816
+         R      16268
+         B     -37786
+         T      22005
+     B1 :1     250331
+     S2 :1     120166
+
+///INDEX 558
+DATA              :2026/08/26 08:35:42
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0008
+BIEZACA WARTOSC
+     R1 :S     115244
+         L      37894
+         U     -29642
+         R      33669
+         B     -61794
+         T       9037
+     B1 :1     211402
+     S2 :1       -932
+
+///INDEX 559
+DATA              :2026/08/26 08:35:04
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0008
+BIEZACA WARTOSC
+     R1 :S     115244
+         L      37894
+         U     -29642
+         R      33669
+         B     -61794
+         T       9037
+     B1 :1     211402
+     S2 :1       -932
+
+///INDEX 560
+DATA              :2026/08/26 08:34:52
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0005
+BIEZACA WARTOSC
+     R1 :S     115244
+         L      36786
+         U     -29268
+         R      33443
+         B     -62466
+         T       9262
+     B1 :1     211402
+     S2 :1       -932
+
+///INDEX 561
+DATA              :2026/08/26 08:15:06
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0157
+BIEZACA WARTOSC
+     R1 :S     122598
+         L      46193
+         U      -7990
+         R      16618
+         B     -38695
+         T      21499
+     B1 :1     371513
+     S2 :1     120166
+
+///INDEX 562
+DATA              :2026/08/26 08:14:30
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0148
+BIEZACA WARTOSC
+     R1 :S     121184
+         L      46214
+         U      -9115
+         R      16279
+         B     -37765
+         T      22000
+     B1 :1     250331
+     S2 :1     120166
+
+///INDEX 563
+DATA              :2026/08/26 08:14:20
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0146
+BIEZACA WARTOSC
+     R1 :S     121225
+         L      44134
+         U     -10815
+         R      16287
+         B     -37795
+         T      21984
+     B1 :1     250331
+     S2 :1     120166
+
+///INDEX 564
+DATA              :2026/08/26 08:13:36
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0141
+BIEZACA WARTOSC
+     R1 :S     131089
+         L      57085
+         U       3573
+         R     -20196
+         B     -44660
+         T     -16687
+     B1 :1     363077
+     S2 :1     120166
+
+///INDEX 565
+DATA              :2026/08/26 08:13:24
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0139
+BIEZACA WARTOSC
+     R1 :S     131154
+         L      55080
+         U       1904
+         R     -20180
+         B     -44646
+         T     -16712
+     B1 :1     363077
+     S2 :1     120166
+
+///INDEX 566
+DATA              :2026/08/26 08:12:47
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0133
+BIEZACA WARTOSC
+     R1 :S     133631
+         L      52831
+         U      -2291
+         R     -16142
+         B     -38893
+         T     -20684
+     B1 :1     250331
+     S2 :1     120166
+
+///INDEX 567
+DATA              :2026/08/26 08:12:37
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0131
+BIEZACA WARTOSC
+     R1 :S     133724
+         L      50837
+         U      -3941
+         R     -16102
+         B     -38888
+         T     -20727
+     B1 :1     250331
+     S2 :1     120166
+
+///INDEX 568
+DATA              :2026/08/26 08:12:12
+ZDARZENIE         :EDYCJA ZAD (USU)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0135
+USUNIETA LINIA    : MOVJ VJ=80.00 DEC=20  +MOVJ VJ=80.00 
+
+
+///INDEX 569
+DATA              :2026/08/26 08:11:56
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0133
+BIEZACA WARTOSC
+     R1 :S     133649
+         L      52840
+         U      -2281
+         R     -16134
+         B     -38891
+         T     -20692
+     B1 :1     250331
+     S2 :1     120166
+
+///INDEX 570
+DATA              :2026/08/26 08:10:51
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0131
+BIEZACA WARTOSC
+     R1 :S     133681
+         L      50817
+         U      -3963
+         R     -16120
+         B     -38891
+         T     -20707
+     B1 :1     250331
+     S2 :1     120166
+
+///INDEX 571
+DATA              :2026/08/26 08:09:04
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0086
+BIEZACA WARTOSC
+     R1 :S     132411
+         L      50961
+         U     -15037
+         R     -22353
+         B     -72013
+         T     -20095
+     B1 :1     250331
+     S2 :1       -934
+
+///INDEX 572
+DATA              :2026/08/26 08:08:55
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0084
+BIEZACA WARTOSC
+     R1 :S     132411
+         L      50121
+         U     -14727
+         R     -22282
+         B     -72591
+         T     -20207
+     B1 :1     250331
+     S2 :1       -934
+
+///INDEX 573
+DATA              :2026/08/26 08:07:17
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0061
+BIEZACA WARTOSC
+     R1 :S     113075
+         L      56744
+         U     -14049
+         R      36941
+         B     -15566
+         T      47819
+     B1 :1     338634
+     S2 :1       -933
+
+///INDEX 574
+DATA              :2026/08/26 08:07:07
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0059
+BIEZACA WARTOSC
+     R1 :S     113075
+         L      55784
+         U     -13816
+         R      35609
+         B     -16085
+         T      48436
+     B1 :1     338634
+     S2 :1       -933
+
+///INDEX 575
+DATA              :2026/08/26 08:06:39
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0053
+BIEZACA WARTOSC
+     R1 :S     115635
+         L      55474
+         U     -15898
+         R      44404
+         B     -17079
+         T      43189
+     B1 :1     227798
+     S2 :1       -933
+
+///INDEX 576
+DATA              :2026/08/26 08:06:29
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0051
+BIEZACA WARTOSC
+     R1 :S     115635
+         L      54474
+         U     -15666
+         R      42945
+         B     -17562
+         T      43870
+     B1 :1     227798
+     S2 :1       -933
+
+///INDEX 577
+DATA              :2026/08/26 08:05:54
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0046
+BIEZACA WARTOSC
+     R1 :S     125364
+         L      59222
+         U     -13740
+         R     -60280
+         B     -22219
+         T     -38038
+     B1 :1     349704
+     S2 :1       -935
+
+///INDEX 578
+DATA              :2026/08/26 08:05:45
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0044
+BIEZACA WARTOSC
+     R1 :S     125364
+         L      58156
+         U     -13535
+         R     -58862
+         B     -22574
+         T     -38722
+     B1 :1     349704
+     S2 :1       -935
+
+///INDEX 579
+DATA              :2026/08/26 08:05:08
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0039
+BIEZACA WARTOSC
+     R1 :S     124111
+         L      57394
+         U     -15771
+         R     -60405
+         B     -22046
+         T     -38003
+     B1 :1     227797
+     S2 :1       -988
+
+///INDEX 580
+DATA              :2026/08/26 08:04:58
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0037
+BIEZACA WARTOSC
+     R1 :S     124111
+         L      56252
+         U     -15551
+         R     -58870
+         B     -22426
+         T     -38742
+     B1 :1     227797
+     S2 :1       -988
+
+///INDEX 581
+DATA              :2026/08/26 08:03:40
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0014
+BIEZACA WARTOSC
+     R1 :S      80978
+         L      67978
+         U       8823
+         R      24389
+         B     -63450
+         T      31651
+     B1 :1     228820
+     S2 :1       -933
+
+///INDEX 582
+DATA              :2026/08/26 08:03:19
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0008
+BIEZACA WARTOSC
+     R1 :S     115210
+         L      37727
+         U     -29581
+         R      33641
+         B     -61887
+         T       9081
+     B1 :1     211402
+     S2 :1       -932
+
+///INDEX 583
+DATA              :2026/08/26 08:02:45
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0008
+BIEZACA WARTOSC
+     R1 :S     115210
+         L      37570
+         U     -29529
+         R      33609
+         B     -61981
+         T       9113
+     B1 :1     211402
+     S2 :1       -932
+
+///INDEX 584
+DATA              :2026/08/26 08:02:34
+ZDARZENIE         :EDYCJA ZAD (TRYB P)
+LOGIN             :
+PRACA             :#00
+NAZWA PLIKU       :2025-RAMKI-KANION14-60NOWE2
+LINIA             :0005
+BIEZACA WARTOSC
+     R1 :S     115210
+         L      36792
+         U     -29262
+         R      33450
+         B     -62456
+         T       9271
+     B1 :1     211402
+     S2 :1       -932
+
+///INDEX 585
+DATA              :2026/08/26 07:37:00
+ZDARZENIE         :EDYCJA INNEGO PLIKU
+LOGIN             :
+NAZWA PLIKU       :POZ. UDARU
+NUMER ELEMENTU    :9-0-0
+PRZED EDYCJA      :0
+PO EDYCJI         :1
+
+///INDEX 586
+DATA              :2026/08/26 07:37:00
+ZDARZENIE         :EDYCJA INNEGO PLIKU
+LOGIN             :
+NAZWA PLIKU       :POZ. UDARU
+NUMER ELEMENTU    :8-0-0
+PRZED EDYCJA      :0
+PO EDYCJI         :1
+
+///INDEX 587
+DATA              :2026/08/26 07:36:59
+ZDARZENIE         :EDYCJA INNEGO PLIKU
+LOGIN             :
+NAZWA PLIKU       :POZ. UDARU
+NUMER ELEMENTU    :7-0-0
+PRZED EDYCJA      :0
+PO EDYCJI         :1
+
+///INDEX 588
+DATA              :2026/08/26 07:36:59
+ZDARZENIE         :EDYCJA INNEGO PLIKU
+LOGIN             :
+NAZWA PLIKU       :POZ. UDARU
+NUMER ELEMENTU    :6-0-0
+PRZED EDYCJA      :0
+PO EDYCJI         :1
+
+///INDEX 589
+DATA              :2026/08/26 07:36:59
+ZDARZENIE         :EDYCJA INNEGO PLIKU
+LOGIN             :
+NAZWA PLIKU       :POZ. UDARU
+NUMER ELEMENTU    :5-0-0
+PRZED EDYCJA      :0
+PO EDYCJI         :1
+
+///INDEX 590
+DATA              :2026/08/26 07:36:59
+ZDARZENIE         :EDYCJA INNEGO PLIKU
+LOGIN             :
+NAZWA PLIKU       :POZ. UDARU
+NUMER ELEMENTU    :4-0-0
+PRZED EDYCJA      :0
+PO EDYCJI         :1
+
+///INDEX 591
+DATA              :2026/08/26 07:36:59
+ZDARZENIE         :EDYCJA INNEGO PLIKU
+LOGIN             :
+NAZWA PLIKU       :POZ. UDARU
+NUMER ELEMENTU    :3-0-0
+PRZED EDYCJA      :0
+PO EDYCJI         :1
+
+///INDEX 592
+DATA              :2026/08/26 07:36:59
+ZDARZENIE         :EDYCJA INNEGO PLIKU
+LOGIN             :
+NAZWA PLIKU       :POZ. UDARU
+NUMER ELEMENTU    :2-0-0
+PRZED EDYCJA      :0
+PO EDYCJI         :1
+
+///INDEX 593
+DATA              :2026/08/26 07:36:58
+ZDARZENIE         :EDYCJA INNEGO PLIKU
+LOGIN             :
+NAZWA PLIKU       :POZ. UDARU
+NUMER ELEMENTU    :1-0-0
+PRZED EDYCJA      :0
+PO EDYCJI         :1
+
+///INDEX 594
+DATA              :2026/08/26 07:34:06
+ZDARZENIE         :EDYCJA INNEGO PLIKU
+LOGIN             :
+NAZWA PLIKU       :POZ. UDARU
+NUMER ELEMENTU    :9-0-0
+PRZED EDYCJA      :1
+PO EDYCJI         :0
+
+///INDEX 595
+DATA              :2026/08/26 07:34:06
+ZDARZENIE         :EDYCJA INNEGO PLIKU
+LOGIN             :
+NAZWA PLIKU       :POZ. UDARU
+NUMER ELEMENTU    :8-0-0
+PRZED EDYCJA      :1
+PO EDYCJI         :0
+
+///INDEX 596
+DATA              :2026/08/26 07:34:05
+ZDARZENIE         :EDYCJA INNEGO PLIKU
+LOGIN             :
+NAZWA PLIKU       :POZ. UDARU
+NUMER ELEMENTU    :7-0-0
+PRZED EDYCJA      :1
+PO EDYCJI         :0
+
+///INDEX 597
+DATA              :2026/08/26 07:34:05
+ZDARZENIE         :EDYCJA INNEGO PLIKU
+LOGIN             :
+NAZWA PLIKU       :POZ. UDARU
+NUMER ELEMENTU    :6-0-0
+PRZED EDYCJA      :1
+PO EDYCJI         :0
+
+///INDEX 598
+DATA              :2026/08/26 07:34:05
+ZDARZENIE         :EDYCJA INNEGO PLIKU
+LOGIN             :
+NAZWA PLIKU       :POZ. UDARU
+NUMER ELEMENTU    :5-0-0
+PRZED EDYCJA      :1
+PO EDYCJI         :0
+
+///INDEX 599
+DATA              :2026/08/26 07:34:05
+ZDARZENIE         :EDYCJA INNEGO PLIKU
+LOGIN             :
+NAZWA PLIKU       :POZ. UDARU
+NUMER ELEMENTU    :4-0-0
+PRZED EDYCJA      :1
+PO EDYCJI         :0
+
+///INDEX 600
+DATA              :2026/08/26 07:34:05
+ZDARZENIE         :EDYCJA INNEGO PLIKU
+LOGIN             :
+NAZWA PLIKU       :POZ. UDARU
+NUMER ELEMENTU    :3-0-0
+PRZED EDYCJA      :1
+PO EDYCJI         :0
+
+

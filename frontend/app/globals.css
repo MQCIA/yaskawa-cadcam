@@ -23,10 +23,56 @@ body {
   background: var(--app-bg);
   color: var(--text);
   font-family: "Segoe UI", "IBM Plex Sans", system-ui, sans-serif;
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* Light industrial scrollbars */
 * {
   scrollbar-width: thin;
   scrollbar-color: #c5ced8 transparent;
+}
+
+/* Hide scrollbars on horizontal chrome strips (steps / ribbon) */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Tall touch-friendly range track (≈44px hit area) */
+input[type="range"].touch-range {
+  height: 2.75rem;
+  margin: 0;
+  cursor: pointer;
+}
+input[type="range"].touch-range::-webkit-slider-runnable-track {
+  height: 0.35rem;
+  border-radius: 999px;
+  background: #d8dee6;
+}
+input[type="range"].touch-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-top: -0.45rem;
+  border-radius: 999px;
+  background: var(--accent);
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px #d8dee6;
+}
+input[type="range"].touch-range::-moz-range-track {
+  height: 0.35rem;
+  border-radius: 999px;
+  background: #d8dee6;
+}
+input[type="range"].touch-range::-moz-range-thumb {
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 999px;
+  background: var(--accent);
+  border: 2px solid #fff;
 }

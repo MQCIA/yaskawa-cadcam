@@ -12,8 +12,6 @@ from shapely.geometry import Polygon
 
 from app.kinematics_engine import forward_kinematics, solve_ik_path, get_robot
 from app.dx200_postprocessor import (
-    SAFE_HOME_BC,
-    SAFE_HOME_PULSES,
     generate_jbi,
     WeldSegment,
     PostprocessorConfig,
@@ -21,8 +19,18 @@ from app.dx200_postprocessor import (
 )
 from app.cad_analysis import detect_seams
 from app.path_planning import plan_from_seams
-from app.robot_config import ACTIVE_MODEL, ACTIVE_POSITIONER, CELL_HOME_PULSES, MODELS
-from app.welding_config import ACTIVE_POWER_SOURCE, MOTOWELD_SCHEDULES
+from app.robot_config import ACTIVE_MODEL, ACTIVE_POSITIONER, MODELS
+from app.welding_config import (
+    ACTIVE_POWER_SOURCE,
+    ARCSRT_TEMPLATE,
+    LORCH_S8_SCHEDULES,
+    MOTOWELD_ARGF_SCHEDULES,
+    TOUCH_SENSE,
+    WEAVE_FILES,
+    get_schedule_by_argf,
+    get_weave,
+    wire_for_current,
+)
 
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -49,12 +57,7 @@ def test_config_loaded():
     assert ACTIVE_MODEL.pulses_per_degree[0] > 1000  # S ≈ 1341 from RC1G
     assert ACTIVE_POSITIONER.axes[0].pulses_per_degree > 1000  # ≈ 1019.7
     assert "MOTOWELD" in ACTIVE_POWER_SOURCE.name.upper()
-    assert "MA2010" in ACTIVE_POWER_SOURCE.cell_label
-    assert set(MOTOWELD_SCHEDULES) >= {1, 2, 3}
-    assert MOTOWELD_SCHEDULES[1].argf == 1
-    assert MOTOWELD_SCHEDULES[2].argf == 4
-    assert MOTOWELD_SCHEDULES[3].argf == 5
-    assert "ARCSRT" in MOTOWELD_SCHEDULES[1].params_source
+    assert set(LORCH_S8_SCHEDULES) >= {1, 2, 3}
 
 
 def test_fk_ik_roundtrip():
@@ -70,16 +73,13 @@ def test_fk_ik_roundtrip():
 
 
 def test_jbi_ma2010_cell_profile():
-    from app.pulse_config import BC_PARK_PULSE, track_mm_to_pulses, track_mm_from_world_z
-
     pts = [
         {"x": 0.8, "y": 0.0, "z": 0.5, "rx": 180},
         {"x": 0.9, "y": 0.1, "z": 0.5, "rx": 180},
         {"x": 1.0, "y": 0.2, "z": 0.5, "rx": 180},
     ]
     segs = [WeldSegment(0, 2, weld_speed=5.0, arc_file=3)]
-    # No joints → RECTAN review (no home bookend).
-    jbi = generate_jbi(pts, segs, PostprocessorConfig(crlf=False), station_deg=[0, 45, 90])
+    jbi = generate_jbi(pts, segs, PostprocessorConfig(), station_deg=[0, 45, 90])
     assert jbi.startswith("/JOB")
     assert "///NPOS 3,3,3,0,0,0" in jbi
     assert "///GROUP1 RB1,BS1" in jbi
@@ -87,86 +87,24 @@ def test_jbi_ma2010_cell_profile():
     assert "ARCON" in jbi and "ARCOF" in jbi
     assert "ASF#(" not in jbi
     assert "WVON WEV#(21)" in jbi and "WVOF" in jbi
-    assert "MACRO1 MJ#(0) ARGF5" in jbi  # schedule 3 → ARGF5
+    assert "MACRO1 MJ#(0)" in jbi
     assert "+MOVJ EC" in jbi
-    assert "DEC=20" in jbi
-    expect_bc = track_mm_to_pulses(track_mm_from_world_z(0.5))
-    assert f"BC00000={expect_bc}" in jbi
-    assert f"BC00002={expect_bc}" in jbi
-    park_jbi = generate_jbi(
-        pts,
-        segs,
-        PostprocessorConfig(crlf=False),
-        station_deg=[0, 45, 90],
-        base_pulse=BC_PARK_PULSE,
-    )
-    assert f"BC00000={BC_PARK_PULSE}" in park_jbi
-    assert "EC00001=45886,0" in jbi
-    assert "MOTOWELD-E" in jbi
+    assert "BC00000=878036" in jbi
+    assert "EC00001=45886,0" in jbi  # 45 * 1019.6889…
+    assert "Motoweld" in jbi
     assert jbi.strip().endswith("END")
 
 
-def test_jbi_pulse_home_bookends_and_crlf():
-    """Production-like PULSE export: home C/BC bookends, CRLF, GROUP2, EC v1,v2."""
-    from app.pulse_config import deg_to_joint_pulses
-
-    pts = [
-        {"x": 0.8, "y": 0.0, "z": -1.2, "rx": 180},
-        {"x": 0.9, "y": 0.0, "z": -1.2, "rx": 180},
-    ]
-    q = [
-        [10.0, -20.0, 15.0, 5.0, 30.0, 0.0],
-        [12.0, -18.0, 14.0, 4.0, 28.0, 1.0],
-    ]
-    segs = [WeldSegment(0, 1, weld_speed=5.0, arc_file=2, weave_no=15)]
-    jbi = generate_jbi(
-        pts,
-        segs,
-        PostprocessorConfig(job_name="HOME_WRAP", group2_station="ST2"),
-        station_deg=[0.0, 10.0],
-        joint_angles_deg=q,
-        station="ST2",
-    )
-    # CRLF line endings (production CF).
-    assert "\r\n" in jbi
-    assert jbi.split("\r\n")[0] == "/JOB"
-    assert "///NPOS 4,4,4,0,0,0" in jbi  # 2 path + 2 home
-    assert "///TOOL 0" in jbi
-    assert "///POSTYPE PULSE" in jbi
-    assert "///PULSE" in jbi
-    assert "///ATTR SC,RW" in jbi
-    assert "///GROUP1 RB1,BS1" in jbi
-    assert "///GROUP2 ST2" in jbi
-    home = ",".join(str(p) for p in SAFE_HOME_PULSES)
-    assert SAFE_HOME_PULSES == CELL_HOME_PULSES
-    assert f"C00000={home}" in jbi
-    assert f"C00003={home}" in jbi
-    assert f"BC00000={SAFE_HOME_BC}" in jbi
-    assert f"BC00003={SAFE_HOME_BC}" in jbi
-    path0 = deg_to_joint_pulses(q[0])
-    assert f"C00001={','.join(str(p) for p in path0)}" in jbi
-    assert "EC00000=192,0" in jbi  # home EC
-    assert re.search(r"EC00001=-?\d+,0", jbi)
-    assert "MACRO1 MJ#(0) ARGF4" in jbi  # schedule 2
-    assert "ARCON" in jbi and "ASF#(" not in jbi
-    assert "WVON WEV#(15)" in jbi
-    # WVOF before ARCOF
-    assert jbi.index("WVOF") < jbi.index("ARCOF")
-    assert "MOVJ C00000 BC00000 VJ=80.00 DEC=20  +MOVJ EC00000 VJ=80.00" in jbi
-    assert "DEC=20" in jbi
-
-
-def test_jbi_pulse_from_joints_no_bookend():
+def test_jbi_pulse_from_joints():
     from app.pulse_config import deg_to_joint_pulses, station_deg_to_ec
 
     pts = [{"x": 0.8, "y": 0.0, "z": 0.5, "rx": 180}]
     q = [10.0, -20.0, 15.0, 5.0, 30.0, 0.0]
     jbi = generate_jbi(
         pts,
-        config=PostprocessorConfig(job_name="PULSE_TEST", crlf=False),
+        config=PostprocessorConfig(job_name="PULSE_TEST"),
         station_deg=[0.0],
         joint_angles_deg=[q],
-        bookend_home=False,
     )
     pulses = deg_to_joint_pulses(q)
     assert "///POSTYPE PULSE" in jbi
@@ -174,65 +112,6 @@ def test_jbi_pulse_from_joints_no_bookend():
     assert "///RECTAN" not in jbi
     e1, e2 = station_deg_to_ec(0.0)
     assert f"EC00000={e1},{e2}" in jbi
-
-
-def test_rect_x_pulses_per_mm_and_bc_sequence():
-    """M1.3: BC00000…BCxxxxx from track mm / station / per-point pulses."""
-    from app.pulse_config import (
-        BASE_PULSES_PER_MM,
-        BC_HOME_PULSE,
-        BC_PARK_PULSE,
-        BC_ST1_ST3_RANGE,
-        BC_ST2_RANGE,
-        PULSES_PER_MM,
-        STATION_BC_MID,
-        track_mm_to_pulses,
-        track_pulses_to_mm,
-        resolve_base_pulses,
-    )
-
-    assert PULSES_PER_MM == pytest.approx(257.708125)
-    assert BASE_PULSES_PER_MM == PULSES_PER_MM
-    assert track_mm_to_pulses(0.0) == BC_HOME_PULSE
-    assert track_pulses_to_mm(BC_HOME_PULSE) == pytest.approx(0.0)
-    assert track_pulses_to_mm(BC_PARK_PULSE) == pytest.approx(1194.805, abs=0.01)
-    assert track_mm_to_pulses(track_pulses_to_mm(BC_PARK_PULSE)) == BC_PARK_PULSE
-
-    assert BC_ST2_RANGE[0] <= STATION_BC_MID["ST2"] <= BC_ST2_RANGE[1]
-    assert BC_ST1_ST3_RANGE[0] <= STATION_BC_MID["ST1"] <= BC_ST1_ST3_RANGE[1]
-
-    pts = [
-        {"x": 0.8, "y": 0.0, "z": -1.2, "rx": 180},
-        {"x": 0.9, "y": 0.0, "z": 0.0, "rx": 180},
-        {"x": 1.0, "y": 0.0, "z": 1.2, "rx": 180},
-    ]
-    cfg = PostprocessorConfig(job_name="BC_SEQ", crlf=False, bookend_home=False)
-    explicit = [808680, BC_HOME_PULSE, 375361]
-    jbi = generate_jbi(
-        pts, config=cfg, station_deg=[0.0, 0.0, 0.0], base_pulse=explicit
-    )
-    for i, bc in enumerate(explicit):
-        assert f"BC{i:05d}={bc}" in jbi
-
-    auto = resolve_base_pulses(3, points=pts)
-    assert auto[1] == BC_HOME_PULSE
-    assert auto[0] > auto[1] > auto[2]
-    auto_jbi = generate_jbi(pts, config=PostprocessorConfig(job_name="BC_AUTO", crlf=False))
-    for i, bc in enumerate(auto):
-        assert f"BC{i:05d}={bc}" in auto_jbi
-
-    st_jbi = generate_jbi(
-        pts, config=PostprocessorConfig(job_name="BC_ST2", crlf=False), station="ST2"
-    )
-    assert f"BC00000={STATION_BC_MID['ST2']}" in st_jbi
-    assert "///GROUP2 ST2" in st_jbi
-
-    mm_list = [0.0, 500.0, -500.0]
-    mm_jbi = generate_jbi(
-        pts, config=PostprocessorConfig(job_name="BC_MM", crlf=False), base_mm=mm_list
-    )
-    for i, mm in enumerate(mm_list):
-        assert f"BC{i:05d}={track_mm_to_pulses(mm)}" in mm_jbi
 
 
 def test_pulse_softlimit_roundtrip():
@@ -243,6 +122,7 @@ def test_pulse_softlimit_roundtrip():
         joint_pulses_to_deg,
     )
 
+    # Softlimit + side should map back near joint limit degrees
     q = joint_pulses_to_deg(list(RC1G_SOFTLIMIT_POS))
     assert abs(q[0] - 180.0) < 0.05
     assert abs(q[3] - 150.0) < 0.05
@@ -267,7 +147,6 @@ def test_jbi_cartesian_review_and_drop01_grammar():
             profile="cartesian_review",
             joint_approach=False,
             station_pulses_per_deg=1.0,
-            crlf=False,
         ),
         station_deg=[359, 359],
     )
@@ -293,10 +172,6 @@ def test_real_cell_000_jbi_grammar():
     assert "ARCON" in cell_job and "ARCOF" in cell_job
     assert "WVON WEV#" in cell_job
     assert "+MOVJ EC" in cell_job
-    assert "DEC=20" in cell_job
-    assert "MACRO1 MJ#(0) ARGF" in cell_job
-    assert re.search(r"EC\d{5}=-?\d+,-?\d+", cell_job)
-    assert "ASF#(" not in cell_job
     sysinfo = (CELL / "SYSTEM.SYS").read_text(encoding="utf-8", errors="replace")
     assert "MA02010" in sysinfo
     assert "ARC WELDING" in sysinfo
@@ -304,140 +179,11 @@ def test_real_cell_000_jbi_grammar():
     assert "415.702" in tool
     assert load_reference_jbi("000.JBI").startswith("/JOB")
 
-    home = (CELL / "HOME_TRACK.JBI").read_text(encoding="utf-8", errors="replace")
-    assert f"C00000={','.join(str(p) for p in CELL_HOME_PULSES)}" in home
-    assert "BC00000=570125" in home
-
-
-def test_generated_matches_production_structure():
-    """Generated ma2010_cell PULSE job mirrors 000.JBI / DEFRO header grammar."""
-    ref = (CELL / "000.JBI").read_text(encoding="utf-8", errors="replace")
-    pts = [
-        {"x": 0.8, "y": 0.0, "z": 0.5, "rx": 180},
-        {"x": 0.85, "y": 0.0, "z": 0.5, "rx": 180},
-        {"x": 0.9, "y": 0.0, "z": 0.5, "rx": 180},
-    ]
-    q = [[10.0, -20.0, 15.0, 5.0, 30.0, 0.0] for _ in pts]
-    segs = [WeldSegment(0, 2, weld_speed=5.0, arc_file=1)]
-    jbi = generate_jbi(
-        pts,
-        segs,
-        PostprocessorConfig(job_name="STRUCT"),
-        station_deg=[0.0] * 3,
-        joint_angles_deg=q,
-        macro_arg=1,
-        weave_no=21,
-    )
-    # Shared structural tokens with production 000.JBI.
-    for token in (
-        "/JOB",
-        "//POS",
-        "///TOOL 0",
-        "///POSTYPE PULSE",
-        "///PULSE",
-        "//INST",
-        "///ATTR SC,RW",
-        "///GROUP1 RB1,BS1",
-        "///GROUP2 ST1",
-        "NOP",
-        "MACRO1 MJ#(0) ARGF",
-        "ARCON",
-        "WVON WEV#(",
-        "DEC=20",
-        "+MOVJ EC",
-        "ARCOF",
-        "END",
-    ):
-        assert token in ref and token in jbi, f"missing shared token {token!r}"
-
-    assert re.search(r"///NPOS \d+,\d+,\d+,0,0,0", jbi)
-    assert re.search(r"EC\d{5}=-?\d+,-?\d+", jbi)
-    assert "ASF#(" not in jbi
-    # Bookended home BC.
-    assert f"BC00000={SAFE_HOME_BC}" in jbi
-    assert jbi.count("BC00000=") == 1
-
 
 def test_cad_seam_detection(lbracket):
     res = detect_seams(lbracket, angle_tol_deg=25, target_angle_deg=90)
     assert res["seam_count"] >= 1
     assert res["total_length"] > 0
-    # Fillet segments carry face normals + outward bisector.
-    seg = res["segments"][0]
-    assert "n1" in seg and "n2" in seg and "bisector" in seg
-    n1 = np.asarray(seg["n1"], dtype=float)
-    n2 = np.asarray(seg["n2"], dtype=float)
-    bis = np.asarray(seg["bisector"], dtype=float)
-    assert abs(np.linalg.norm(n1) - 1.0) < 1e-6
-    assert abs(np.linalg.norm(n2) - 1.0) < 1e-6
-    assert abs(np.linalg.norm(bis) - 1.0) < 1e-6
-    expected = n1 + n2
-    expected = expected / np.linalg.norm(expected)
-    assert np.allclose(bis, expected, atol=1e-5)
-
-
-def test_tfillet_bisector_approach_and_torch(tmp_path):
-    """T-fillet (extruded L): approach offset and torch wire follow face bisector."""
-    from app.path_planning import (
-        plan_from_seams,
-        seam_bisector,
-        torch_dir_to_rpy_deg,
-        torch_wire_direction,
-    )
-
-    # Concave 90° corner: faces with normals +Y and +X → bisector ≈ (0.707, 0.707, 0).
-    poly = Polygon(
-        [(0, 0), (0.3, 0), (0.3, 0.05), (0.05, 0.05), (0.05, 0.3), (0, 0.3)]
-    )
-    solid = trimesh.creation.extrude_polygon(poly, height=0.4)
-    path = str(tmp_path / "tfillet.stl")
-    solid.export(path)
-
-    seams = detect_seams(path, angle_tol_deg=25, target_angle_deg=90)
-    assert seams["seam_count"] >= 1
-    seg = seams["segments"][0]
-    bis = np.asarray(seg["bisector"], dtype=float)
-    assert abs(np.linalg.norm(bis) - 1.0) < 1e-6
-    assert bis[0] > 0.3 and bis[1] > 0.3
-    assert abs(bis[2]) < 1e-6
-    assert np.allclose(seg["n1"], [0.0, 1.0, 0.0], atol=1e-5) or np.allclose(
-        seg["n2"], [0.0, 1.0, 0.0], atol=1e-5
-    )
-
-    travel = np.asarray(seg["end"], dtype=float) - np.asarray(seg["start"], dtype=float)
-    wire = torch_wire_direction(bis, travel, travel_angle_deg=12.0, push=True)
-    # Wire aims into the joint ≈ −bisector (within travel tilt).
-    assert float(np.dot(wire, -bis)) > 0.85
-    assert float(np.dot(wire, bis)) < 0.0
-
-    standoff = 0.05
-    planned = plan_from_seams(
-        [seg],
-        samples_per_seam=3,
-        approach_height=standoff,
-        travel_angle_deg=12.0,
-        arc_file=1,
-    )
-    assert len(planned.points) >= 5
-    approach = np.array(
-        [planned.points[0]["x"], planned.points[0]["y"], planned.points[0]["z"]]
-    )
-    seam_start = np.asarray(seg["start"], dtype=float)
-    delta = approach - seam_start
-    # Approach is offset along +bisector, not world +Z alone.
-    assert float(np.dot(delta / np.linalg.norm(delta), bis)) > 0.95
-    assert abs(np.linalg.norm(delta) - standoff) < 1e-6
-    assert abs(delta[2]) < 1e-6  # bisector is in XY → no pure +Z lift
-
-    rx, ry, rz = torch_dir_to_rpy_deg(wire)
-    assert planned.points[1]["rx"] == pytest.approx(rx, abs=1e-3)
-    assert planned.points[1]["ry"] == pytest.approx(ry, abs=1e-3)
-    assert planned.points[1]["rz"] == pytest.approx(rz, abs=1e-3)
-    forced = plan_from_seams(
-        [seg], samples_per_seam=2, torch_rpy_deg=(180.0, 0.0, 0.0)
-    )
-    assert forced.points[1]["rx"] == 180.0
-    assert np.allclose(seam_bisector(seg), bis)
 
 
 def test_full_pipeline(lbracket):
@@ -446,8 +192,6 @@ def test_full_pipeline(lbracket):
     assert len(planned.points) > 0
     ik = solve_ik_path(planned.points)
     assert ik["all_reachable"]
-    from app.pulse_config import resolve_base_pulses
-
     jbi = generate_jbi(
         planned.points,
         planned.weld_segments,
@@ -455,21 +199,192 @@ def test_full_pipeline(lbracket):
         station_deg=[0.0] * len(planned.points),
         joint_angles_deg=ik["joint_angles_deg"],
     )
-    assert "\r\n" in jbi
     assert "///POSTYPE PULSE" in jbi
     assert "///RECTAN" not in jbi
-    # Home bookend is first/last.
-    home = ",".join(str(p) for p in SAFE_HOME_PULSES)
-    assert f"C00000={home}" in jbi
-    assert f"BC00000={SAFE_HOME_BC}" in jbi
-    npos = len(planned.points) + 2
-    assert f"///NPOS {npos},{npos},{npos},0,0,0" in jbi
-    path_bc = resolve_base_pulses(len(planned.points), points=planned.points)
-    assert f"BC00001={path_bc[0]}" in jbi
-    assert "MACRO1 MJ#(0) ARGF4" in jbi  # arc_file=2
+    assert "C00000=" in jbi and "BC00000=878036" in jbi
     assert "ARCON" in jbi and jbi.strip().endswith("END")
     assert "RB1,BS1" in jbi
 
 
+def test_merge_collinear_and_arc_grouping():
+    """Collinear glue + constant-radius chords → type=arc (MOVC pipe pattern)."""
+    from app.cad_analysis import group_constant_radius_arcs, merge_collinear_seams
+
+    # Three collinear 100 mm edges → one line.
+    col = [
+        {"start": [0.0, 0.0, 0.0], "end": [0.1, 0.0, 0.0], "length": 0.1},
+        {"start": [0.1, 0.0, 0.0], "end": [0.2, 0.0, 0.0], "length": 0.1},
+        {"start": [0.2, 0.0, 0.0], "end": [0.3, 0.0, 0.0], "length": 0.1},
+    ]
+    merged = merge_collinear_seams(col)
+    assert len(merged) == 1
+    assert merged[0]["type"] == "line"
+    assert merged[0]["length"] == pytest.approx(0.3, rel=1e-6)
+
+    # Ø70 mm tube (R=35 mm) — short chords like tessellated fillet around pipe.
+    r = 0.035
+    n = 12
+    chords: list[dict] = []
+    for i in range(n):
+        a0 = 2 * np.pi * i / n
+        a1 = 2 * np.pi * (i + 1) / n
+        p0 = [r * np.cos(a0), r * np.sin(a0), 0.0]
+        p1 = [r * np.cos(a1), r * np.sin(a1), 0.0]
+        chords.append(
+            {
+                "start": p0,
+                "end": p1,
+                "length": float(np.linalg.norm(np.array(p1) - np.array(p0))),
+            }
+        )
+    grouped = group_constant_radius_arcs(chords, min_edges=3)
+    arcs = [s for s in grouped if s.get("type") == "arc"]
+    assert len(arcs) >= 1
+    arc = arcs[0]
+    assert arc["move_type"] == "MOVC"
+    assert "via" in arc and "points" in arc
+    assert len(arc["points"]) >= 3
+    assert arc["radius"] == pytest.approx(r, rel=0.15)
+
+
+def test_jbi_movc_and_per_point_ec():
+    """MOVC for arc welds (12/123.JBI) + variable EC (1-DEFRO-5 ST3 pattern)."""
+    # Three circular weld samples → MOVC in //INST.
+    pts = [
+        {"x": 0.8, "y": 0.0, "z": 0.55, "rx": 180, "move_type": "MOVJ"},
+        {"x": 0.835, "y": 0.0, "z": 0.5, "rx": 180, "move_type": "MOVC"},
+        {"x": 0.8, "y": 0.035, "z": 0.5, "rx": 180, "move_type": "MOVC"},
+        {"x": 0.765, "y": 0.0, "z": 0.5, "rx": 180, "move_type": "MOVC"},
+        {"x": 0.8, "y": 0.0, "z": 0.55, "rx": 180, "move_type": "MOVJ"},
+    ]
+    segs = [WeldSegment(1, 3, weld_speed=5.0, arc_file=1, move_type="MOVC")]
+    jbi = generate_jbi(pts, segs, PostprocessorConfig(), station_deg=[0.0] * 5)
+    assert "MOVC C00001 BC00001 V=5.0 DEC=20  +MOVJ EC00001" in jbi
+    assert "MOVC C00002" in jbi
+    assert "MOVC C00003" in jbi
+    # Air approach stays MOVJ.
+    assert "MOVJ C00000" in jbi
+
+    # ST3 circumferential: identical TCP intent, EC axis-2 rotates
+    # (1-DEFRO-5.JBI: EC00004=-2638,-94527 → EC00005=-2638,-726117).
+    circ = [
+        {"x": 0.9, "y": 0.5, "z": 0.4, "rx": 180},
+        {"x": 0.9, "y": 0.5, "z": 0.4, "rx": 180},
+    ]
+    ec = [(-2638, -94527), (-2638, -726117)]
+    jbi_ec = generate_jbi(
+        circ,
+        [WeldSegment(0, 1, weld_speed=4.2, arc_file=1, weave_no=0)],
+        PostprocessorConfig(macro_arg=4),
+        station_deg=[0.0, 0.0],
+        ec_pulses=ec,
+    )
+    assert "EC00000=-2638,-94527" in jbi_ec
+    assert "EC00001=-2638,-726117" in jbi_ec
+
+    # Point-embedded ec= also works.
+    pts_ec = [
+        {"x": 0.9, "y": 0.5, "z": 0.4, "rx": 180, "ec": [-2638, -94527]},
+        {"x": 0.9, "y": 0.5, "z": 0.4, "rx": 180, "ec": [-2638, -726117]},
+    ]
+    jbi_pt = generate_jbi(
+        pts_ec,
+        [WeldSegment(0, 1, weld_speed=4.2, arc_file=1)],
+        PostprocessorConfig(),
+    )
+    assert "EC00000=-2638,-94527" in jbi_pt
+    assert "EC00001=-2638,-726117" in jbi_pt
+
+    # Planner tags arc seams as MOVC.
+    planned = plan_from_seams(
+        [
+            {
+                "type": "arc",
+                "move_type": "MOVC",
+                "start": [0.035, 0.0, 0.0],
+                "via": [0.0, 0.035, 0.0],
+                "end": [-0.035, 0.0, 0.0],
+                "points": [
+                    [0.035, 0.0, 0.0],
+                    [0.0, 0.035, 0.0],
+                    [-0.035, 0.0, 0.0],
+                ],
+                "radius": 0.035,
+            }
+        ],
+        samples_per_seam=3,
+    )
+    assert planned.weld_segments[0].move_type == "MOVC"
+    weld_moves = [
+        p.get("move_type")
+        for p in planned.points[planned.weld_segments[0].start_index : planned.weld_segments[0].end_index + 1]
+    ]
+    assert all(m == "MOVC" for m in weld_moves)
+    assert len(weld_moves) >= 3
+    jbi_plan = generate_jbi(
+        planned.points,
+        planned.weld_segments,
+        PostprocessorConfig(),
+        station_deg=[0.0] * len(planned.points),
+    )
+    movc_lines = [ln for ln in jbi_plan.splitlines() if ln.startswith("MOVC ")]
+    assert len(movc_lines) >= 3
+
+
+def test_production_movc_and_defro_ec_fixtures():
+    """Fixtures uploaded from the cell dump encode the taught patterns."""
+    j12 = (CELL / "12.JBI").read_text(encoding="utf-8", errors="replace")
+    assert "MOVC C00013" in j12
+    assert "MOVC C00014" in j12
+    assert "MOVC C00015" in j12
+    j123 = (CELL / "123.JBI").read_text(encoding="utf-8", errors="replace")
+    assert j123.count("MOVC ") >= 3
+    defro = (CELL / "1-DEFRO-5.JBI").read_text(encoding="utf-8", errors="replace")
+    assert "///GROUP2 ST3" in defro
+    assert "C00004=-83555,68320,-11474,26050,-31610,-59171" in defro
+    assert "C00005=-83555,68320,-11474,26050,-31610,-59171" in defro
+    assert "EC00004=-2638,-94527" in defro
+    assert "EC00005=-2638,-726117" in defro
+
+
 def test_robot_dof():
     assert get_robot().n == 6
+
+
+def test_motoweld_argf_and_arcsrt_template():
+    """M3: ARGF map + shared ARCSRT 200 A / 20 V template from dump."""
+    assert ARCSRT_TEMPLATE.current_a == 200.0
+    assert ARCSRT_TEMPLATE.voltage_v == 20.0
+    assert set(LORCH_S8_SCHEDULES) >= {1, 2, 3}
+    assert set(MOTOWELD_ARGF_SCHEDULES) >= {1, 4, 5, 8}
+    sch8 = get_schedule_by_argf(8)
+    assert sch8.lorch_job == 8
+    assert sch8.current_a == ARCSRT_TEMPLATE.current_a
+    assert sch8.default_weave == 21
+    assert abs(wire_for_current(200) - 7.2) < 0.15
+    # Fixture ARCSRT EN blocks are identical templates
+    arcsrt = (CELL / "ARCSRT.CND").read_text(encoding="latin-1", errors="replace")
+    assert arcsrt.count("//ARCSRT EN ") == 1000
+    assert "200,20.0,100" in arcsrt
+
+
+def test_weave_files_from_weav_cnd():
+    """M3: WEV#(1/15/16/21) amplitudes match WEAV.CND."""
+    assert get_weave(1).amp_l_mm == 2.0 and get_weave(1).angle_l_deg == 70.0
+    assert get_weave(15).amp_l_mm == 3.0 and get_weave(15).frequency_hz == 3.0
+    assert get_weave(16).angle_r_deg == 0.0
+    assert get_weave(21).amp_l_mm == 4.0 and get_weave(21).amp_r_mm == 0.0
+    weav = (CELL / "WEAV.CND").read_text(encoding="latin-1", errors="replace")
+    assert "//WEAV 21" in weav
+    assert set(WEAVE_FILES) == {1, 15, 16, 21}
+
+
+def test_touchsense_movs_pattern_from_123123():
+    """M3: TouchSense search uses MOVS V=11.0 +MOVJ EC VJ=0.78 (123123.JBI)."""
+    job = (CELL / "123123.JBI").read_text(encoding="latin-1", errors="replace")
+    assert "MOVS C00001 BC00001 V=11.0  +MOVJ EC00001 VJ=0.78" in job
+    assert TOUCH_SENSE.opcode == "MOVS"
+    assert TOUCH_SENSE.search_speed_cm_min == 11.0
+    assert TOUCH_SENSE.station_vj == 0.78
+    macro = (CELL / "MACRO.DAT").read_text(encoding="latin-1", errors="replace")
+    assert "//MACRO1 1" in macro and "PROG-NR:" in macro

@@ -12,6 +12,10 @@ torch orientation and approach/retract are derived from geometry:
   so vertical / side seams do not drive the torch through the part.
 
 Without a bisector the planner falls back to world-up lift and a fixed RPY.
+
+``type="arc"`` seams (from ``cad_analysis.group_constant_radius_arcs``) emit
+≥3 weld samples tagged ``move_type="MOVC"`` so the postprocessor can match
+production pipe welds (``12.JBI`` / ``123.JBI``).
 """
 
 from __future__ import annotations
@@ -25,7 +29,7 @@ from .dx200_postprocessor import WeldSegment
 
 @dataclass
 class PlannedPath:
-    points: list[dict]  # ordered TCP poses {x,y,z,rx,ry,rz}
+    points: list[dict]  # ordered TCP poses {x,y,z,rx,ry,rz[,move_type]}
     weld_segments: list[WeldSegment]  # index ranges to wrap with ARCON/ARCOF
 
 
@@ -90,7 +94,6 @@ def torch_wire_direction(
 
     axis = np.cross(wire, trav)
     if float(np.linalg.norm(axis)) < 1e-9:
-        # Travel nearly parallel to wire — pick a stable perpendicular.
         helper = np.array([0.0, 0.0, 1.0]) if abs(wire[2]) < 0.9 else np.array([1.0, 0.0, 0.0])
         axis = np.cross(wire, helper)
     axis = _normalize(axis)
@@ -101,16 +104,39 @@ def torch_wire_direction(
 
 
 def torch_dir_to_rpy_deg(direction: np.ndarray) -> tuple[float, float, float]:
-    """Approximate Motoman RECTAN Rx,Ry,Rz [deg] from tool −Z / wire direction.
-
-    Mirrors ``frontend/lib/weldProgram.ts`` ``torchDirToRpy``.
-    """
+    """Approximate Motoman RECTAN Rx,Ry,Rz [deg] from tool −Z / wire direction."""
     d = _normalize(np.asarray(direction, dtype=float))
     if float(np.linalg.norm(d)) < 1e-9:
         return 180.0, 0.0, 0.0
     rx = float(np.degrees(np.arctan2(d[1], -d[2])))
     ry = float(np.degrees(np.arcsin(float(np.clip(-d[0], -1.0, 1.0)))))
     return rx, ry, 0.0
+
+
+def _sample_arc_points(seam: dict, samples: int) -> list[np.ndarray]:
+    """Sample an arc seam: prefer explicit points, else start/via/end circle."""
+    raw = seam.get("points")
+    if isinstance(raw, (list, tuple)) and len(raw) >= 3:
+        pts = [np.asarray(p, dtype=float) for p in raw]
+        if samples <= len(pts):
+            idx = np.linspace(0, len(pts) - 1, max(3, samples))
+            return [pts[int(round(i))] for i in idx]
+        return pts
+
+    start = np.asarray(seam["start"], dtype=float)
+    end = np.asarray(seam["end"], dtype=float)
+    via = seam.get("via")
+    if via is not None:
+        via_p = np.asarray(via, dtype=float)
+        n = max(3, samples)
+        out: list[np.ndarray] = []
+        for t in np.linspace(0.0, 1.0, n):
+            p = (1 - t) ** 2 * start + 2 * (1 - t) * t * via_p + t**2 * end
+            out.append(p)
+        return out
+
+    n = max(2, samples)
+    return [start + t * (end - start) for t in np.linspace(0.0, 1.0, n)]
 
 
 def plan_from_seams(
@@ -129,13 +155,29 @@ def plan_from_seams(
     When a segment provides ``bisector`` / ``n1``+``n2``, approach and retract
     are offset along the bisector and torch RPY follows work + travel angles.
     Pass ``torch_rpy_deg`` to force a fixed orientation (legacy / override).
+
+    Arc seams (``type="arc"`` / ``move_type="MOVC"``) get circular samples
+    tagged for INFORM ``MOVC``; linear seams use ``MOVL``.
     """
     points: list[dict] = []
     weld_segments: list[WeldSegment] = []
 
     for seam in seams:
-        start = np.asarray(seam["start"], dtype=float)
-        end = np.asarray(seam["end"], dtype=float)
+        is_arc = (
+            str(seam.get("type", "")).lower() == "arc"
+            or str(seam.get("move_type", "")).upper() == "MOVC"
+        )
+        move_type = "MOVC" if is_arc else "MOVL"
+        if is_arc:
+            weld_pts = _sample_arc_points(seam, max(3, samples_per_seam))
+        else:
+            start = np.asarray(seam["start"], dtype=float)
+            end = np.asarray(seam["end"], dtype=float)
+            n = max(2, samples_per_seam)
+            weld_pts = [start + t * (end - start) for t in np.linspace(0.0, 1.0, n)]
+
+        start = weld_pts[0]
+        end = weld_pts[-1]
         travel = end - start
         bis = seam_bisector(seam)
         wire = torch_wire_direction(
@@ -146,13 +188,12 @@ def plan_from_seams(
         else:
             rx, ry, rz = torch_dir_to_rpy_deg(wire)
 
-        # Outward offset for air moves — never default to world +Z alone.
         offset = bis * float(approach_height)
         if float(np.linalg.norm(offset)) < 1e-9:
             offset = np.array([0.0, 0.0, approach_height])
 
-        def pose(p: np.ndarray) -> dict:
-            return {
+        def pose(p: np.ndarray, *, mt: str | None = None) -> dict:
+            out = {
                 "x": float(p[0]),
                 "y": float(p[1]),
                 "z": float(p[2]),
@@ -160,16 +201,18 @@ def plan_from_seams(
                 "ry": ry,
                 "rz": rz,
             }
+            if mt:
+                out["move_type"] = mt
+            return out
 
-        points.append(pose(start + offset))  # approach
+        points.append(pose(start + offset, mt="MOVJ"))  # approach
         weld_start_idx = len(points)
 
-        n = max(2, samples_per_seam)
-        for t in np.linspace(0.0, 1.0, n):
-            points.append(pose(start + t * (end - start)))
+        for p in weld_pts:
+            points.append(pose(p, mt=move_type))
 
         weld_end_idx = len(points) - 1
-        points.append(pose(end + offset))  # retract
+        points.append(pose(end + offset, mt="MOVJ"))  # retract
 
         weld_segments.append(
             WeldSegment(
@@ -177,6 +220,7 @@ def plan_from_seams(
                 end_index=weld_end_idx,
                 weld_speed=weld_speed,
                 arc_file=arc_file,
+                move_type=move_type,
             )
         )
 
