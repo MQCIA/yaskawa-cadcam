@@ -3,7 +3,7 @@
 import { Html } from "@react-three/drei";
 
 /**
- * Procedural Lorch S8 welding power source ("spawarka") on a travelling dolly.
+ * Procedural Motoweld-E welding power source ("spawarka") on a travelling dolly.
  *
  * In this cell it rides the same rail carriage as the robot, so it moves in
  * sync with the robot along the track. The model is an approximate stand-in
@@ -12,14 +12,14 @@ import { Html } from "@react-three/drei";
  */
 export default function WeldPowerSource({
   position = [0, 0, 0],
-  label = "LORCH S8",
+  label = "MOTOWELD-E",
 }: {
   position?: [number, number, number];
   label?: string;
 }) {
   const body = 0x2a2f36; // anthracite cabinet
   const panel = 0x3b424b;
-  const lorchBlue = 0x0072ce;
+  const lorchBlue = 0x0072ce; // accent (legacy Lorch blue on Motoweld stand-in)
   const cabW = 0.42;
   const cabH = 0.72;
   const cabD = 0.5;

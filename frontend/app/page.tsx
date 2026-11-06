@@ -24,7 +24,9 @@ import {
   generateJbi,
   waypointsToIkPoints,
   DEMO_MOUNT,
-  LORCH_S8_SCHEDULES,
+  MOTOWELD_SCHEDULES,
+  CELL_WEAVE_OPTIONS,
+  DEFAULT_WEAVE_NO,
   ensureTouchSense,
   optimizeSequence,
   planMotions,
@@ -71,6 +73,7 @@ export default function Home() {
 
   const [program, setProgram] = useState<WeldProgram | null>(null);
   const [weldCondition, setWeldCondition] = useState(1);
+  const [weaveNo, setWeaveNo] = useState<number | null>(DEFAULT_WEAVE_NO);
   const [simT, setSimT] = useState(0);
   const [simPlaying, setSimPlaying] = useState(false);
   const [simSpeed, setSimSpeed] = useState(1);
@@ -234,6 +237,7 @@ export default function Home() {
       allowPreviewRectan: !pulseOk,
       baseMm: baseMm !== 0 ? baseMm * 1000 : undefined, // UI rail is metres
       homeBookends: true,
+      weaveNo,
     });
     const blob = new Blob([text], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
@@ -469,14 +473,37 @@ export default function Home() {
                   onChange={(e) => changeCondition(Number(e.target.value))}
                   className="rounded bg-slate-100 px-2 py-1"
                 >
-                  {LORCH_S8_SCHEDULES.map((s) => (
+                  {MOTOWELD_SCHEDULES.map((s) => (
                     <option key={s.condition} value={s.condition}>
-                      #{s.condition} — {s.currentA}A / {s.voltageV.toFixed(1)}V / {s.travelCmMin}{" "}
+                      ARGF{s.job} — {s.currentA}A / {s.voltageV.toFixed(1)}V / {s.travelCmMin}{" "}
                       cm/min
                     </option>
                   ))}
                 </select>
               </div>
+              <div className="flex items-center gap-2 px-2 text-xs text-slate-700">
+                <span>{t("settings.weave")}</span>
+                <select
+                  value={weaveNo === null ? "none" : String(weaveNo)}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setWeaveNo(v === "none" ? null : Number(v));
+                  }}
+                  className="rounded bg-slate-100 px-2 py-1"
+                >
+                  {CELL_WEAVE_OPTIONS.map((w) => (
+                    <option
+                      key={w.wev === null ? "none" : w.wev}
+                      value={w.wev === null ? "none" : String(w.wev)}
+                    >
+                      {w.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <p className="max-w-xs px-2 text-[10px] leading-snug text-amber-800">
+                {t("settings.wpsWarning")}
+              </p>
               <div className="flex items-center gap-2 px-2 text-xs text-slate-700">
                 <span>{t("settings.robot")}</span>
                 <select
@@ -650,12 +677,33 @@ export default function Home() {
                       onChange={(e) => changeCondition(Number(e.target.value))}
                       className="mt-0.5 w-full rounded bg-slate-100 px-2 py-1 text-xs"
                     >
-                      {LORCH_S8_SCHEDULES.map((s) => (
+                      {MOTOWELD_SCHEDULES.map((s) => (
                         <option key={s.condition} value={s.condition}>
-                          #{s.condition} {s.process} · {s.currentA}A
+                          ARGF{s.job} Motoweld · {s.currentA}A
                         </option>
                       ))}
                     </select>
+                    <label className="mt-2 block text-[10px] text-slate-500">{t("settings.weave")}</label>
+                    <select
+                      value={weaveNo === null ? "none" : String(weaveNo)}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        setWeaveNo(v === "none" ? null : Number(v));
+                      }}
+                      className="mt-0.5 w-full rounded bg-slate-100 px-2 py-1 text-xs"
+                    >
+                      {CELL_WEAVE_OPTIONS.map((w) => (
+                        <option
+                          key={w.wev === null ? "none" : w.wev}
+                          value={w.wev === null ? "none" : String(w.wev)}
+                        >
+                          {w.label}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="mt-2 text-[10px] leading-snug text-amber-800">
+                      {t("settings.wpsWarning")}
+                    </p>
                   </div>
                 ) : (
                   <p className="px-1 text-xs text-slate-500">{t("welds.empty")}</p>
@@ -867,7 +915,7 @@ export default function Home() {
           <div className="border-b border-slate-200 px-3 py-2">
             <div className="text-xs font-semibold uppercase tracking-wide text-slate-700">{t("robot.title")}</div>
             <div className="text-[10px] text-slate-500">
-              {activeModel?.label ?? "AR2010"} · {t("robot.jointJog")}
+              {activeModel?.label ?? "MA2010"} · {t("robot.jointJog")}
             </div>
           </div>
 

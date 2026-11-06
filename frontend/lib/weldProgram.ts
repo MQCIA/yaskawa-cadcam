@@ -54,12 +54,31 @@ export type WeldProgram = {
   };
 };
 
-// Mirror of backend welding schedules — Motoweld-E cell (travel V≈5–8).
-export const LORCH_S8_SCHEDULES: WeldScheduleRow[] = [
-  { condition: 1, job: 8, currentA: 180, voltageV: 22.0, wireMmin: 6.5, travelCmMin: 5.0, process: "Motoweld" },
-  { condition: 2, job: 8, currentA: 220, voltageV: 24.0, wireMmin: 8.0, travelCmMin: 6.7, process: "Motoweld" },
-  { condition: 3, job: 4, currentA: 140, voltageV: 19.0, wireMmin: 5.0, travelCmMin: 7.5, process: "Motoweld" },
+/** Motoweld MACRO1 ARGF presets (mirror backend `MOTOWELD_SCHEDULES`). */
+export const MOTOWELD_SCHEDULES: WeldScheduleRow[] = [
+  { condition: 1, job: 1, currentA: 180, voltageV: 22.0, wireMmin: 6.5, travelCmMin: 5.0, process: "Motoweld" },
+  { condition: 4, job: 4, currentA: 200, voltageV: 20.0, wireMmin: 7.0, travelCmMin: 5.0, process: "Motoweld" },
+  { condition: 5, job: 5, currentA: 180, voltageV: 22.0, wireMmin: 6.5, travelCmMin: 5.0, process: "Motoweld" },
+  { condition: 8, job: 8, currentA: 220, voltageV: 24.0, wireMmin: 8.0, travelCmMin: 6.7, process: "Motoweld" },
 ];
+
+/** @deprecated alias — prefer MOTOWELD_SCHEDULES */
+export const LORCH_S8_SCHEDULES = MOTOWELD_SCHEDULES;
+
+/** Live-cell WEV# choices (M3.3). `wev: null` → omit WVON. */
+export type WeaveOptionRow = { wev: number | null; label: string };
+
+export const CELL_WEAVE_OPTIONS: WeaveOptionRow[] = [
+  { wev: null, label: "Brak / None" },
+  { wev: 1, label: "WEV#(1)" },
+  { wev: 15, label: "WEV#(15)" },
+  { wev: 16, label: "WEV#(16)" },
+  { wev: 21, label: "WEV#(21)" },
+];
+
+export const DEFAULT_WEAVE_NO: number | null = 21;
+export const WPS_UNQUALIFIED_WARNING =
+  "UNQUALIFIED WPS — VERIFY MACRO1 ARGF AND WEAV ON PENDANT";
 
 // Mount point on work-station 1's positioner faceplate (world coords, metres).
 export const DEMO_MOUNT: Vec3 = [1.6, 0.98, -1.2];
@@ -189,7 +208,7 @@ function refreshMeta(prog: WeldProgram): WeldProgram {
 /** Build a T-fillet demo weld program mounted on the given positioner. */
 export function buildDemoProgram(mount: Vec3 = DEMO_MOUNT, condition = 1): WeldProgram {
   const sch =
-    LORCH_S8_SCHEDULES.find((s) => s.condition === condition) ?? LORCH_S8_SCHEDULES[0];
+    MOTOWELD_SCHEDULES.find((s) => s.condition === condition) ?? MOTOWELD_SCHEDULES[0];
 
   const platesLocal: { size: Vec3; center: Vec3 }[] = [
     { size: [0.5, 0.02, 0.34], center: [0, 0.01, 0] },
@@ -739,7 +758,7 @@ export function generateJbi(
     stationPulsesPerDeg?: number;
     stationDeg?: number | number[];
     stationDeg2?: number | number[];
-    weaveNo?: number;
+    weaveNo?: number | null;
     jointAnglesDeg?: number[][];
     /** @deprecated ignored — BC comes from station zone / baseMm */
     baseParkPulse?: number;
@@ -785,7 +804,7 @@ export function generateJbi(
 
   const npos = pts.length;
   const pulsesPerDeg = opts?.stationPulsesPerDeg ?? CELL_PULSE.stationPulsesPerDeg;
-  const weaveNo = opts?.weaveNo ?? 21;
+  const weaveNo = opts?.weaveNo === undefined ? DEFAULT_WEAVE_NO : opts.weaveNo;
   const usePulse = jointsReady(joints, npos);
   if (!usePulse && !opts?.allowPreviewRectan) {
     throw new PulseExportError(
@@ -826,6 +845,10 @@ export function generateJbi(
       `' WARN: RECT-X pulses/mm=${CELL_PULSE.rectXPulsesPerMm} UNVERIFIED_PLACEHOLDER (RC1G/RC2G lead TBD) — BC# mm mapping is APP_ESTIMATE only`,
     );
   }
+  lines.push(`' NOTE: ${WPS_UNQUALIFIED_WARNING}`);
+  lines.push(
+    `' MACRO1 ARGF${sch.job}; default WEV#=${weaveNo === null ? "NONE" : weaveNo}`,
+  );
   lines.push("//POS");
   lines.push(`///NPOS ${npos},${npos},${npos},0,0,0`);
   lines.push("///TOOL 0");
@@ -905,12 +928,14 @@ export function generateJbi(
       lines.push("TIMER T=0.50");
       lines.push(`MACRO1 MJ#(0) ARGF${sch.job}`);
       lines.push(
-        `' Motoweld cond ${sch.condition}: ${sch.currentA}A / ${sch.voltageV.toFixed(1)}V / wire ${sch.wireMmin.toFixed(
+        `' Motoweld ARGF${sch.job}: ${sch.currentA}A / ${sch.voltageV.toFixed(1)}V / wire ${sch.wireMmin.toFixed(
           1,
-        )} m/min / ${sch.process}`,
+        )} m/min / ${sch.process} [UNQUALIFIED WPS heuristic]`,
       );
       lines.push("ARCON");
-      lines.push(`WVON WEV#(${weaveNo})`);
+      if (weaveNo !== null) {
+        lines.push(`WVON WEV#(${weaveNo})`);
+      }
     }
 
     if (useJoint && p.kind !== "weld" && p.kind !== "sense") {
@@ -926,7 +951,9 @@ export function generateJbi(
     }
     if (p.tag === "ARCOF") {
       lines.push("ARCOF");
-      lines.push("WVOF");
+      if (weaveNo !== null) {
+        lines.push("WVOF");
+      }
     }
   });
   lines.push("END");

@@ -59,7 +59,8 @@ def test_config_loaded():
     assert ACTIVE_MODEL.pulses_per_degree[0] > 1000  # S ≈ 1341 from RC1G
     assert ACTIVE_POSITIONER.axes[0].pulses_per_degree > 1000  # ≈ 1019.7
     assert "MOTOWELD" in ACTIVE_POWER_SOURCE.name.upper()
-    assert set(LORCH_S8_SCHEDULES) >= {1, 2, 3}
+    # Live-cell MACRO1 ARGF set (M3.1) — not legacy Lorch 1/2/3.
+    assert set(LORCH_S8_SCHEDULES) >= {1, 4, 5, 8}
 
 
 def test_cell_stations_registry():
@@ -143,7 +144,28 @@ def test_jbi_ma2010_cell_profile():
     assert "EC00001=45886,0" in jbi  # 45 * 1019.6889…
     assert "UNVERIFIED_PLACEHOLDER" in jbi
     assert "Motoweld" in jbi
+    assert "UNQUALIFIED WPS" in jbi
     assert jbi.strip().endswith("END")
+
+
+def test_jbi_omits_wvon_when_weave_none():
+    pts = [
+        {"x": 0.8, "y": 0.0, "z": 0.5, "rx": 180},
+        {"x": 0.9, "y": 0.1, "z": 0.5, "rx": 180},
+    ]
+    segs = [WeldSegment(0, 1, weld_speed=5.0, arc_file=1, weave_no=None)]
+    jbi = generate_jbi(
+        pts,
+        segs,
+        PostprocessorConfig(
+            allow_preview_rectan=True,
+            home_bookends=False,
+            default_weave=None,
+        ),
+        station_deg=[0, 0],
+    )
+    assert "ARCON" in jbi and "ARCOF" in jbi
+    assert "WVON" not in jbi and "WVOF" not in jbi
 
 
 def test_jbi_pulse_requires_ik_no_fake_pulses():
