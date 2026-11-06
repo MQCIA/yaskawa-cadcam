@@ -53,6 +53,10 @@ export type Waypoint = {
    * so re-export can stay in pulse units without re-running IK.
    */
   jointsDeg?: number[];
+  /** INFORM C##### index from the job (may repeat on tack-in-place). */
+  cIndex?: number;
+  /** Raw PULSE S..T when imported from .JBI. */
+  pulses?: number[];
 };
 
 export type WeldScheduleRow = {
@@ -109,6 +113,10 @@ export type WeldProgram = {
     seamEdits?: import("@/lib/trajectoryViz").SeamEdit[];
     /** Active WEV# for visualisation (0 = no weave / no zigzag). */
     activeWeaveNo?: number;
+    /** BC pulse at carriage Z = 0 (PULSE .JBI import). */
+    bcRefPulse?: number;
+    /** True when program came from a PULSE .JBI (XYZ aligned, not pendant world). */
+    importedPulse?: boolean;
   };
 };
 

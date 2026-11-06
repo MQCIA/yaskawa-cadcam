@@ -353,15 +353,28 @@ function jointsAt(
   cache: number[][],
 ): number[] {
   if (cache[index]) return cache[index];
+  const wp = prog.waypoints[index];
+  // Prefer taught / imported PULSE joints on the waypoint itself.
+  if (wp.jointsDeg && wp.jointsDeg.length === 6) {
+    cache[index] = wp.jointsDeg;
+    return cache[index];
+  }
   const dense = prog.meta?.denseJointAnglesDeg;
   if (dense && dense.length === prog.waypoints.length && dense[index]?.length === 6) {
     cache[index] = dense[index];
     return cache[index];
   }
-  const wp = prog.waypoints[index];
   const prev = index > 0 ? cache[index - 1] : undefined;
   cache[index] = estimateJoints(wp.pos, prev);
   return cache[index];
+}
+
+/** True when the program carries real joint samples (PULSE .JBI / IK export). */
+function hasTaughtJoints(prog: WeldProgram, i: number): boolean {
+  const wp = prog.waypoints[i];
+  if (wp.jointsDeg && wp.jointsDeg.length === 6) return true;
+  const dense = prog.meta?.denseJointAnglesDeg;
+  return Boolean(dense && dense.length === prog.waypoints.length && dense[i]?.length === 6);
 }
 
 function dirAt(prog: WeldProgram, i: number): Vec3 {
@@ -529,9 +542,10 @@ export function sampleDx200(prog: WeldProgram, p: number, weaveNo = 0): SimSampl
       const q1 = jointsAt(prog, i + 1, cache);
       const s = trapezoidS(u, 20);
       jointsDeg = q0.map((q, k) => q + (q1[k] - q) * s);
-      const fk = fkTcp(jointsDeg);
-      pos = fk.pos;
-      dir = fk.dir;
+      // Stay on the drawn path (waypoint.pos / polyline), not a second FK model.
+      // URDF tip is driven to this TCP by CCD IK in WeldUrdfRobot.
+      pos = add(scale(a.pos, 1 - s), scale(b.pos, s));
+      dir = slerpDir(dirAt(prog, i), dirAt(prog, i + 1), s);
       if (Math.abs(jointsDeg[4]) < WRIST_SING_B_DEG) {
         warnings.push({
           kind: "singularity",
@@ -549,15 +563,30 @@ export function sampleDx200(prog: WeldProgram, p: number, weaveNo = 0): SimSampl
       move = "MOVC";
       pos = circlePoint(a.pos, b.pos, wps[i + 2].pos, u);
       dir = slerpDir(dirAt(prog, i), dirAt(prog, i + 2), u);
+      if (hasTaughtJoints(prog, i) && hasTaughtJoints(prog, i + 1)) {
+        const q0 = jointsAt(prog, i, cache);
+        const q1 = jointsAt(prog, i + 1, cache);
+        jointsDeg = q0.map((q, k) => q + (q1[k] - q) * u);
+      }
     } else if (a.move === "MOVC") {
       move = "MOVC";
       pos = add(scale(a.pos, 1 - u), scale(b.pos, u));
       dir = slerpDir(dirAt(prog, i), dirAt(prog, i + 1), u);
+      if (hasTaughtJoints(prog, i) && hasTaughtJoints(prog, i + 1)) {
+        const q0 = jointsAt(prog, i, cache);
+        const q1 = jointsAt(prog, i + 1, cache);
+        jointsDeg = q0.map((q, k) => q + (q1[k] - q) * u);
+      }
     } else {
       move = a.move === "MOVS" ? "MOVS" : "MOVL";
       const s = a.kind === "weld" ? u : trapezoidS(u, 20);
       pos = add(scale(a.pos, 1 - s), scale(b.pos, s));
       dir = slerpDir(dirAt(prog, i), dirAt(prog, i + 1), s);
+      if (hasTaughtJoints(prog, i) && hasTaughtJoints(prog, i + 1)) {
+        const q0 = jointsAt(prog, i, cache);
+        const q1 = jointsAt(prog, i + 1, cache);
+        jointsDeg = q0.map((q, k) => q + (q1[k] - q) * s);
+      }
     }
 
     let weaveActive = false;
@@ -645,21 +674,24 @@ export function sampleDx200(prog: WeldProgram, p: number, weaveNo = 0): SimSampl
   };
 }
 
-/** Dense FK samples along a MOVJ segment for the blue air-path polyline. */
+/**
+ * Dense samples along a MOVJ segment for the blue air-path polyline.
+ * Uses the same trapezoid blend of waypoint.pos as ``sampleDx200`` so the
+ * dashed path matches the TCP the robot is IK-driven toward.
+ */
 export function movjTcpPolyline(
   prog: WeldProgram,
   i0: number,
   i1: number,
   samples = 20,
 ): Vec3[] {
-  const cache: number[][] = [];
-  const q0 = jointsAt(prog, i0, cache);
-  const q1 = jointsAt(prog, i1, cache);
+  const a = prog.waypoints[i0]?.pos;
+  const b = prog.waypoints[i1]?.pos;
+  if (!a || !b) return [];
   const out: Vec3[] = [];
   for (let i = 0; i < samples; i++) {
     const s = trapezoidS(i / (samples - 1), 20);
-    const q = q0.map((q, k) => q + (q1[k] - q) * s);
-    out.push(fkTcp(q).pos);
+    out.push(add(scale(a, 1 - s), scale(b, s)));
   }
   return out;
 }

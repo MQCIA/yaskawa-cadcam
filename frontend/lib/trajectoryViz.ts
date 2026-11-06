@@ -62,8 +62,8 @@ export type SeamEdit = {
   sketchKind?: SeamSketchKind;
 };
 
-export function informCLabel(index: number): string {
-  return `C${String(index).padStart(5, "0")}`;
+export function informCLabel(index: number, cIndex?: number): string {
+  return `C${String(cIndex ?? index).padStart(5, "0")}`;
 }
 
 function hitObstacles(prog: WeldProgram, a: Vec3, b: Vec3): boolean {

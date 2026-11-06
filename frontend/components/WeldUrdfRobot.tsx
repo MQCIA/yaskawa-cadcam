@@ -302,21 +302,6 @@ export default function WeldUrdfRobot({
 
     const s = prog ? sampleProgram(prog, simRef.current) : null;
 
-    // DX200 MOVJ (and any sample with baked joints): drive axes directly —
-    // TCP follows FK, not a straight Cartesian chord.
-    if (s?.jointsDeg && s.jointsDeg.length >= 6 && s.pathClass === "joint") {
-      for (let k = 0; k < CHAIN.length; k++) {
-        const axis = AXES[k];
-        if (!axis) continue;
-        const rad = deg2rad(s.jointsDeg[k] ?? 0);
-        if (robot.setJointValue) robot.setJointValue(CHAIN[k], rad);
-        else if (chain[k]) chain[k].setJointValue(rad);
-      }
-      robot.updateMatrixWorld(true);
-      publishTip();
-      return;
-    }
-
     if (s) {
       target.set(s.pos[0], s.pos[1], s.pos[2]);
       desiredDir.set(s.dir[0], s.dir[1], s.dir[2]).normalize();
@@ -344,8 +329,9 @@ export default function WeldUrdfRobot({
         .normalize();
     }
 
-    // Prefer dense joint stream for Cartesian segments when available.
-    if (s?.jointsDeg && s.jointsDeg.length >= 6 && prog?.meta?.denseJointAnglesDeg) {
+    // Seed with taught / PULSE joints (config), then CCD-IK so TCP tracks the
+    // drawn .JBI path lines (URDF FK ≠ approx DH used when importing pulses).
+    if (s?.jointsDeg && s.jointsDeg.length >= 6) {
       for (let k = 0; k < CHAIN.length; k++) {
         const axis = AXES[k];
         if (!axis) continue;
@@ -354,11 +340,7 @@ export default function WeldUrdfRobot({
         else if (chain[k]) chain[k].setJointValue(rad);
       }
       robot.updateMatrixWorld(true);
-      publishTip();
-      return;
-    }
-
-    if (chain.length >= 6) {
+    } else if (chain.length >= 6) {
       chain[5].setJointValue(0);
       robot.updateMatrixWorld(true);
     }
