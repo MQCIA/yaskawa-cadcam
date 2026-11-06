@@ -95,8 +95,16 @@ class JbiRequest(BaseModel):
     job_name: str = "WELD_AUTO"
     tool_no: int = 0
     move_speed: float = 10.0
+    station: str = Field(
+        default="ST1",
+        description="GROUP2 station: ST1 | ST2 | ST3 | ST4.",
+    )
     station_deg: list[float] | None = Field(
-        default=None, description="Optional per-point TURN ST1 angle (deg)."
+        default=None, description="Optional per-point TURN axis-1 angle (deg)."
+    )
+    station_deg2: list[float] | None = Field(
+        default=None,
+        description="Optional per-point TURN axis-2 angle (deg) for ST3/ST4.",
     )
     joint_angles_deg: list[list[float]] | None = Field(
         default=None,
@@ -112,6 +120,10 @@ class JbiRequest(BaseModel):
     base_mm: list[float] | float | None = Field(
         default=None,
         description="RECT-X rail mm relative to BC_HOME (via base_mm_to_bc).",
+    )
+    home_bookends: bool = Field(
+        default=True,
+        description="Prepend/append cell-home C00000 / BC=570125 when missing.",
     )
 
 
@@ -244,6 +256,8 @@ def generate_job(req: JbiRequest):
         move_speed=req.move_speed,
         prefer_pulse=True,
         allow_preview_rectan=req.allow_preview_rectan,
+        station=req.station,  # type: ignore[arg-type]
+        home_bookends=req.home_bookends,
     )
     segments = [
         WeldSegment(
@@ -260,6 +274,7 @@ def generate_job(req: JbiRequest):
             segments,
             cfg,
             station_deg=req.station_deg,
+            station_deg2=req.station_deg2,
             joint_angles_deg=req.joint_angles_deg,
             base_mm=req.base_mm,
         )
