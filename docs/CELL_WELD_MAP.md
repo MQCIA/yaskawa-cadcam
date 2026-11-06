@@ -78,3 +78,18 @@ Każdy eksport `ma2010_cell` zawiera komentarz:
 ```
 ' NOTE: UNQUALIFIED WPS - VERIFY MACRO1 ARGF AND WEAV ON PENDANT
 ```
+
+---
+
+## Gas / wire / stickout (M3.4)
+
+Z `WELDER.DAT` (MOTOWELD-E Series 350A):
+
+| Parametr | Wartość w dumpie | Uwagi |
+|----------|------------------|-------|
+| Wire Ø | **1.2** mm | Pierwszy token wiersza `1.2,0,15,0.1,0.60` |
+| Gas | „COMBINATION GAS AND WIRE” | Brak składu % w tekście → UI: `CO2/Mix (cell)` |
+| Stickout | **nie nazwany** w CND | `TODO: weryfikacja na hali` — nie inventować mm |
+| UI gas default | `CO2/Mix (cell)` | `MOTOWELD_SCHEDULES[].gas` / `CELL_PROCESS_DEFAULTS` |
+
+Kod: `backend/app/welding_config.py` → `CELL_PROCESS_DEFAULTS`.

@@ -125,6 +125,15 @@ CELL_WEAVE_OPTIONS: tuple[WeaveOption, ...] = (
 DEFAULT_WEAVE_NO: int | None = 21
 DEFAULT_ARGF: int = 1
 
+# M3.4 — cell process defaults from WELDER.DAT (not a qualified WPS).
+CELL_PROCESS_DEFAULTS = {
+    "wire_diameter_mm": 1.2,
+    "gas_label": "CO2/Mix (cell)",
+    "welder_name": "MOTOWELD-E Series 350A",
+    "stickout_mm": None,  # not named in dump text — verify on cell
+    "source": "WELDER.DAT ///COMMENT COMBINATION GAS AND WIRE",
+}
+
 WPS_UNQUALIFIED_WARNING = (
     "UNQUALIFIED WPS — VERIFY MACRO1 ARGF AND WEAV ON PENDANT"
 )
@@ -156,6 +165,7 @@ def schedules_public() -> list[dict]:
                 "travel_speed": s.travel_speed,
                 "process": s.process,
                 "gas": s.gas,
+                "wire_diameter_mm": CELL_PROCESS_DEFAULTS["wire_diameter_mm"],
                 "weldudef_user": s.weldudef_user,
                 "arcsrt_en": s.arcsrt_en,
                 "source_jobs": list(s.source_jobs),

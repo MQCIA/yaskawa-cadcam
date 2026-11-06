@@ -61,6 +61,10 @@ def test_config_loaded():
     assert "MOTOWELD" in ACTIVE_POWER_SOURCE.name.upper()
     # Live-cell MACRO1 ARGF set (M3.1) — not legacy Lorch 1/2/3.
     assert set(LORCH_S8_SCHEDULES) >= {1, 4, 5, 8}
+    from app.welding_config import CELL_PROCESS_DEFAULTS
+
+    assert CELL_PROCESS_DEFAULTS["wire_diameter_mm"] == 1.2
+    assert "MOTOWELD" in CELL_PROCESS_DEFAULTS["welder_name"].upper()
 
 
 def test_cell_stations_registry():
