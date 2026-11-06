@@ -138,7 +138,7 @@ flowchart LR
 | # | Zadanie | Done when |
 |---|---------|-----------|
 | 5.1 | Import CAD → spoiny → plan → symulacja → eksport jako jeden flow | Mniej „demo buttons” |
-| 5.2 | Podgląd JBI w UI (diff vs `000.JBI` grammar) | Panel kodu |
+| 5.2 | Podgląd JBI w UI (diff vs `000.JBI` grammar) | **Done** — zakładka JBI + checklist gramatyki vs komórka |
 | 5.3 | Symulacja TCP + opcjonalnie joint z IK | Suwak czasu już jest; dociągnąć joint |
 | 5.4 | README = MA2010 cell (sprzątnięcie AR/Lorch default) | **Done** — README = MA2010 + Motoweld + GO_LIVE |
 | 5.5 | Skan dumpa: `tools/scan_dx200_dump.py` odświeża katalog | **Done** — skrypt odświeża `_dump_scan.json` stub / katalog |

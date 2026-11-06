@@ -56,6 +56,10 @@ const pl: Dict = {
   "left.workspace": "Stanowisko",
   "left.welds": "Spoiny",
   "left.program": "Program",
+  "left.jbi": "JBI",
+  "jbi.empty": "Brak programu — najpierw wykryj / zbuduj spoinę.",
+  "jbi.previewNote":
+    "Podgląd offline (może być RECTAN bez IK). Przed DX200: GO_LIVE.md + MotoSim. Checklist vs gramatyka komórki (000.JBI).",
 
   // Workspace
   "workspace.cell": "Komórka",
@@ -223,6 +227,10 @@ const en: Dict = {
   "left.workspace": "Workspace",
   "left.welds": "Welds",
   "left.program": "Program",
+  "left.jbi": "JBI",
+  "jbi.empty": "No program yet — identify / build a weld first.",
+  "jbi.previewNote":
+    "Offline preview (may be RECTAN without IK). Before DX200: GO_LIVE.md + MotoSim. Checklist vs cell grammar (000.JBI).",
 
   "workspace.cell": "Cell",
   "workspace.robot": "Robot",

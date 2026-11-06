@@ -44,7 +44,18 @@ const RobotWorkspace = dynamic(() => import("@/components/RobotWorkspace"), {
 
 const PLAYBACK_BASE_SEC = 12;
 
-type LeftTab = "workspace" | "welds" | "program";
+type LeftTab = "workspace" | "welds" | "program" | "jbi";
+
+/** Grammar tokens expected in production ma2010_cell JBI (vs 000.JBI). */
+const JBI_GRAMMAR_CHECKS: { token: string; label: string }[] = [
+  { token: "///TOOL 0", label: "TOOL 0" },
+  { token: "///GROUP1 RB1,BS1", label: "GROUP1 RB1,BS1" },
+  { token: "///GROUP2", label: "GROUP2 STn" },
+  { token: "///ATTR SC,RW", label: "ATTR SC,RW" },
+  { token: "MACRO1 MJ#(0)", label: "MACRO1" },
+  { token: "ARCON", label: "ARCON" },
+  { token: "ASF#(", label: "no ASF#" },
+];
 type Ribbon = "plan" | "settings" | "view";
 
 const btnPrimary =
@@ -314,6 +325,33 @@ export default function Home() {
   const activePositioner = POSITIONER_MODELS.find((p) => p.id === positionerId);
   const sample = program ? sampleProgram(program, simT) : null;
   const curWp = program && sample ? program.waypoints[sample.wpIndex] : null;
+
+  const jbiPreview = useMemo(() => {
+    if (!program) return null;
+    try {
+      const stIdx = selectedStation ?? 0;
+      const stationAngle = stations[stIdx]?.rotate ?? 0;
+      return generateJbi(program, {
+        station: exportStation,
+        stationDeg: stationAngle,
+        allowPreviewRectan: true,
+        homeBookends: true,
+        baseMm: railTravel !== 0 ? railTravel * 1000 : undefined,
+      });
+    } catch {
+      return null;
+    }
+  }, [program, selectedStation, stations, exportStation, railTravel]);
+
+  const jbiGrammar = useMemo(() => {
+    if (!jbiPreview) return [];
+    return JBI_GRAMMAR_CHECKS.map(({ token, label }) => {
+      if (token === "ASF#(") {
+        return { label, ok: !jbiPreview.includes(token) };
+      }
+      return { label, ok: jbiPreview.includes(token) };
+    });
+  }, [jbiPreview]);
   const instruction = curWp
     ? `${curWp.move} ${curWp.id}  ${curWp.speedLabel}${curWp.tag ? "  " + curWp.tag : ""}`
     : "—";
@@ -553,6 +591,7 @@ export default function Home() {
             {leftTabBtn("workspace", t("left.workspace"))}
             {leftTabBtn("welds", t("left.welds"))}
             {leftTabBtn("program", t("left.program"))}
+            {leftTabBtn("jbi", t("left.jbi"))}
           </div>
 
           <div className="flex-1 overflow-y-auto p-2 text-sm">
@@ -695,6 +734,37 @@ export default function Home() {
                   </div>
                 ) : (
                   <p className="px-1 text-xs text-slate-500">{t("program.empty")}</p>
+                )}
+              </div>
+            )}
+
+            {leftTab === "jbi" && (
+              <div className="space-y-2">
+                {!program || !jbiPreview ? (
+                  <p className="px-1 text-xs text-slate-500">{t("jbi.empty")}</p>
+                ) : (
+                  <>
+                    <p className="px-1 text-[10px] leading-snug text-amber-800">
+                      {t("jbi.previewNote")}
+                    </p>
+                    <div className="flex flex-wrap gap-1 px-1">
+                      {jbiGrammar.map((g) => (
+                        <span
+                          key={g.label}
+                          className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${
+                            g.ok
+                              ? "bg-emerald-50 text-emerald-800"
+                              : "bg-rose-50 text-rose-800"
+                          }`}
+                        >
+                          {g.ok ? "✓" : "✗"} {g.label}
+                        </span>
+                      ))}
+                    </div>
+                    <pre className="max-h-[28rem] overflow-auto rounded bg-slate-900 p-2 font-mono text-[10px] leading-snug text-slate-100">
+                      {jbiPreview}
+                    </pre>
+                  </>
                 )}
               </div>
             )}
