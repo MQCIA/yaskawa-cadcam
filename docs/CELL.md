@@ -72,6 +72,7 @@ Large binaries (`CMOS.BIN`, `ALL.PRM`, …) stay under `reference/` (gitignored)
 - **Golden poses + pulse diagnostic:** [CELL_POSES.md](CELL_POSES.md), `tools/compare_pulses.py`
 - **IO / safety + YSFLOGIC note:** [CELL_IO.md](CELL_IO.md)
 - **TouchSense / SRCH:** [CELL_TOUCHSENSE.md](CELL_TOUCHSENSE.md)
+- **Soft cubes CUBEINTF:** [CELL_CUBES.md](CELL_CUBES.md)
 - **Offline → MotoSim → DX200:** [GO_LIVE.md](GO_LIVE.md)
 - **IO / safety names + station CALL:** [CELL_IO.md](CELL_IO.md)
 - **Offline → MotoSim → DX200:** [GO_LIVE.md](GO_LIVE.md)
