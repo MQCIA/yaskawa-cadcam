@@ -102,3 +102,40 @@ def test_rectan_job_is_rejected():
     assert job.postype == "USER"
     with pytest.raises(ValueError, match="POSTYPE"):
         cp.compare_job(job, do_ik=False)
+
+
+def test_empty_npos_job():
+    path = FIXTURES / "EMPTY.JBI"
+    if not path.is_file():
+        path = FIXTURES / "1-DEFRO-60.JBI"
+    if not path.is_file():
+        pytest.skip("empty NPOS fixture missing")
+    job = cp.parse_jbi_file(path)
+    assert job.npos and job.npos.startswith("0,")
+    rows = cp.compare_job(job, do_ik=False)
+    assert rows == []
+
+
+def test_multipoint_000_and_optional_kosz():
+    job = cp.parse_jbi_file(FIXTURES / "000.JBI")
+    rows = cp.compare_job(job, do_ik=False)
+    assert len(rows) == 20
+    assert all(r.limit_flag in {"OK", "LIMIT_WARN", "OUT_OF_RANGE"} for r in rows)
+
+    kosz = FIXTURES / "02025_KOSZ_DO_RURY_70-PLUS-RAMKI.JBI"
+    if not kosz.is_file():
+        return
+    big = cp.parse_jbi_file(kosz)
+    n_c = sum(1 for p in big.points.values() if p.c and len(p.c) == 6)
+    assert n_c == 218
+    assert len(cp.compare_job(big, do_ik=False)) == 218
+
+
+def test_markdown_out(tmp_path):
+    out = tmp_path / "report.md"
+    code = cp.main([str(FIXTURES / "HOME_TRACK.JBI"), "--no-ik", "--markdown-out", str(out)])
+    assert code == 0
+    text = out.read_text(encoding="utf-8")
+    assert "PULSE compare report" in text
+    assert "HOME_TRACK" in text
+    assert "C00000" in text
