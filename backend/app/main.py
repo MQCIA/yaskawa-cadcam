@@ -33,6 +33,7 @@ from .robot_config import (
 )
 from .welding_config import (
     ACTIVE_POWER_SOURCE,
+    CELL_PROCESS_DEFAULTS,
     schedules_public,
     weave_options_public,
 )
@@ -196,6 +197,7 @@ def cell_config():
                 "UI A/V are APP_ESTIMATE only — verify MACRO1 ARGF + WEAV on "
                 "pendant / MotoSim before DX200 load (see docs/CELL_WELD_MAP.md)."
             ),
+            "process_defaults": CELL_PROCESS_DEFAULTS,
         },
         "tool0": {
             "xyz_mm": list(TOOL0_XYZ_MM),

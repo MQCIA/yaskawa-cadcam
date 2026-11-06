@@ -110,7 +110,7 @@ flowchart LR
 | 3.1 | Mapa ARGF / cond → `ARCSRT` EN + `WELDUDEF` USER-n | **Done** — [CELL_WELD_MAP.md](CELL_WELD_MAP.md) |
 | 3.2 | WPS przykładowe (A/V/wire/travel) + ostrzeżenie „nie kwalifikowane” | **Done** — UI + komentarze JBI `UNQUALIFIED WPS` |
 | 3.3 | `WEV#` używane w live jobs (grep) → lista w UI | **Done** — dropdown Brak/1/15/16/21 |
-| 3.4 | Gas / stickout / wire defaults z komórki | Częściowo — gas w `MOTOWELD_SCHEDULES`; stickout TBD |
+| 3.4 | Gas / stickout / wire defaults z komórki | **Done** — `CELL_PROCESS_DEFAULTS` (wire 1.2; stickout TODO hali) |
 
 **Wyjście M3:** Operator wybiera warunek jak na uczniu, nie „Lorch job #”.
 
