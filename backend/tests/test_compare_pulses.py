@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 import sys
 from pathlib import Path
 
@@ -139,3 +140,51 @@ def test_markdown_out(tmp_path):
     assert "PULSE compare report" in text
     assert "HOME_TRACK" in text
     assert "C00000" in text
+
+
+def test_golden_poses_fixture_loaded():
+    data = cp.load_golden_poses()
+    assert data["schema"].startswith("yaskawa-cadcam/golden_poses")
+    ids = [p["id"] for p in data["poses"]]
+    assert ids == [
+        "POSE_01_SAFE_HOME",
+        "POSE_02_PARK_000",
+        "POSE_03_ST1_WELD_START",
+        "POSE_04_ST2_KOSZ_WELD_1",
+        "POSE_05_ST2_KOSZ_WELD_MID",
+        "POSE_06_ST2_ARC_MOVC",
+        "POSE_07_ST3_ROTARY_WELD",
+        "POSE_08_ST4_WELD",
+    ]
+    for pose in data["poses"]:
+        assert pose["verified_on_pendant"] is False
+        assert pose["cartesian_status"] == "UNVERIFIED_ON_PENDANT"
+        assert pose["pendant_or_motosim"] is None
+        assert len(pose["pulses"]) == 6
+
+
+def test_check_golden_cli():
+    code, report = cp.check_golden(do_ik=True)
+    assert code == 0
+    assert "POSE_01_SAFE_HOME" in report
+    assert "UNVERIFIED_ON_PENDANT" in report
+    assert "errors=0" in report
+    assert cp.main(["--check-golden"]) == 0
+
+
+def test_check_golden_rejects_fake_pendant(tmp_path):
+    data = cp.load_golden_poses()
+    data["poses"][0]["pendant_or_motosim"] = {
+        "x_mm": 0.0,
+        "y_mm": 0.0,
+        "z_mm": 0.0,
+        "rx_deg": 0.0,
+        "ry_deg": 0.0,
+        "rz_deg": 0.0,
+    }
+    # still verified_on_pendant=false → honesty error
+    bad = tmp_path / "bad_golden.json"
+    bad.write_text(json.dumps(data), encoding="utf-8")
+    code, report = cp.check_golden(bad, do_ik=False)
+    assert code == 1
+    assert "verified_on_pendant=false" in report

@@ -1,115 +1,96 @@
 # Złote pozy komórki MA2010 / DX200
 
-Pozy odniesienia do M1 (zaufany PULSE). Impulsy pochodzą z jobów INFORM.
-Stopnie liczy `tools/compare_pulses.py` skalą z `backend/app/pulse_config.py`
-(RC1G + RBCALIB). Poza TCP jest FK modelu DH razy TOOL 0.
+Rejestr **8** reprezentatywnych póz z produkcyjnych `.JBI` (impulsy bez zmian).
+Stopnie: `pulse_config.py` (RC1G / RBCALIB).  
+`APP_ESTIMATE`: FK aplikacji = placeholder DH × TOOL 0 — **nie** jest odczytem z pendanta.
 
-TOOL 0 (`TOOL.CND`): xyz `-54.280, 1.052, 415.702` mm, RPY `1.3119, -42.6215, -6.8387` deg.
+Maszynowo: `backend/tests/fixtures/robot-cell/golden_poses.json`  
+Sprawdzenie: `python3 tools/compare_pulses.py --check-golden`
 
-**XYZ i RPY w tabelach nie są współrzędnymi z pendantu.** Długości DH są
-placeholderem (`robot_config.MA2010.approximate`). Round-trip IK na home i na
-większości punktów `000.JBI` wraca do tych samych impulsów, więc skala
-pulse↔stopień jest wewnętrznie spójna. Zgodność z uczoną pozycją kartezjańską
-to dopiero M1.4.
+TOOL 0 (`TOOL.CND`): xyz `-54.280, 1.052, 415.702` mm · RPY `1.3119, -42.6215, -6.8387` deg.
 
-Powtórzenie liczb:
+| Status kartezjański | Znaczenie |
+|--|--|
+| `UNVERIFIED_ON_PENDANT` | Brak wpisanego XYZ/RPY z DX200 / MotoSim — **zakaz** traktować `APP_ESTIMATE` jako certyfikat |
+| `VERIFIED_ON_PENDANT` | Wypełnione `pendant_or_motosim` + `verified_on_pendant: true` w JSON |
 
-```bash
-python tools/compare_pulses.py backend/tests/fixtures/robot-cell
-```
+---
 
-Pełne joby produkcyjne leżą w `reference/robot-cell-dx200/jobs/` (gitignore).
-W tym repozytorium jest kompletny `000.JBI` oraz fixture home. Reszta nazw
-jest w `docs/_dump_scan.json` (nagłówki, bez `C#`).
+## Tabela 8 póz
 
-## Skala
+Impulsy skopiowane z jobów. `APP_ESTIMATE` przelicz live: `--check-golden` (poniżej wartości z generacji dokumentu — mogą lekko dryfować przy zmianie DH).
 
-| Oś | impuls/stopień |
-|----|----------------|
-| S L U R B T | 1341.38, 1907.68, 1592.89, 1022.87, 980.24, 454.76 |
-| TURN oś 1 (`EC` pierwsza liczba) | 91771 / 90° ≈ 1019.69 |
-| TURN oś 2 (`EC` druga liczba) | brak certyfikowanej skali |
-| RECT-X `BC` | brak impuls/mm. Znane są dwa punkty szyny, nie lead |
+| ID | Źródło | ST | C# | S | L | U | R | B | T | BC | EC1 | EC2 | S…T ° (pulse_config) | APP_ESTIMATE XYZ mm / RPY ° | PENDANT_OR_MOTOSIM_XYZ_RPY |
+|--|--|--|--|--|--|--|--|--|--|--|--|--|--|--|--|
+| `POSE_01_SAFE_HOME` | `02025_KOSZ…JBI` | rail-home | C00000 | -281 | -101163 | -84214 | 3730 | -80188 | -1936 | 570125 | 192 | 0 | -0.209, -53.029, -52.869, 3.647, -81.804, -4.257 | -1463.1, -31.7, 1967.7 / -160.57, -53.58, 17.08 | `TODO` — CURRENT POSITION → ROBOT (CARTESIAN), TOOL 0 |
+| `POSE_02_PARK_000` | `000.JBI` | ST1 | C00000 | 95902 | -19559 | -65353 | -68228 | -62443 | 70439 | 878036 | -1746 | 0 | 71.495, -10.253, -41.028, -66.703, -63.701, 154.894 | -265.8, 636.2, 2507.3 / -105.23, -76.97, -127.05 | `TODO` |
+| `POSE_03_ST1_WELD_START` | `11.JBI` | ST1 | C00003 | 97267 | 52739 | -6802 | 12719 | -17839 | -9459 | 927851 | 1163 | 0 | 72.512, 27.646, -4.270, 12.435, -18.199, -20.800 | 667.6, 1972.0, 864.4 / -73.80, 25.13, -142.86 | `TODO` |
+| `POSE_04_ST2_KOSZ_WELD_1` | `02025_KOSZ…JBI` | ST2 | C00003 | 150409 | 61689 | -12910 | 81671 | -34099 | -23144 | 124171 | -932 | 0 | 112.130, 32.337, -8.105, 79.845, -34.786, -50.893 | -514.8, 1983.1, 743.2 / -60.56, 0.83, -146.32 | `TODO` |
+| `POSE_05_ST2_KOSZ_WELD_MID` | `02025_KOSZ…JBI` | ST2 | C00100 | 119061 | 39982 | -23058 | 19092 | -67348 | 19868 | 352913 | -933 | 0 | 88.760, 20.958, -14.476, 18.665, -68.705, 43.689 | 153.1, 1790.9, 1751.2 / -34.81, -12.18, -59.68 | `TODO` |
+| `POSE_06_ST2_ARC_MOVC` | `12.JBI` | ST2 | C00013 | 94466 | 78056 | 15184 | 22601 | -26793 | -15578 | 262818 | 2712 | 0 | 70.424, 40.917, 9.532, 22.096, -27.333, -34.256 | 743.3, 1781.5, 147.4 / -67.30, 28.06, -166.85 | `TODO` |
+| `POSE_07_ST3_ROTARY_WELD` | `1-DEFRO-5.JBI` | ST3 | C00004 | -83555 | 68320 | -11474 | 26050 | -31610 | -59171 | 808680 | -2638 | -94527 | -62.290, 35.813, -7.203, 25.468, -32.247, -130.116 | 841.6, -1964.1, 840.7 / -15.45, -24.64, 70.40 | `TODO` |
+| `POSE_08_ST4_WELD` | `1KT.JBI` | ST4 | C00003 | -103675 | 64756 | 3591 | -48976 | -53898 | 45246 | 190240 | -2 | -1 | -77.290, 33.945, 2.254, -47.881, -54.984, 99.495 | 771.9, -1819.5, 720.8 / 81.66, 71.49, 169.43 | `TODO` |
 
-Osie home i wszystkich `C#` z `000.JBI` mieszczą się w softlimitach RC1G.
+Wszystkie wiersze: **`cartesian_status = UNVERIFIED_ON_PENDANT`**, `verified_on_pendant = false`.
 
-## Home nad torem
+Uwagi:
 
-Ta sama szóstka `C` jest pozycją bezpieczną: `C00000` i ostatni punkt joba.
-Widziana w `1-DEFRO-5.JBI`, `1-DEFRO-5-KOSZ.JBI`,
-`02025_KOSZ_DO_RURY_70-PLUS-RAMKI.JBI`, `11.JBI`, `12.JBI`, `1KT.JBI`,
-`123.JBI`. W gicie trzyma ją `backend/tests/fixtures/robot-cell/HOME_TRACK.JBI`
-(nie jest to kopia całego joba, tylko ta poza).
+- Warianty „home” w innych jobach różnią się o kilka impulsów (`-283…`, `-288…`) — kanoniczny `POSE_01` to wpis z `02025_KOSZ…` C00000.
+- `EC` oś 2 (TURN-2) bez certyfikowanej skali ° — tylko impulsy.
+- `BC` bez impuls/mm (M1.3).
 
-`000.JBI` tej pozy **nie** używa. Tam szyna stoi na parku.
+---
 
-| | S | L | U | R | B | T |
-|--|--|--|--|--|--|--|
-| impulsy | -283 | -101162 | -84213 | 3710 | -80188 | -1936 |
-| stopnie | -0.211 | -53.029 | -52.868 | 3.627 | -81.804 | -4.257 |
+## Instrukcja operatora — spisać XYZ z pendanta / MotoSim
 
-| Szyna | Stacja | TCP modelu (mm, deg) | round-trip |
-|--|--|--|--|
-| `BC = 570125` | osobno, nie jest częścią tej pozy robota | X -1463.1, Y -31.5, Z 1967.7, Rx -160.60, Ry -53.58, Rz 17.06 | ΔPULSE 0, ΔTCP 0.00 mm |
+Cel: dla każdej z 8 póz wpisać **6 liczb** `(X, Y, Z, Rx, Ry, Rz)` w układzie **ROBOT (CARTESIAN)** przy **TOOL 0**, **bez ruszania robotem** (albo z MotoSim EG-VRC na tej samej konfiguracji impulsów).
 
-Różnica szyny park − home = `878036 − 570125 = 307911` impulsów. Na milimetry
-nie przeliczać, dopóki nie ma leadu RECT-X (M1.3).
+### A) Pendant DX200 (preferowane)
 
-## Park szyny i pozy z `000.JBI` (ST1, TURN-1)
+1. Upewnij się, że aktywne jest **TOOL 0** (ekran TOOL / CURRENT TOOL).
+2. Otwórz job źródłowy z tabeli (np. `11.JBI`) w trybie teach / play stop.
+3. Ustaw kursor na linii ruchu z danym `C#####` **albo** ręcznie ustaw osie S…T / BC / EC na wartości z tabeli (pulse) — robot musi stać w tej konfiguracji.
+4. Ekran **CURRENT POSITION**:
+   - przełącz wyświetlanie z **PULSE** na **ROBOT** (czasem etykieta **CARTESIAN** / **BASE** zależnie od oprogramowania — wybierz układ **robot / tool0**, nie user-frame spoiny, chyba że dokumentujesz UF osobno).
+5. Spisz `X Y Z Rx Ry Rz` (mm, °) dokładnie jak na ekranie.
+6. W `golden_poses.json` dla tej pozy:
+   - ustaw `"pendant_or_motosim": {"x_mm": …, "y_mm": …, "z_mm": …, "rx_deg": …, "ry_deg": …, "rz_deg": …}`,
+   - `"verified_on_pendant": true`,
+   - `"cartesian_status": "VERIFIED_ON_PENDANT"`,
+   - dodaj `"verified_at"` (data ISO) i `"verified_by"` (inicjały).
+7. Zaktualizuj kolumnę w tej tabeli Markdown (zamień `TODO` na liczby).
+8. Uruchom `python3 tools/compare_pulses.py --check-golden` — pojawi się `Δtcp_mm` vs `APP_ESTIMATE`.
 
-Źródło: `backend/tests/fixtures/robot-cell/000.JBI`.
+### B) MotoSim EG-VRC
 
-- `///NPOS 20,20,20,0,0,0`, `///TOOL 0`, `///POSTYPE PULSE`
-- `///GROUP1 RB1,BS1`, `///GROUP2 ST1`
-- `BC` = 878036 na starcie, dalej 878036 lub 878037 (jeden impuls)
-- `EC` ≈ `-1746,0` → **-1.712°** na osi 1, druga oś 0
-- instrukcje: 3× MOVJ, 7× MOVL, 10× MOVC, ARCON, ARCOF, 4× WVON, MACRO1 `ARGF8`
+1. Załaduj projekt komórki zgodny z dumpem CF.
+2. Otwórz ten sam `.JBI`, przejdź do `C#####`.
+3. Odczytaj TCP w TOOL 0 / robot frame (jak w pendancie).
+4. Wpisz jak w kroku 6 powyżej; w notatce zaznacz `source: MotoSim`.
 
-| Rola | punkt | impulsy S,L,U,R,B,T | stopnie S,L,U,R,B,T | TCP modelu mm / RPY deg | ΔPULSE max | ΔTCP mm |
-|--|--|--|--|--|--|--|
-| dojazd, pierwszy MOVJ, przed łukiem | C00000 | 95902, -19559, -65353, -68228, -62443, 70439 | 71.495, -10.253, -41.028, -66.703, -63.701, 154.894 | -265.8, 636.2, 2507.3 / -105.23, -76.97, -127.05 | 0 | 0.00 |
-| pierwszy punkt łuku (MOVC po ARCON) | C00002 | 96643, 1036, -73382, -77097, -56952, 78162 | 72.047, 0.543, -46.068, -75.373, -58.100, 171.876 | -168.0, 951.7, 2450.7 / -75.19, -80.75, -118.04 | 30 | 0.16 |
-| spawanie MOVL, `V=5.0` | C00005 | 144285, 13854, -56584, 51164, -49608, 19486 | 107.564, 7.262, -35.523, 50.020, -50.608, 42.849 | -140.2, 1312.6, 2387.5 / 12.09, -15.23, -32.88 | 5 | 0.02 |
-| ostatni MOVL przed ARCOF | C00018 | 135827, -7962, -68903, 53184, -44238, -62042 | 101.259, -4.174, -43.256, 51.995, -45.130, -136.429 | 180.2, 799.6, 2621.6 / -164.80, 74.18, -20.89 | 86 | 0.29 |
-| odjazd MOVJ po ARCOF | C00019 | 116865, -4881, -33684, -3254, -73880, -61311 | 87.123, -2.559, -21.146, -3.181, -75.369, -134.821 | 54.9, 904.4, 2421.7 / 130.01, 19.74, 45.78 | 0 | 0.00 |
+### Czego nie robić
 
-`BC00000 = 878036`. Od C00003 w górę `BC = 878037`. `EC00000 = -1746,0`,
-przy łuku `-1743,0` albo `-1744,0`.
+- Nie kopiuj wartości `APP_ESTIMATE` do kolumny pendant.
+- Nie „zaokrąglaj na oko” impulsów z joba.
+- Nie ładuj nic na produkcyjny DX200 tylko po to, by spisać pozy — teach/stop wystarczy.
 
-Na C00003 solver IK, z ziarnem z poprzedniej nauczanej pozy, trafia w TCP
-(błąd poniżej 1 mm), ale inną konfiguracją nadgarstka (max |ΔPULSE| ≈ 90812).
-To nie jest błąd skali impulsów. Ziarno kolejnego punktu jest znowu nauczanym
-`C#`, nie tą obcą konfiguracją. Od C00004 round-trip wraca do impulsów joba.
+---
 
-## Stacje ST1–ST4
+## Skala (przypomnienie)
 
-`EC` ma zawsze dwie liczby. S1 i S2 to TURN-1 (jedna oś, druga liczba 0).
-S3 i S4 to TURN-2 (dwie osie). Grupa w jobie i tak nazywa się `ST1`…`ST4`.
+| Oś | impuls/° |
+|--|--|
+| S L U R B T | ≈ 1341.38, 1907.68, 1592.89, 1022.87, 980.24, 454.76 |
+| TURN oś 1 (`EC` pierwsza) | 91771 / 90° ≈ 1019.69 |
+| TURN oś 2 / RECT-X `BC` | brak certyfikatu ° / mm |
 
-| Stacja | Sprzęt | Job w skanie dumpa | Co jest w gicie |
-|--|--|--|--|
-| ST1 | S1 TURN-1 | `000.JBI` (`NPOS` 20), `1.JBI` (162) | pełne `C#`/`BC#`/`EC#` tylko dla `000.JBI` |
-| ST2 | S2 TURN-1 | `12.JBI` (25), `02025_KOSZ_DO_RURY_70-PLUS-RAMKI.JBI` (218) | nagłówki w `_dump_scan.json`, bez ciał `C#` |
-| ST3 | S3 TURN-2 | `1-DEFRO-5.JBI` (9, GROUP2 ST3) | nagłówek; home `C` jak wyżej, reszta punktów nie |
-| ST4 | S4 TURN-2 | `BAZA1.JBI` (6, GROUP2 ST4) | nagłówek |
+---
 
-`11.JBI`, `1KT.JBI`, `123.JBI` i `1-DEFRO-5-KOSZ.JBI` niosą to samo home, ale
-nie ma ich wpisu w `_dump_scan.json`, więc grupy z tego checkoutu nie da się
-potwierdzić.
+## Powiązanie z M1
 
-Przykłady `EC` z jobów (nie parować ich na siłę z home `C#`):
-
-| Zapis | Oś 1 stopnie | Oś 2 | Gdzie |
-|--|--|--|--|
-| `192,0` | 0.188 | 0, oś nieużywana | TURN-1, dojazd 1-osiowy |
-| `-1746,0` | -1.712 | 0 | `000.JBI`, spawanie na ST1 |
-| `-2638,-94527` | -2.587 | -94527 impulsów, stopni nie liczyć | TURN-2, zapis dwuosiowy |
-
-## Czego ta tabela jeszcze nie jest
-
-- Nie zastępuje złotych poz z pendantu (XYZ uczone, ta sama poza zmierzona na
-  kontrolerze).
-- Nie daje `BC` w milimetrach.
-- Nie daje stopni drugiej osi TURN-2.
-- Duży ΔPULSE przy małym błędzie TCP znaczy drugą konfigurację IK, nie złą
-  skalę RC1G.
+| Kamień | Rola tego rejestru |
+|--|--|
+| M1.1 `compare_pulses` | `--check-golden` czyta ten JSON |
+| M1.2 (ten plik) | 8 póz + miejsce na pendant |
+| M1.3 | BC → mm po leadzie |
+| M1.4 | DH vs pendant `Δtcp_mm` w limicie integratora |
