@@ -37,7 +37,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from spatialmath import SE3
+import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "backend"))
@@ -46,7 +46,12 @@ DEFAULT_GOLDEN = (
     ROOT / "backend" / "tests" / "fixtures" / "robot-cell" / "golden_poses.json"
 )
 
-from app.kinematics_engine import _pose_to_se3, forward_kinematics, solve_ik_path  # noqa: E402
+from app.kinematics_engine import (  # noqa: E402
+    forward_kinematics,
+    solve_ik_path,
+    urdf_flange_se3_reference,
+    flange_se3,
+)
 from app.pulse_config import (  # noqa: E402
     CELL_PULSE,
     RC1G_SOFTLIMIT_NEG,
@@ -54,6 +59,7 @@ from app.pulse_config import (  # noqa: E402
     deg_to_joint_pulses,
     joint_pulses_to_deg,
 )
+from app.robot_config import CELL_HOME_PULSES, cell_home_deg  # noqa: E402
 
 AXIS = ("S", "L", "U", "R", "B", "T")
 OPCODES = (
@@ -70,9 +76,9 @@ OPCODES = (
 )
 LIMIT_WARN_FRAC = 0.05
 
-# TOOL.CND / docs/CELL.md — tool frame relative to the flange.
-TOOL0_XYZ_MM = (-54.280, 1.052, 415.702)
-TOOL0_RPY_DEG = (1.3119, -42.6215, -6.8387)
+DEFAULT_PENDANT_TOL_MM = 5.0
+URDF_FK_TOL_MM = 1.0
+ROUNDTRIP_PULSE_TOL = 2
 
 
 def pulses_to_degrees(pulses: list[int]) -> list[float]:
@@ -85,35 +91,15 @@ def degrees_to_pulses(q_deg: list[float]) -> list[int]:
     return deg_to_joint_pulses(q_deg)
 
 
-def tool0_se3() -> SE3:
-    xyz_m = [v / 1000.0 for v in TOOL0_XYZ_MM]
-    return SE3(xyz_m[0], xyz_m[1], xyz_m[2]) * SE3.RPY(list(TOOL0_RPY_DEG), unit="deg", order="xyz")
-
-
-def _se3_to_pose(T: SE3) -> dict:
-    rpy = T.rpy(unit="deg", order="xyz")
-    t = T.t
-    return {
-        "x": float(t[0]),
-        "y": float(t[1]),
-        "z": float(t[2]),
-        "rx": float(rpy[0]),
-        "ry": float(rpy[1]),
-        "rz": float(rpy[2]),
-    }
-
-
 def tcp_from_joints(q_deg: list[float]) -> dict:
-    """Flange FK composed with TOOL 0. Translation in metres, RPY in degrees."""
-    flange = forward_kinematics(q_deg)
-    T_tcp = _pose_to_se3(flange) * tool0_se3()
-    return _se3_to_pose(T_tcp)
+    """Torch TCP via URDF MA2010 ERobot + Motoman TOOL 0 (metres, deg)."""
+    return forward_kinematics(q_deg, frame="tcp")
 
 
-def flange_pose_for_tcp(tcp: dict) -> dict:
-    """Invert TOOL 0 so IK targets the flange that produces this TCP."""
-    T_flange = _pose_to_se3(tcp) * tool0_se3().inv()
-    return _se3_to_pose(T_flange)
+def urdf_backend_flange_error_mm(q_deg: list[float]) -> float:
+    """ERobot flange vs independent SE3 URDF product (should be ~0)."""
+    err = float(np.linalg.norm(flange_se3(q_deg).t - urdf_flange_se3_reference(q_deg).t))
+    return err * 1000.0
 
 
 @dataclass
@@ -290,7 +276,7 @@ def ec_axis1_deg(ec: list[int] | None) -> float | None:
 
 
 def compare_job(job: JbiJob, *, do_ik: bool = True) -> list[PointReport]:
-    """Pulse → degrees → TCP (TOOL 0) → optional IK → pulses."""
+    """Pulse → degrees → TCP (URDF + TOOL 0) → optional IK → pulses."""
     if job.postype and job.postype.upper() != "PULSE":
         raise ValueError(
             f"{job.source or job.name}: POSTYPE is {job.postype}, not PULSE. "
@@ -298,8 +284,12 @@ def compare_job(job: JbiJob, *, do_ik: bool = True) -> list[PointReport]:
         )
     ordered = [job.points[i] for i in sorted(job.points)]
     home = job.points.get(0)
-    home_seed = pulses_to_degrees(home.c) if home and home.c and len(home.c) == 6 else None
-    seed: list[float] | None = home_seed
+    home_seed = (
+        pulses_to_degrees(home.c)
+        if home and home.c and len(home.c) == 6
+        else cell_home_deg(CELL_HOME_PULSES)
+    )
+    seed: list[float] = list(home_seed)
     rows: list[PointReport] = []
 
     for pt in ordered:
@@ -314,9 +304,8 @@ def compare_job(job: JbiJob, *, do_ik: bool = True) -> list[PointReport]:
         ik_ok: bool | None = None
         tcp_err_mm: float | None = None
         if do_ik:
-            used_seed = seed if seed is not None else q
-            flange = flange_pose_for_tcp(tcp)
-            solved = solve_ik_path([flange], q_seed_deg=used_seed)
+            # Seed with taught joints (prev point / C00000) to avoid wrist flips.
+            solved = solve_ik_path([tcp], q_seed_deg=seed, frame="tcp")
             ik_ok = bool(solved["diagnostics"][0]["success"])
             ik_deg = [float(a) for a in solved["joint_angles_deg"][0]]
             ik_pulses = degrees_to_pulses(ik_deg)
@@ -327,8 +316,6 @@ def compare_job(job: JbiJob, *, do_ik: bool = True) -> list[PointReport]:
                 (tcp_back["x"] * 1000.0, tcp_back["y"] * 1000.0, tcp_back["z"] * 1000.0),
                 (tcp["x"] * 1000.0, tcp["y"] * 1000.0, tcp["z"] * 1000.0),
             )
-            # Stay on the taught branch. A "successful" IK in another wrist
-            # configuration must not become the seed for the next point.
             seed = q
         rows.append(
             PointReport(
@@ -450,25 +437,30 @@ def check_golden(
     path: Path | None = None,
     *,
     do_ik: bool = True,
+    pendant_tol_mm: float = DEFAULT_PENDANT_TOL_MM,
 ) -> tuple[int, str]:
-    """Validate golden registry: pulses → deg → APP_ESTIMATE; never invent pendant XYZ.
+    """Validate golden registry vs URDF FK and optional pendant XYZ.
 
-    Returns ``(exit_code, report_text)``. Exit 0 when all poses parse and any
-    verified pendant rows are consistent; exit 1 on structural / honesty errors.
+    Returns ``(exit_code, report_text)``. Exit 0 when structure is honest,
+    backend FK matches URDF reference (<1 mm), round-trip ≤2 pulses when
+    ``do_ik``, and any ``verified_on_pendant`` rows meet ``pendant_tol_mm``.
     """
     data = load_golden_poses(path)
     lines: list[str] = [
         "=== compare_pulses --check-golden ===",
         f"file: {path or DEFAULT_GOLDEN}",
         f"poses: {len(data.get('poses', []))}",
-        "APP_ESTIMATE = FK(DH placeholder) × TOOL 0 — not pendant truth.",
+        "APP_ESTIMATE = URDF MA2010 ERobot × TOOL.CND on flange — not pendant truth.",
+        "WARNING: verified_on_pendant=false for unverified rows — do NOT treat "
+        "APP_ESTIMATE XYZ as DX200-certified.",
         "",
         (
             f"{'id':<28} {'flag':<14} {'status':<24} "
-            f"{'Xmm':>8} {'Ymm':>8} {'Zmm':>8} {'dP':>6} {'Δtcp':>8}"
+            f"{'Xmm':>8} {'Ymm':>8} {'Zmm':>8} {'dP':>6} {'Δurdf':>7} {'Δpend':>8}"
         ),
     ]
     errors: list[str] = []
+    warns: list[str] = []
     n_unverified = 0
     n_verified = 0
 
@@ -496,7 +488,6 @@ def check_golden(
                     f"{pid}: unverified pose must use cartesian_status=UNVERIFIED_ON_PENDANT "
                     f"(got {status!r})"
                 )
-            # Honesty: APP numbers must not be smuggled in as pendant.
             if isinstance(pendant, dict) and any(
                 pendant.get(k) is not None
                 for k in ("x_mm", "y_mm", "z_mm", "rx_deg", "ry_deg", "rz_deg")
@@ -505,23 +496,38 @@ def check_golden(
                     f"{pid}: pendant_or_motosim filled while verified_on_pendant=false "
                     "(set verified=true only after a real pendant/MotoSim reading)"
                 )
+            warns.append(
+                f"WARN: Brak odczytu XYZ z pendanta/MotoSim w golden_poses.json "
+                f"({pid}) — zgodność sprawdzona tylko wewnętrznie względem URDF MA2010"
+            )
         else:
             n_verified += 1
 
         q = pulses_to_degrees(pulses_i)
         tcp = tcp_from_joints(q)
         lim = softlimit_flag(pulses_i)
+        d_urdf = urdf_backend_flange_error_mm(q)
+        if d_urdf >= URDF_FK_TOL_MM:
+            errors.append(
+                f"{pid}: backend FK vs URDF reference {d_urdf:.3f} mm "
+                f"(tol {URDF_FK_TOL_MM} mm)"
+            )
+
         d_p: float | None = None
         d_tcp: float | None = None
         if do_ik:
-            flange = flange_pose_for_tcp(tcp)
-            solved = solve_ik_path([flange], q_seed_deg=q)
+            solved = solve_ik_path([tcp], q_seed_deg=q, frame="tcp")
             ik_ok = bool(solved["diagnostics"][0]["success"])
             ik_deg = [float(a) for a in solved["joint_angles_deg"][0]]
             ik_pulses = degrees_to_pulses(ik_deg)
             d_p = max(abs(b - a) for a, b in zip(pulses_i, ik_pulses))
             if not ik_ok:
-                errors.append(f"{pid}: IK failed for APP_ESTIMATE flange pose")
+                errors.append(f"{pid}: IK failed for APP_ESTIMATE TCP (seeded with taught q)")
+            elif d_p > ROUNDTRIP_PULSE_TOL:
+                errors.append(
+                    f"{pid}: round-trip max|Δpulse|={d_p:.0f} "
+                    f"(tol {ROUNDTRIP_PULSE_TOL})"
+                )
         if verified and isinstance(pendant, dict):
             try:
                 gx = float(pendant["x_mm"])
@@ -534,13 +540,19 @@ def check_golden(
                     (tcp["x"] * 1000.0, tcp["y"] * 1000.0, tcp["z"] * 1000.0),
                     (gx, gy, gz),
                 )
+                if d_tcp >= pendant_tol_mm:
+                    errors.append(
+                        f"{pid}: pendant Δtcp_mm={d_tcp:.2f} "
+                        f"(tol {pendant_tol_mm} mm)"
+                    )
 
         dp_txt = f"{d_p:.0f}" if d_p is not None else "-"
+        du_txt = f"{d_urdf:.3f}"
         dt_txt = f"{d_tcp:.2f}" if d_tcp is not None else "-"
         lines.append(
             f"{pid:<28} {lim:<14} {status:<24} "
             f"{tcp['x']*1000:8.1f} {tcp['y']*1000:8.1f} {tcp['z']*1000:8.1f} "
-            f"{dp_txt:>6} {dt_txt:>8}"
+            f"{dp_txt:>6} {du_txt:>7} {dt_txt:>8}"
         )
         lines.append(
             f"  source={pose.get('source_jbi')} C{int(pose.get('c_index', 0)):05d} "
@@ -549,8 +561,11 @@ def check_golden(
         )
 
     lines.append("")
+    for w in warns:
+        lines.append(w)
     lines.append(
-        f"summary  unverified={n_unverified}  verified={n_verified}  errors={len(errors)}"
+        f"summary  unverified={n_unverified}  verified={n_verified}  "
+        f"errors={len(errors)}  warns={len(warns)}"
     )
     if errors:
         lines.append("ERRORS:")
@@ -640,11 +655,21 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help="Path to golden_poses.json (default: fixtures/robot-cell/golden_poses.json)",
     )
+    parser.add_argument(
+        "--pendant-tol-mm",
+        type=float,
+        default=DEFAULT_PENDANT_TOL_MM,
+        help="Max APP_ESTIMATE↔pendant TCP error when verified_on_pendant (default 5 mm)",
+    )
     args = parser.parse_args(argv)
 
     golden_code = 0
     if args.check_golden:
-        golden_code, report = check_golden(args.golden, do_ik=not args.no_ik)
+        golden_code, report = check_golden(
+            args.golden,
+            do_ik=not args.no_ik,
+            pendant_tol_mm=args.pendant_tol_mm,
+        )
         print(report)
 
     if not args.paths:

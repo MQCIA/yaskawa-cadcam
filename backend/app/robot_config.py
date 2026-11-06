@@ -7,10 +7,10 @@ Production cell (``reference/robot-cell-dx200`` / SYSTEM.SYS):
   * Station      : TURN S1–S4 → INFORM **ST1** (jobs use GROUP2 ST1)
   * Power source : MOTOWELD-E Series 350A (see welding_config.py)
 
-MA2010 link lengths and joint axes match ROS-Industrial
-``motoman_ma2010_support`` URDF (vendored at ``frontend/public/models/ma2010``).
 Pulse↔degree for MA2010 + TURN is mined in ``pulse_config.py`` from RC.PRM /
-RBCALIB.
+RBCALIB. MA2010 FK/IK uses the ROS-Industrial URDF chain (not placeholder DH).
+Cartesian poses are still **APP_ESTIMATE** until ``golden_poses.json`` has
+``verified_on_pendant: true``.
 
 ============================================================================
   !!!  UWAGA / WARNING  -  CRITICAL SAFETY NOTICE  !!!
@@ -38,9 +38,6 @@ class JointDH:
     """Revolute joint in standard (distal) DH parameters.
 
     a[m], alpha[rad], d[m], offset[rad] added to theta, qlim=(min,max)[rad].
-    Used by the AR-series catalogue models. MA2010 uses URDF elementary
-    transforms instead (see ``Ma2010Geometry``); its ``joints`` list only
-    carries correct qlim for the API.
     """
 
     a: float
@@ -52,35 +49,41 @@ class JointDH:
 
 @dataclass(frozen=True)
 class Ma2010Geometry:
-    """ROS-Industrial MA2010 URDF origins / axes (metres).
+    """ROS-Industrial MA2010 URDF origins (metres).
 
-    joint_1_s … joint_6_t + fixed ``joint_6_t-tool0`` from
-    ``frontend/public/models/ma2010/ma2010.urdf``.
+    From ``frontend/public/models/ma2010/ma2010.urdf`` joint_1_s…joint_6_t
+    + fixed ``joint_6_t-tool0`` (datasheet-aligned: d1=505, a1=150, a2=760,
+    a3=200, d4=1082, d6=100 mm).
     """
 
-    # Shoulder height (base_link → S).
     d1: float = 0.505
-    # S → L along X.
     a1: float = 0.150
-    # L → U along Z (upper-arm length).
     a2: float = 0.760
-    # U → R along Z.
     a3: float = 0.200
-    # R → B along X (forearm / reach to wrist pitch).
     d4: float = 1.082
-    # B/T → flange face (URDF tool0).
     d6: float = 0.100
 
 
 MA2010_URDF = Ma2010Geometry()
 
-# Cell dump TOOL.CND — torch TCP relative to the flange (URDF tool0).
+# TOOL.CND ///TOOL 0 — Motoman tcp_0 relative to Motoman tool0 (Z+ out).
 TOOL0_XYZ_MM: tuple[float, float, float] = (-54.280, 1.052, 415.702)
 TOOL0_RPY_DEG: tuple[float, float, float] = (1.3119, -42.6215, -6.8387)
+TOOL0_XYZ_M: tuple[float, float, float] = (
+    TOOL0_XYZ_MM[0] / 1000.0,
+    TOOL0_XYZ_MM[1] / 1000.0,
+    TOOL0_XYZ_MM[2] / 1000.0,
+)
 
-# Safe home / transport over the rail — repeating C00000 in production jobs.
-# Pulses: (-283, -101162, -84213, 3710, -80188, -1936). See docs/CELL_POSES.md.
-CELL_HOME_PULSES: tuple[int, ...] = (-283, -101162, -84213, 3710, -80188, -1936)
+# ROS-I flange (REP-103 X+ out) → Motoman tool0 (Z+ out). Columns = tool0 basis.
+FLANGE_TO_TOOL0_R: tuple[tuple[float, float, float], ...] = (
+    (0.0, 0.0, 1.0),
+    (0.0, -1.0, 0.0),
+    (1.0, 0.0, 0.0),
+)
+
+# Safe home bookend — POSE_01 / 02025_KOSZ… C00000 (see golden_poses.json).
+CELL_HOME_PULSES: tuple[int, ...] = (-281, -101163, -84214, 3730, -80188, -1936)
 
 
 def cell_home_deg(
@@ -98,10 +101,10 @@ class RobotModel:
     reach_mm: float
     payload_kg: float
     joints: list[JointDH] = field(default_factory=list)  # order: S,L,U,R,B,T
-    # Pulses-per-degree per axis from the DX200 parameter file.
     pulses_per_degree: list[float] | None = None
-    approximate: bool = True  # True => link lengths are placeholders
-    # When True, kinematics_engine builds an ERobot from MA2010_URDF axes.
+    # True => catalogue placeholder DH. MA2010 sets False (URDF lengths) but
+    # Cartesian is still APP_ESTIMATE until pendant-verified golden poses exist.
+    approximate: bool = True
     urdf_chain: bool = False
     home_deg: list[float] | None = None
 
@@ -143,10 +146,9 @@ def _ar_model(
 
 
 def _ma2010_model() -> RobotModel:
-    """Production MA2010: URDF lengths / axes, RC1G pulses, cell home seed."""
+    """Production MA2010: URDF lengths/axes, RC1G pulses, cell-home IK seed."""
     lim = _limits_rad(MA2010_LIMITS_DEG)
     g = MA2010_URDF
-    # JointDH rows are informational for /api/robot limits; FK/IK use ERobot.
     joints = [
         JointDH(g.a1, -np.pi / 2, g.d1, 0.0, lim[0]),
         JointDH(g.a2, 0.0, 0.0, -np.pi / 2, lim[1]),
@@ -161,6 +163,7 @@ def _ma2010_model() -> RobotModel:
         payload_kg=10,
         joints=joints,
         pulses_per_degree=list(MA2010_PULSES_PER_DEGREE),
+        # Lengths match URDF; NOT pendant-certified (see golden_poses.json).
         approximate=False,
         urdf_chain=True,
         home_deg=cell_home_deg(),
@@ -169,7 +172,7 @@ def _ma2010_model() -> RobotModel:
 
 # ---------------------------------------------------------------------------
 # AR-series catalogue. Reach & joint ranges follow the public specs; link
-# lengths (d1,a1,a2,a3,d4,d6) are APPROXIMATE and must be confirmed per unit.
+# lengths (d1,a1,a2,a3,d4,d6) are APPROXIMATE except MA2010 (URDF).
 # ---------------------------------------------------------------------------
 _AR_LIMITS = [
     (-170, 170),   # S

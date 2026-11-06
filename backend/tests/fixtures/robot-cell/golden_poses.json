@@ -9,7 +9,8 @@
   "notes": [
     "Joint pulses are copied from production INFORM .JBI (not invented).",
     "Cartesian pendant/MotoSim fields stay null until verified_on_pendant=true.",
-    "APP_ESTIMATE TCP is computed at check time by tools/compare_pulses.py (placeholder DH × TOOL 0) — never treat it as pendant truth."
+    "APP_ESTIMATE TCP is computed at check time by tools/compare_pulses.py (URDF MA2010 ERobot × TOOL.CND on flange) — never treat it as pendant truth.",
+    "M1.4: backend FK must match independent URDF SE3 product within 1 mm; round-trip ≤2 pulses when seeded with taught joints. Not DX200-certified while verified_on_pendant=false."
   ],
   "poses": [
     {
