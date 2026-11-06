@@ -24,6 +24,9 @@ const deg2rad = (d: number) => (d * Math.PI) / 180;
 
 const TORCH_URL = withBase(TORCH_MESH_URL);
 
+/** Tip arc glow during weld — off by default (calmer preview). */
+const SHOW_WELD_ARC_GLOW = false;
+
 // Warm the STL cache so Suspense resolves quickly inside the tool0 portal.
 if (typeof window !== "undefined") {
   useLoader.preload(STLLoader, TORCH_URL);
@@ -67,7 +70,7 @@ function TorchBody({
       <group>
         <CustomTorchMesh calib={calib} />
         {calib.showAxes && <Axes calib={calib} />}
-        {arcOn && <ArcGlow tcp={tcpMetres(calib)} />}
+        {SHOW_WELD_ARC_GLOW && arcOn && <ArcGlow tcp={tcpMetres(calib)} />}
       </group>
     );
   }
@@ -80,7 +83,7 @@ function TorchBody({
     <group>
       <VendorTorchAtTcp calib={calib} geometry={torchGeo} />
       {calib.showAxes && <Axes calib={calib} />}
-      {arcOn && <ArcGlow tcp={tcpMetres(calib)} />}
+      {SHOW_WELD_ARC_GLOW && arcOn && <ArcGlow tcp={tcpMetres(calib)} />}
     </group>
   );
 }
@@ -199,7 +202,9 @@ function ProceduralTorch({
       </mesh>
 
       {calib.showAxes && <Axes calib={calib} />}
-      {arcOn && <ArcGlow tcp={g.tcp.toArray() as [number, number, number]} />}
+      {SHOW_WELD_ARC_GLOW && arcOn && (
+        <ArcGlow tcp={g.tcp.toArray() as [number, number, number]} />
+      )}
     </group>
   );
 }

@@ -32,6 +32,9 @@ function beadPoints(seam: Vec3[], f: number): Vec3[] {
   return out;
 }
 
+/** Welding FX (arc glow / growing bead) — off by default for a calmer preview. */
+const SHOW_WELD_FX = false;
+
 /** Flickering arc light + molten-pool glow at the torch tip. */
 function Arc({ pos }: { pos: Vec3 }) {
   const light = useRef<THREE.PointLight>(null);
@@ -318,19 +321,20 @@ export default function WeldScene({
         ) : null,
       )}
 
-      {/* Growing weld bead */}
-      {bead.map((p, i) => (
-        <mesh key={`bead-${i}`} position={p}>
-          <sphereGeometry args={[0.014, 10, 10]} />
-          <meshStandardMaterial
-            color="#ffb066"
-            emissive="#ff6a00"
-            emissiveIntensity={0.8}
-            metalness={0.4}
-            roughness={0.5}
-          />
-        </mesh>
-      ))}
+      {/* Growing weld bead (disabled with SHOW_WELD_FX) */}
+      {SHOW_WELD_FX &&
+        bead.map((p, i) => (
+          <mesh key={`bead-${i}`} position={p}>
+            <sphereGeometry args={[0.014, 10, 10]} />
+            <meshStandardMaterial
+              color="#ffb066"
+              emissive="#ff6a00"
+              emissiveIntensity={0.8}
+              metalness={0.4}
+              roughness={0.5}
+            />
+          </mesh>
+        ))}
 
       {/* Yellow TouchSense points */}
       {program.waypoints.map((w, i) =>
@@ -383,7 +387,7 @@ export default function WeldScene({
         />
       ))}
 
-      {s.arcOn && <Arc pos={s.pos} />}
+      {SHOW_WELD_FX && s.arcOn && <Arc pos={s.pos} />}
     </group>
   );
 }
