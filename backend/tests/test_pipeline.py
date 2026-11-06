@@ -314,6 +314,22 @@ def test_jbi_cartesian_review_and_drop01_grammar():
         assert token in jbi, f"missing {token!r}"
 
 
+def test_cubeintf_named_stations_parse():
+    from app.cubeintf import cube_contains_pulses, parse_cubeintf, path_cube_hits
+
+    cubes = parse_cubeintf(CELL / "CUBEINTF.CND")
+    named = [c for c in cubes if c.named]
+    assert {c.name for c in named} >= {"STACJA_1", "STACJA_2"}
+    st1 = next(c for c in named if c.name == "STACJA_1")
+    mid = [(st1.lo[i] + st1.hi[i]) // 2 for i in range(6)]
+    assert cube_contains_pulses(st1, mid)
+    outside = list(mid)
+    outside[0] = st1.hi[0] + 50_000
+    assert not cube_contains_pulses(st1, outside)
+    hits = path_cube_hits([mid], [st1])
+    assert hits and hits[0]["cube"] == "STACJA_1"
+
+
 def test_jbi_touchsense_call_before_arcon():
     """M2.4 — optional CALL JOB:SRCH-2D1 before first ARCON."""
     pts = [

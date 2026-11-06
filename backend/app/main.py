@@ -32,6 +32,7 @@ from .robot_config import (
     cell_stations_public,
 )
 from .welding_config import ACTIVE_POWER_SOURCE, LORCH_S8_SCHEDULES
+from .cubeintf import cubes_public, path_cube_hits, parse_cubeintf
 
 app = FastAPI(
     title="Yaskawa CAD/CAM prototype API",
@@ -205,7 +206,29 @@ def cell_config():
             ),
         },
         "stations": cell_stations_public(),
+        "cubeintf": cubes_public(),
         "warning": "Validate pulse jobs in MotoSim before loading the DX200.",
+    }
+
+
+class CubeCheckRequest(BaseModel):
+    """Joint pulse rows (6 ints) to flag against named CUBEINTF soft cubes."""
+
+    joint_pulses: list[list[int]] = Field(default_factory=list)
+    named_only: bool = True
+
+
+@app.post("/api/check-cubes")
+def check_cubes(req: CubeCheckRequest):
+    """Coarse soft-cube hit report (not FSU / not MotoSim)."""
+    if not req.joint_pulses:
+        raise HTTPException(400, "joint_pulses required")
+    hits = path_cube_hits(req.joint_pulses, named_only=req.named_only)
+    return {
+        "hit_count": len(hits),
+        "hits": hits,
+        "cubes_loaded": len([c for c in parse_cubeintf() if c.named]),
+        "note": "PULSE-space soft interference only — validate in MotoSim EG-VRC",
     }
 
 

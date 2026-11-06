@@ -98,15 +98,20 @@ function segmentHitsAabb(a: Vec3, b: Vec3, box: Aabb, steps = 8): boolean {
   return false;
 }
 
-/** Coarse cell obstacles (rail + H1000D pedestals) for demo collision checks. */
+/** Coarse cell obstacles (rail + station APP_ESTIMATE AABBs from CELL_STATIONS). */
 function cellObstacles(): Aabb[] {
-  return [
-    { min: [-0.25, 0.0, -2.4], max: [0.25, 0.28, 2.4] },
-    { min: [1.35, 0.0, -1.55], max: [1.55, 0.9, -1.35] },
-    { min: [1.65, 0.0, -1.55], max: [1.85, 0.9, -1.35] },
-    { min: [1.35, 0.0, 1.05], max: [1.55, 0.9, 1.25] },
-    { min: [1.65, 0.0, 1.05], max: [1.85, 0.9, 1.25] },
-  ];
+  const rail: Aabb = { min: [-0.25, 0.0, -2.4], max: [0.25, 0.28, 2.4] };
+  // Station weld-cloud AABB (mm → m). Soft / APP_ESTIMATE — not CUBEINTF pulse cubes.
+  // Soft approach volumes around station mounts (APP_ESTIMATE). Pulse-space
+  // CUBEINTF STACJA_* boxes are checked on the backend via cubeintf.py.
+  const stationBoxes: Aabb[] = Object.values(CELL_STATIONS).map((st) => {
+    const m = st.mountXyzM;
+    return {
+      min: [m[0] - 0.35, m[1] - 0.35, m[2] - 0.35] as Vec3,
+      max: [m[0] + 0.35, m[1] + 0.35, m[2] + 0.35] as Vec3,
+    };
+  });
+  return [rail, ...stationBoxes];
 }
 
 function plateObstacles(prog: WeldProgram): Aabb[] {

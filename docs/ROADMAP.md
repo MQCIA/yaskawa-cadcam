@@ -94,7 +94,7 @@ flowchart LR
 | 2.2 | Wybór stacji ST1–ST4 + group w eksporcie | JBI z właściwym `GROUP2` |
 | 2.3 | BC# z pozycji szyny (mm), nie stały park | Ruch bazy w ścieżce |
 | 2.4 | TouchSense / search zgodne z `SRCH-*` / `SZUKAJ*` (wzorzec) | **Done** — `enable_touchsense` → `CALL JOB:SRCH-2D1`; [CELL_TOUCHSENSE.md](CELL_TOUCHSENSE.md) |
-| 2.5 | Kolizje: coarse AABB → modele cube z `CUBEINTF` | Flaga kolizji bliższa rzeczywistości |
+| 2.5 | Kolizje: coarse AABB → modele cube z `CUBEINTF` | **Done** — `cubeintf.py` + `/api/check-cubes`; FE station AABB soft boxes |
 | 2.6 | Multi-seam sequence (kolejność, retract) | Już częściowo; domknąć pod 4 stacje |
 
 **Wyjście M2:** Program na jedną stację z sensowną sekwencją air/weld/retract.
