@@ -48,6 +48,11 @@ export type Waypoint = {
    * Optional dwell after ARCON (s) — tack welds emit ``TIMER T=2.00`` like ``12.JBI``.
    */
   timerSec?: number;
+  /**
+   * Optional joint angles [S,L,U,R,B,T] deg — kept when a PULSE .JBI is opened
+   * so re-export can stay in pulse units without re-running IK.
+   */
+  jointsDeg?: number[];
 };
 
 export type WeldScheduleRow = {
@@ -1574,8 +1579,15 @@ export function generateJbi(
   const basePark = opts?.baseParkPulse ?? CELL_PULSE.baseParkPulse;
   const weaveNo = opts?.weaveNo ?? 21;
   const group2 = (opts?.group2 ?? "ST1").toUpperCase().replace(/\s+/g, "");
-  const usePulse =
-    Array.isArray(opts?.jointAnglesDeg) && opts!.jointAnglesDeg!.length === npos;
+  const jointsFromWaypoints =
+    pts.every((p) => Array.isArray(p.jointsDeg) && p.jointsDeg!.length === 6)
+      ? pts.map((p) => p.jointsDeg as number[])
+      : undefined;
+  const jointAnglesDeg =
+    Array.isArray(opts?.jointAnglesDeg) && opts!.jointAnglesDeg!.length === npos
+      ? opts!.jointAnglesDeg!
+      : jointsFromWaypoints;
+  const usePulse = Array.isArray(jointAnglesDeg) && jointAnglesDeg.length === npos;
   const stationDeg = pts.map((_, i) => {
     if (Array.isArray(opts?.stationDeg)) return opts!.stationDeg![i] ?? opts!.stationDeg![0] ?? 0;
     return opts?.stationDeg ?? 0;
@@ -1605,10 +1617,10 @@ export function generateJbi(
   lines.push(`///NPOS ${npos},${npos},${npos},0,0,0`);
   lines.push("///TOOL 0");
 
-  if (usePulse) {
+  if (usePulse && jointAnglesDeg) {
     lines.push("///POSTYPE PULSE");
     lines.push("///PULSE");
-    opts!.jointAnglesDeg!.forEach((q, i) => {
+    jointAnglesDeg.forEach((q, i) => {
       const pulses = degToJointPulses(q);
       lines.push(`C${String(i).padStart(5, "0")}=${pulses.join(",")}`);
     });
