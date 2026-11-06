@@ -109,6 +109,8 @@ export type WeldProgram = {
     seamEdits?: import("@/lib/trajectoryViz").SeamEdit[];
     /** Active WEV# for visualisation (0 = no weave / no zigzag). */
     activeWeaveNo?: number;
+    /** BC pulse at carriage Z = 0 (PULSE .JBI import). */
+    bcRefPulse?: number;
   };
 };
 

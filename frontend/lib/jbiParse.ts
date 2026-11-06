@@ -17,12 +17,26 @@ import {
   type WeldScheduleRow,
 } from "@/lib/weldProgram";
 import { computeDx200Durations } from "@/lib/dx200Sim";
+import { TSL_CARRIAGE_TOP_Y } from "@/lib/trackMesh";
+
+/**
+ * RECT-X placeholder lead (matches backend dx200_trajectory heuristic):
+ * ~0.002 mm/pulse → metres.
+ */
+export const BC_M_PER_PULSE = 0.002 / 1000;
+
+/** Carriage Z from BC pulses relative to a reference pulse (usually first C#). */
+export function railZFromBc(bc: number, refBc: number): number {
+  return (bc - refBc) * BC_M_PER_PULSE;
+}
 
 export type ParsedJbi = {
   program: WeldProgram;
   sourceText: string;
   postype: "PULSE" | "RECTAN" | "UNKNOWN";
   warnings: string[];
+  /** BC pulse used as Z=0 for RECT-X when postype is PULSE. */
+  bcRef?: number;
 };
 
 const pad = (n: number) => `P${String(n).padStart(3, "0")}`;
@@ -379,26 +393,50 @@ export function parseJbi(text: string): ParsedJbi {
   const seam: Vec3[] = [];
   let prevWasWeld = false;
 
+  // Anchor RECT-X so the first BC sits at carriage Z = 0.
+  let bcRef: number | undefined;
+  for (const m of moveBuf) {
+    const v = bc.get(m.c);
+    if (typeof v === "number") {
+      bcRef = v;
+      break;
+    }
+  }
+
   moveBuf.forEach((m, i) => {
     const pose = resolvePose(positions.get(m.c), warnings, m.c);
     const kind = inferKind(m.move, m.arc, i, moveBuf.length, prevWasWeld);
+    const bcPulse = bc.get(m.c);
+    let pos = pose.pos;
+    // PULSE C# is arm-base frame — lift by carriage deck and slide by BC.
+    if (positions.get(m.c)?.kind === "pulse") {
+      const railZ =
+        typeof bcPulse === "number" && bcRef != null
+          ? railZFromBc(bcPulse, bcRef)
+          : 0;
+      pos = [
+        pose.pos[0],
+        pose.pos[1] + TSL_CARRIAGE_TOP_Y,
+        pose.pos[2] + railZ,
+      ];
+    }
     const wp: Waypoint = {
       id: pad(i + 1),
-      pos: pose.pos,
+      pos,
       move: m.move,
       speedLabel: m.speedLabel,
       arc: m.arc,
       kind,
       tag: m.tag,
       timerSec: m.timerSec,
-      bc: bc.get(m.c),
+      bc: bcPulse,
       ec: ec.get(m.c),
       jointsDeg: pose.jointsDeg,
     };
     waypoints.push(wp);
     if (kind === "weld") {
-      seam.push(pose.pos);
-      torchFrames.push({ pos: pose.pos, dir: pose.dir });
+      seam.push(pos);
+      torchFrames.push({ pos, dir: pose.dir });
       prevWasWeld = true;
     } else if (kind === "sense") {
       prevWasWeld = false;
@@ -483,6 +521,7 @@ export function parseJbi(text: string): ParsedJbi {
       singularitySafe: true,
       activeWeaveNo: weaveNo,
       denseJointAnglesDeg,
+      bcRefPulse: bcRef,
     },
   };
 
@@ -494,6 +533,7 @@ export function parseJbi(text: string): ParsedJbi {
     sourceText: trimmed.endsWith("\n") ? trimmed : `${trimmed}\n`,
     postype,
     warnings,
+    bcRef,
   };
 }
 

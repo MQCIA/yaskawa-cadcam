@@ -86,7 +86,7 @@ import SeamSketchToolbar from "@/components/SeamSketchToolbar";
 import type { DraftPoint } from "@/components/SeamSketchLayer";
 import SimTimeline from "@/components/SimTimeline";
 import JbiEditorPanel from "@/components/JbiEditorPanel";
-import { parseJbi } from "@/lib/jbiParse";
+import { parseJbi, railZFromBc } from "@/lib/jbiParse";
 
 const RobotWorkspace = dynamic(() => import("@/components/RobotWorkspace"), {
   ssr: false,
@@ -658,7 +658,12 @@ export default function Home() {
   function loadJbiSource(text: string, opts?: { keepEditor?: boolean }) {
     const parsed = parseJbi(text);
     const stIdx = mountStationIndex(parsed.program.mount) as 0 | 1;
-    applyProgram(parsed.program, parsed.program.mount[2], stIdx);
+    // PULSE jobs: path already includes BC→Z; start carriage at first BC (Z≈0).
+    const railZ =
+      parsed.postype === "PULSE"
+        ? 0
+        : parsed.program.mount[2];
+    applyProgram(parsed.program, railZ, stIdx);
     setLastJbiText(opts?.keepEditor ? text : parsed.sourceText);
     setJbiDirty(false);
     setLeftTab("jbi");
@@ -826,6 +831,16 @@ export default function Home() {
   const activeModel = ROBOT_MODELS.find((m) => m.id === modelId);
   const activePositioner = POSITIONER_MODELS.find((p) => p.id === positionerId);
   const sample = program ? sampleProgram(program, simT) : null;
+
+  // Keep RECT-X carriage on the same BC→Z map used when importing PULSE .JBI.
+  useEffect(() => {
+    if (!program || manualJog) return;
+    const ref = program.meta?.bcRefPulse;
+    const bc = sample?.bc;
+    if (ref == null || bc == null || !Number.isFinite(bc)) return;
+    const z = railZFromBc(bc, ref);
+    setRailTravel((prev) => (Math.abs(prev - z) < 1e-4 ? prev : z));
+  }, [program, sample?.bc, manualJog]);
   const curWp = program && sample ? program.waypoints[sample.wpIndex] : null;
   const curC = sample ? informCLabel(sample.wpIndex) : "—";
   const instruction = curWp
