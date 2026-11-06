@@ -86,8 +86,8 @@ const RobotWorkspace = dynamic(() => import("@/components/RobotWorkspace"), {
 const PLAYBACK_BASE_SEC = 12;
 /** Match RobotWorkspace station axles — teach FK → program frame. */
 const STATION_POS_XZ: [number, number][] = [
-  [1.6, -1.2],
-  [1.6, 1.2],
+  [1.1, -1.2],
+  [1.1, 1.2],
 ];
 const AXLE_Y = 0.95;
 
