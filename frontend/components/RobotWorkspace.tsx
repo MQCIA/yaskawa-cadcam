@@ -39,9 +39,10 @@ const AXLE_Y = 0.95;
 // X position of the trailing power-source dolly on the carriage (matches RobotTrack).
 const DOLLY_X = -0.62;
 // The two work-station positioner positions (robot faces +X, rail runs along Z).
+// Axles at X≈1.1 m (~0.5 m closer to the robot than the previous 1.6 m layout).
 const STATION_POS: [number, number, number][] = [
-  [1.6, 0, -1.2],
-  [1.6, 0, 1.2],
+  [1.1, 0, -1.2],
+  [1.1, 0, 1.2],
 ];
 
 const deg2rad = (d: number) => (d * Math.PI) / 180;

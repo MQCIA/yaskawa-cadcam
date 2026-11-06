@@ -231,9 +231,9 @@ export function cellHomeDeg(): [
 }
 
 // Mount point on work-station 1's positioner faceplate (world coords, metres).
-export const DEMO_MOUNT: Vec3 = [1.6, 0.98, -1.2];
+export const DEMO_MOUNT: Vec3 = [1.1, 0.98, -1.2];
 /** Hard demo (90° fillet + pipe) on station 2 — forces rail travel to +Z. */
-export const DEMO_HARD_MOUNT: Vec3 = [1.6, 0.98, 1.2];
+export const DEMO_HARD_MOUNT: Vec3 = [1.1, 0.98, 1.2];
 
 const add = (a: Vec3, b: Vec3): Vec3 => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
 const dist = (a: Vec3, b: Vec3) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
@@ -273,10 +273,10 @@ function segmentHitsAabb(a: Vec3, b: Vec3, box: Aabb, steps = 8): boolean {
 function cellObstacles(): Aabb[] {
   return [
     { min: [-0.25, 0.0, -2.4], max: [0.25, 0.28, 2.4] },
-    { min: [1.35, 0.0, -1.55], max: [1.55, 0.9, -1.35] },
-    { min: [1.65, 0.0, -1.55], max: [1.85, 0.9, -1.35] },
-    { min: [1.35, 0.0, 1.05], max: [1.55, 0.9, 1.25] },
-    { min: [1.65, 0.0, 1.05], max: [1.85, 0.9, 1.25] },
+    { min: [0.85, 0.0, -1.55], max: [1.05, 0.9, -1.35] },
+    { min: [1.15, 0.0, -1.55], max: [1.35, 0.9, -1.35] },
+    { min: [0.85, 0.0, 1.05], max: [1.05, 0.9, 1.25] },
+    { min: [1.15, 0.0, 1.05], max: [1.35, 0.9, 1.25] },
   ];
 }
 
