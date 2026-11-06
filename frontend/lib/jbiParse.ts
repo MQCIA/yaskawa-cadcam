@@ -29,7 +29,7 @@ export function railZFromBc(bc: number, refBc: number): number {
   return (bc - refBc) * BC_M_PER_PULSE;
 }
 
-/** Default faceplate mount (station 1) — PULSE paths are rigidly aligned here. */
+/** Fallback mount when a job has no weld points yet. */
 export const JBI_ALIGN_MOUNT: Vec3 = [1.1, 0.98, -1.2];
 
 export type ParsedJbi = {
@@ -266,28 +266,6 @@ function resolvePose(
   return { pos: fk.pos, dir: fk.dir, jointsDeg, pulses: entry.pulses };
 }
 
-/**
- * Motoman approximate DH puts absolute TCP in a nonsense cell frame.
- * Keep relative shape, rigidly map weld (or path) centroid → station faceplate.
- */
-function alignPulsePathToStation(
-  waypoints: Waypoint[],
-  mount: Vec3 = JBI_ALIGN_MOUNT,
-): Vec3 {
-  const anchors =
-    waypoints.filter((w) => w.kind === "weld").map((w) => w.pos).length > 0
-      ? waypoints.filter((w) => w.kind === "weld").map((w) => w.pos)
-      : waypoints.map((w) => w.pos);
-  const cx = anchors.reduce((s, p) => s + p[0], 0) / anchors.length;
-  const cy = anchors.reduce((s, p) => s + p[1], 0) / anchors.length;
-  const cz = anchors.reduce((s, p) => s + p[2], 0) / anchors.length;
-  const d: Vec3 = [mount[0] - cx, mount[1] - cy, mount[2] - cz];
-  for (const w of waypoints) {
-    w.pos = [w.pos[0] + d[0], w.pos[1] + d[1], w.pos[2] + d[2]];
-  }
-  return d;
-}
-
 /** Assign approach / clearance / retract around weld & sense runs. */
 function assignAirKinds(waypoints: Waypoint[]): void {
   const firstWeld = waypoints.findIndex((w) => w.kind === "weld");
@@ -327,7 +305,9 @@ export function parseJbi(text: string): ParsedJbi {
 
   let arcPending = false;
   let arcOn = false;
+  /** TIMER waiting to attach — before ARCON (pre) or after ARCON (tack dwell). */
   let pendingTimer: number | undefined;
+  let timerAfterArcon = false;
   let argf: number | null = null;
   let weaveNo = 21;
   const moveBuf: Array<{
@@ -337,6 +317,8 @@ export function parseJbi(text: string): ParsedJbi {
     arc: boolean;
     tag?: "ARCON" | "ARCOF" | "TOUCH";
     timerSec?: number;
+    preArcTimerSec?: number;
+    weaveNo?: number;
   }> = [];
 
   for (const ev of events) {
@@ -348,33 +330,34 @@ export function parseJbi(text: string): ParsedJbi {
       weaveNo = ev.wev;
       continue;
     }
-    if (ev.type === "wvof") continue;
+    if (ev.type === "wvof") {
+      weaveNo = 0;
+      continue;
+    }
     if (ev.type === "timer") {
       pendingTimer = ev.sec;
+      // If ARCON already open with no move yet, this TIMER is tack dwell.
+      timerAfterArcon = arcPending || arcOn;
       continue;
     }
     if (ev.type === "arcon") {
       arcPending = true;
       arcOn = true;
+      // TIMER before ARCON (e.g. T=0.50) stays in pendingTimer until first weld move.
+      timerAfterArcon = false;
       continue;
     }
     if (ev.type === "arcof") {
-      // Tack in place: ARCON / TIMER / ARCOF with no motion — weld at last C#.
-      if (
-        arcPending &&
-        pendingTimer != null &&
-        pendingTimer >= 1.5 &&
-        moveBuf.length > 0
-      ) {
+      // Tack in place: ARCON [/ TIMER] / ARCOF with no intervening motion —
+      // annotate the last C# (current TCP), do NOT invent a new point.
+      if (arcPending && moveBuf.length > 0) {
         const last = moveBuf[moveBuf.length - 1];
-        moveBuf.push({
-          c: last.c,
-          move: "MOVL",
-          speedLabel: "V=5.0",
-          arc: true,
-          tag: "ARCON",
-          timerSec: pendingTimer,
-        });
+        last.arc = true;
+        last.tag = "ARCON";
+        if (pendingTimer != null && timerAfterArcon) {
+          last.timerSec = pendingTimer;
+        }
+        last.weaveNo = 0; // tack: no weave
       } else {
         for (let i = moveBuf.length - 1; i >= 0; i--) {
           if (moveBuf[i].arc) {
@@ -386,6 +369,7 @@ export function parseJbi(text: string): ParsedJbi {
       arcOn = false;
       arcPending = false;
       pendingTimer = undefined;
+      timerAfterArcon = false;
       continue;
     }
     if (ev.type === "move") {
@@ -395,22 +379,31 @@ export function parseJbi(text: string): ParsedJbi {
         : ev.move === "MOVS"
           ? "TOUCH"
           : undefined;
-      const timerSec =
-        arcPending && pendingTimer != null && pendingTimer >= 1.5
-          ? pendingTimer
-          : undefined;
+      let timerSec: number | undefined;
+      let preArcTimerSec: number | undefined;
+      if (arcPending && pendingTimer != null) {
+        if (timerAfterArcon && pendingTimer >= 1.5) {
+          // Unusual: TIMER between ARCON and first move — treat as tack dwell.
+          timerSec = pendingTimer;
+        } else if (!timerAfterArcon) {
+          // TIMER T=0.50 before ARCON (000.JBI pattern).
+          preArcTimerSec = pendingTimer;
+        }
+      }
       moveBuf.push({
         c: ev.c,
         move: ev.move,
         speedLabel: ev.speedLabel,
-        // Only cartesian weld moves carry the arc; MOVJ during an open arc is air.
         arc: arcOn && isCart,
         tag,
         timerSec,
+        preArcTimerSec,
+        weaveNo: arcOn && isCart ? weaveNo : undefined,
       });
       if (arcPending) {
         arcPending = false;
         pendingTimer = undefined;
+        timerAfterArcon = false;
       }
     }
   }
@@ -431,31 +424,34 @@ export function parseJbi(text: string): ParsedJbi {
 
   const isPulseJob = Array.from(positions.values()).some((p) => p.kind === "pulse");
 
-  moveBuf.forEach((m, i) => {
+  moveBuf.forEach((m) => {
     const pose = resolvePose(positions.get(m.c), warnings, m.c);
-    const kind: Waypoint["kind"] = m.move === "MOVS" ? "sense" : m.arc ? "weld" : "travel";
+    // Tack-in-place annotates a prior air C# as weld (arc+ARCON+timer).
+    const kind: Waypoint["kind"] =
+      m.move === "MOVS" ? "sense" : m.arc || m.tag === "ARCON" ? "weld" : "travel";
     const wp: Waypoint = {
       id: `C${String(m.c).padStart(5, "0")}`,
       cIndex: m.c,
       pos: pose.pos,
       move: m.move,
       speedLabel: m.speedLabel,
-      arc: m.arc,
+      arc: Boolean(m.arc || m.tag === "ARCON"),
       kind,
       tag: m.tag,
       timerSec: m.timerSec,
+      preArcTimerSec: m.preArcTimerSec,
+      weaveNo: m.weaveNo,
       bc: bc.get(m.c),
       ec: ec.get(m.c),
       jointsDeg: pose.jointsDeg,
       pulses: pose.pulses,
     };
     waypoints.push(wp);
-    void i;
   });
 
   assignAirKinds(waypoints);
 
-  // Tag ARCON/ARCOF on contiguous weld runs; keep tack TIMER only when already set.
+  // Normalize ARCON/ARCOF on contiguous weld runs; never invent TIMER.
   {
     let i = 0;
     while (i < waypoints.length) {
@@ -467,25 +463,33 @@ export function parseJbi(text: string): ParsedJbi {
       while (i < waypoints.length && waypoints[i].kind === "weld") i++;
       const end = i - 1;
       const startTimer = waypoints[start].timerSec;
+      const pre = waypoints[start].preArcTimerSec;
+      const wev = waypoints[start].weaveNo;
       waypoints[start] = {
         ...waypoints[start],
         tag: "ARCON",
         arc: true,
         timerSec: startTimer,
+        preArcTimerSec: pre,
+        weaveNo: wev,
       };
       if (start !== end) {
         waypoints[end] = { ...waypoints[end], tag: "ARCOF", arc: true };
         for (let j = start + 1; j < end; j++) {
-          waypoints[j] = { ...waypoints[j], tag: undefined, arc: true };
+          waypoints[j] = {
+            ...waypoints[j],
+            tag: undefined,
+            arc: true,
+            weaveNo: waypoints[j].weaveNo ?? wev,
+          };
         }
       }
     }
   }
 
   if (isPulseJob) {
-    alignPulsePathToStation(waypoints, JBI_ALIGN_MOUNT);
     warnings.push(
-      "PULSE: pozycje XYZ to przybliżone DH wyrównane do stołu ST1 — kształt względny; waliduj w MotoSim.",
+      "PULSE: TCP zostanie policzone z URDF MA2010 + TOOL 0 (jak robot w 3D).",
     );
   }
 

@@ -329,8 +329,25 @@ export default function WeldUrdfRobot({
         .normalize();
     }
 
-    // Seed with taught / PULSE joints (config), then CCD-IK so TCP tracks the
-    // drawn .JBI path lines (URDF FK ≠ approx DH used when importing pulses).
+    // When TCP was baked from this URDF, drive joints directly — tip ≡ path.
+    if (
+      s?.jointsDeg &&
+      s.jointsDeg.length >= 6 &&
+      prog?.meta?.urdfBaked
+    ) {
+      for (let k = 0; k < CHAIN.length; k++) {
+        const axis = AXES[k];
+        if (!axis) continue;
+        const rad = deg2rad(s.jointsDeg[k] ?? 0);
+        if (robot.setJointValue) robot.setJointValue(CHAIN[k], rad);
+        else if (chain[k]) chain[k].setJointValue(rad);
+      }
+      robot.updateMatrixWorld(true);
+      publishTip();
+      return;
+    }
+
+    // Otherwise seed taught joints, then CCD-IK so TCP tracks path lines.
     if (s?.jointsDeg && s.jointsDeg.length >= 6) {
       for (let k = 0; k < CHAIN.length; k++) {
         const axis = AXES[k];
