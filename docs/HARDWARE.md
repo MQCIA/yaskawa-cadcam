@@ -12,8 +12,9 @@ Production dump: `reference/robot-cell-dx200` (see [CELL.md](CELL.md)).
 
 ## Robot (MA2010)
 
-Default model matches the CF dump. DH link lengths are still approximate;
-**pulse-per-degree** values are mined from `RC.PRM` softlimits and are used
+Default model matches the CF dump. Kinematics use the **ROS-Industrial MA2010
+URDF** × TOOL 0 (APP_ESTIMATE until pendant XYZ sign-off).
+**Pulse-per-degree** values are mined from `RC.PRM` softlimits and are used
 when exporting `///POSTYPE PULSE` jobs.
 
 ```bash

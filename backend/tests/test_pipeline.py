@@ -314,6 +314,29 @@ def test_jbi_cartesian_review_and_drop01_grammar():
         assert token in jbi, f"missing {token!r}"
 
 
+def test_jbi_touchsense_call_before_arcon():
+    """M2.4 — optional CALL JOB:SRCH-2D1 before first ARCON."""
+    pts = [
+        {"x": 0.8, "y": 0.0, "z": 0.5, "rx": 180},
+        {"x": 0.9, "y": 0.1, "z": 0.5, "rx": 180},
+    ]
+    segs = [WeldSegment(0, 1, weld_speed=5.0, arc_file=1)]
+    jbi = generate_jbi(
+        pts,
+        segs,
+        PostprocessorConfig(
+            allow_preview_rectan=True,
+            home_bookends=False,
+            enable_touchsense=True,
+            touchsense_job="SRCH-2D1",
+        ),
+        station_deg=[0, 0],
+    )
+    assert "CALL JOB:SRCH-2D1" in jbi
+    assert jbi.index("CALL JOB:SRCH-2D1") < jbi.index("ARCON")
+    assert jbi.count("CALL JOB:SRCH-2D1") == 1
+
+
 def test_real_cell_000_jbi_grammar():
     cell_job = (CELL / "000.JBI").read_text(encoding="utf-8", errors="replace")
     assert "///POSTYPE PULSE" in cell_job

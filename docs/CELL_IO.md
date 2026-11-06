@@ -128,10 +128,26 @@ Warunki procesu (`MACRO1 ARGF`, `WVON WEV#`) → [CELL_WELD_MAP.md](CELL_WELD_MA
 
 ---
 
-## 6. Checklist weryfikacji IO (integrator)
+## 6. YSFLOGIC / shock — skrót dla integratora (M4.3)
+
+| Plik | Co widać w dumpie tekstowym | Co zrobić na hali |
+|------|-----------------------------|-------------------|
+| `YSFLOGIC.DAT` | Nagłówek `/SFLOGIC` + `//SFLCIRCUIT` i puste siatki `, , ,` — **brak** czytelnych etykiet kurtyn/FSU w ASCII | Odczytać w Pendant → SAFETY / Functional Safety albo w narzędziu Yaskawa FSU; **nie** edytować z CAD/CAM |
+| `SHOCKLVL.CND` | Bloki `//SHOCKLVL n` + `///AXISLVL` z poziomami 0–100 per oś | Progi detekcji kolizji / shock — strojenie tylko przez integratora; CAD/CAM ich nie zmienia |
+| `CUBEINTF.CND` | Nazwane soft-cube `STACJA_1` / `STACJA_2` (+ nienazwane) | Soft interference (nie FSU). Walidacja w MotoSim |
+| `CIOPRG.LST` | m.in. `MISSING ARC START CONFIRM` | Potwierdza nadzór startu łuku poza samym `ARCON` |
+
+**CAD/CAM nie generuje** instrukcji omijających FSU, shock ani kurtyny. Master `generate_station_master_jbi` tylko `CALL`-uje child weld; produkcyjne `STACJA_*` na kontrolerze nadal wołają `RESET-KURTYNY` / `ZAMKNIJ-*` / `OTWORZ-BRAMA-*`.
+
+`TODO: weryfikacja w CIO / schemacie elektrycznym` — mapowanie bitów `SFLCIRCUIT` ↔ fizyczne kurtyny/E-STOP.
+
+---
+
+## 7. Checklist weryfikacji IO (integrator)
 
 - [ ] Porównać każdą nazwę `KURTYNA-*` / `START_ST*` z szafy / schematem → wpisać prawdziwy Universal I/O #
 - [ ] Potwierdzić polarność (OK = 1 czy 0) dla `POWIETRZE OK`, `LORCH OK`
 - [ ] Odtworzyć ciała `OTWORZ-BRAMA-*` / `ZAMKNIJ-KURTYNA-*` z pełnego CF i dopisać DOUT/WAIT
 - [ ] Sprawdzić `CUBEINTF` vs layout hali w MotoSim EG-VRC
+- [ ] Potwierdzić FSU / `YSFLOGIC` u integratora (nie z samego dumpa tekstowego)
 - [ ] Podpisać [GO_LIVE.md](GO_LIVE.md) przed pierwszym dry-run na DX200

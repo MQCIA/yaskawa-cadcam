@@ -85,6 +85,9 @@ class PostprocessorConfig:
     allow_preview_rectan: bool = False
     # When True and path lacks role=home ends, prepend/append cell home.
     home_bookends: bool = True
+    # M2.4 — optional CALL JOB:SRCH-* before first ARCON (jobs must exist on DX200).
+    enable_touchsense: bool = False
+    touchsense_job: str = "SRCH-2D1"
     # Rail X in mm relative to BC_HOME (0 → home bookend). Per-point overrides
     # via ``base_mm`` argument to ``generate_jbi``. None → use station zone BC.
     base_mm: float | None = None
@@ -446,6 +449,7 @@ def _generate_ma2010_cell(
     lines.append("NOP")
 
     weave_on = False
+    touchsense_emitted = False
     for i in range(npos):
         c = f"C{i:05d}"
         bc = f"BC{i:05d}"
@@ -463,6 +467,16 @@ def _generate_ma2010_cell(
 
         if i in arc_on_at:
             seg = arc_on_at[i]
+            if cfg.enable_touchsense and not touchsense_emitted:
+                job = str(cfg.touchsense_job).strip()
+                if job.upper().endswith(".JBI"):
+                    job = job[:-4]
+                lines.append(
+                    f"' TouchSense — requires {job}.JBI on controller "
+                    f"(dump SZUKAJ1 / docs/CELL_TOUCHSENSE.md)"
+                )
+                lines.append(f"CALL JOB:{job}")
+                touchsense_emitted = True
             lines.append("TIMER T=0.50")
             lines.append(f"MACRO1 MJ#(0) ARGF{cfg.macro_arg}")
             lines.append(_weld_comment(seg.arc_file))

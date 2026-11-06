@@ -93,7 +93,7 @@ flowchart LR
 | 2.1 | Rejestr ram: TOOL / USER (`docs/CELL_FRAMES.md`) z teach jobs | Znane `UF#` używane w produkcji |
 | 2.2 | Wybór stacji ST1–ST4 + group w eksporcie | JBI z właściwym `GROUP2` |
 | 2.3 | BC# z pozycji szyny (mm), nie stały park | Ruch bazy w ścieżce |
-| 2.4 | TouchSense / search zgodne z `SRCH-*` / `SZUKAJ*` (wzorzec) | Opcjonalny blok przed ARCON |
+| 2.4 | TouchSense / search zgodne z `SRCH-*` / `SZUKAJ*` (wzorzec) | **Done** — `enable_touchsense` → `CALL JOB:SRCH-2D1`; [CELL_TOUCHSENSE.md](CELL_TOUCHSENSE.md) |
 | 2.5 | Kolizje: coarse AABB → modele cube z `CUBEINTF` | Flaga kolizji bliższa rzeczywistości |
 | 2.6 | Multi-seam sequence (kolejność, retract) | Już częściowo; domknąć pod 4 stacje |
 
@@ -124,10 +124,10 @@ flowchart LR
 |---|---------|-----------|
 | 4.1 | Mapa IO z jobów bram/kurtyn | **Done** — [CELL_IO.md](CELL_IO.md) (`IONAME` + wzorzec `STACJA_*`; SIN/SOUT → TODO CIO) |
 | 4.2 | Opcja „opakuj w STACJA_n” (CALL pattern) | **Done** — `generate_station_master_jbi` (`ATTR CJ` + `CALL JOB:`) |
-| 4.3 | YSFLOGIC / shock — skrót dla integratora | Otwarte (dump nieczytelny bez schematu) |
+| 4.3 | YSFLOGIC / shock — skrót dla integratora | **Done** — sekcja w [CELL_IO.md](CELL_IO.md) (FSU nieczytelny w ASCII; SHOCKLVL/CUBEINTF) |
 | 4.4 | Checklist offline→online (MotoSim → CF) | **Done** — [GO_LIVE.md](GO_LIVE.md) |
 
-**Wyjście M4:** Ścieżka wdrożenia zrozumiała dla integratora Yaskawy (4.1 / 4.2 / 4.4).
+**Wyjście M4:** Ścieżka wdrożenia zrozumiała dla integratora Yaskawy (4.1–4.4).
 
 ---
 
@@ -140,8 +140,8 @@ flowchart LR
 | 5.1 | Import CAD → spoiny → plan → symulacja → eksport jako jeden flow | Mniej „demo buttons” |
 | 5.2 | Podgląd JBI w UI (diff vs `000.JBI` grammar) | Panel kodu |
 | 5.3 | Symulacja TCP + opcjonalnie joint z IK | Suwak czasu już jest; dociągnąć joint |
-| 5.4 | README = MA2010 cell (sprzątnięcie AR/Lorch default) | Docs = kod |
-| 5.5 | Skan dumpa: `tools/scan_dx200_dump.py` odświeża katalog | Jedna komenda po nowym CF |
+| 5.4 | README = MA2010 cell (sprzątnięcie AR/Lorch default) | **Done** — README = MA2010 + Motoweld + GO_LIVE |
+| 5.5 | Skan dumpa: `tools/scan_dx200_dump.py` odświeża katalog | **Done** — skrypt odświeża `_dump_scan.json` stub / katalog |
 
 **Wyjście M5:** Spójny produkt „ArcNC / cell CAD-CAM” pod tę instalację.
 

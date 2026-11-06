@@ -1,188 +1,109 @@
-# Yaskawa CAD/CAM Prototype (DX200 · AR series)
+# Yaskawa CAD/CAM — komórka MA2010 / DX200
 
 [![CI](https://github.com/MQCIA/yaskawa-cadcam/actions/workflows/ci.yml/badge.svg)](https://github.com/MQCIA/yaskawa-cadcam/actions/workflows/ci.yml)
 
-A **prototype** welding CAD/CAM web application for a Yaskawa 6-axis welding
-cell: a 3D workspace (React-Three-Fiber), a kinematics backend
-(FastAPI + roboticstoolbox), a Yaskawa DX200 `.JBI` postprocessor, and a CAD
-seam-detection endpoint.
+Offline welding CAD/CAM for the **production MA2010 cell**: React-Three-Fiber
+workspace, FastAPI kinematics + DX200 `.JBI` postprocessor, CAD seam detection.
 
-**Roadmap:** [`docs/ROADMAP.md`](docs/ROADMAP.md) · **Cell:** [`docs/CELL.md`](docs/CELL.md) · **Dump catalog:** [`docs/CELL_DUMP_CATALOG.md`](docs/CELL_DUMP_CATALOG.md)
+**Roadmap:** [`docs/ROADMAP.md`](docs/ROADMAP.md) · **Cell:** [`docs/CELL.md`](docs/CELL.md) ·
+**Go-live:** [`docs/GO_LIVE.md`](docs/GO_LIVE.md) · **Dump catalog:** [`docs/CELL_DUMP_CATALOG.md`](docs/CELL_DUMP_CATALOG.md)
 
-**Configured cell** (see [`docs/HARDWARE.md`](docs/HARDWARE.md) / [`docs/CELL.md`](docs/CELL.md)):
-- Robot: **Yaskawa MA2010** (MA02010-A0*) on DX200 — default `ROBOT_MODEL=MA2010`
-  (AR-series catalogue still selectable)
-- Base / station: **RECT-X (BS1)** + **TURN (ST1)** — default `POSITIONER=TURN-ST1`
-- Power source: **MOTOWELD-E Series 350A** (plain `ARCON`; no `ASF#` on this cell)
-> ## ⚠️ SAFETY — READ BEFORE DOING ANYTHING WITH REAL HARDWARE
+**Configured cell** ([`docs/HARDWARE.md`](docs/HARDWARE.md)):
+- Robot: **Yaskawa MA2010** (MA02010-A0*) on DX200 — `ROBOT_MODEL=MA2010`
+- Base / stations: **RECT-X (BS1)** + **TURN ST1–ST4** — `POSITIONER=TURN-ST1`
+- Power source: **MOTOWELD-E Series 350A** — `MACRO1 ARGF` + bare `ARCON` (no `ASF#`)
+- Frames / IO / weld map: [`CELL_FRAMES.md`](docs/CELL_FRAMES.md) · [`CELL_IO.md`](docs/CELL_IO.md) · [`CELL_WELD_MAP.md`](docs/CELL_WELD_MAP.md) (when present)
+
+> ## ⚠️ SAFETY — READ BEFORE REAL HARDWARE
 >
-> This project **cannot** and **does not** guarantee "immediate, error-free"
-> operation on a physical robot, and no software honestly can. It drives an
-> industrial arc-welding manipulator; incorrect output causes collisions,
-> equipment damage, fire and injury.
+> Generated `.JBI` is a **draft**. Incorrect output can cause collisions, fire, or injury.
 >
-> **The kinematic parameters shipped here are generic PLACEHOLDERS**, not the
-> certified values of any specific robot. Before this is anything more than a
-> visualiser you MUST:
-> 1. Replace the DH parameters, joint limits, home pose and pulse constants in
->    `backend/app/robot_config.py` with the **exact** figures for your robot
->    (from the Yaskawa data sheet / MotoSim model / controller parameter file).
-> 2. Validate the DX200 `.JBI` format against a reference job exported from
->    **your** controller (RCONF word, TOOL/USER frames, weld-condition file
->    numbers, speed tags all differ per cell).
-> 3. Dry-run **every** generated path in **MotoSim EG-VRC** with collision
->    checking, and have a qualified Yaskawa integrator sign off, before loading
->    onto a live controller.
->
-> Treat all generated code as a draft for expert review, never as
-> ready-to-run.
+> 1. FK/IK uses **ROS-Industrial MA2010 URDF × TOOL 0** — still **APP_ESTIMATE** until pendant XYZ sign-off ([`CELL_POSES.md`](docs/CELL_POSES.md)).
+> 2. RECT-X mm↔pulse lead is **unverified** (`RECT_X_LEAD_VERIFIED=false`).
+> 3. Follow **[`docs/GO_LIVE.md`](docs/GO_LIVE.md)**: `compare_pulses --check-golden` → MotoSim EG-VRC → DX200 TEACH+DRY RUN.
+> 4. **Never** bypass curtains / FSU; **never** auto-load `.JBI` onto production DX200 from CI.
 
 ---
 
 ## Architecture
 
 ```
-frontend/   Next.js 14 (App Router) + TypeScript + Tailwind
-            React-Three-Fiber 3D workspace, axis jog sliders, CAD upload
-backend/    FastAPI + roboticstoolbox-python + spatialmath + trimesh
-            kinematics engine, DX200 postprocessor, CAD seam detection
+frontend/   Next.js 14 + TypeScript + Tailwind + R3F (MA2010 URDF + torch)
+backend/    FastAPI + roboticstoolbox + trimesh
+            URDF FK/IK, pulse_config, ma2010_cell PULSE postprocessor, seam detect
 ```
 
-### Phase 1 — 3D frontend (`frontend/`)
-- `components/RobotWorkspace.tsx` — `<Canvas>` with `OrbitControls`, an
-  infinite `Grid` floor, and multi-source lighting.
-- **Real example models** (see [`docs/MODELS.md`](docs/MODELS.md)): a "Robot
-  model" dropdown loads articulated **Yaskawa MOTOMAN-AR2010** or **MA2010**
-  (URDF + STL, 6 axes) and a "Positioner" dropdown loads a **MotoPos D500**
-  2-axis rotary positioner — both driven by the sliders. The travel rail can
-  use TSL-600 style meshes. Models are vendored from ROS-Industrial `motoman`
-  (Apache-2.0) / Verbotics visual dump and served from `public/models/`.
-  `components/UrdfModel.tsx` / `WeldUrdfRobot.tsx` load them with `urdf-loader`.
-- `components/YaskawaManipulator.tsx` — a "Procedural placeholder" option: a
-  **nested** kinematic chain (base → S → L → U → R → B → T) built from
-  primitives, for when no mesh model is loaded.
-- `components/AxisSliders.tsx` — per-axis sliders bound to React state.
+### Frontend
+- 3D cell workspace, joint jog, seam highlight, Motoweld ARGF / WEV# controls
+- Client-side demo JBI path (static Pages preview) + API export when backend is up
 
-To add your exact AR model or the H1000D positioner, follow
-[`docs/MODELS.md`](docs/MODELS.md) (download meshes + xacro, run
-`tools/xacro_to_urdf.py`, register in `frontend/lib/models.ts`).
-
-### Phase 2 — Kinematics backend (`backend/app/kinematics_engine.py`)
-- Builds a `roboticstoolbox` `DHRobot` from `robot_config.ACTIVE_MODEL`.
-- `POST /api/calculate-ik` — takes an ordered list of TCP poses
-  `{x,y,z,rx,ry,rz}` and returns the 6 joint angles per point, using the
-  Levenberg–Marquardt numeric IK solver seeded with the previous solution
-  (continuous configuration along the path).
-
-### Phase 3 — DX200 postprocessor (`backend/app/dx200_postprocessor.py`)
-- Converts a path into INFORM III `.JBI` aligned with a real DX200 reference
-  job (`DROP01.JBI`): `/JOB`, `///USER` + `///POSTYPE USER`, `///RECTAN`,
-  `///POSTYPE PULSE` + `EC#`, `///ATTR SC,RW,RJ`, `MOVJ`/`MOVL C# EC# V=`/`VJ=`,
-  `ARCON`/`ARCOF`, `END`.
-- `POST /api/generate-jbi`.
-
-### Phase 4 — CAD seam detection (`backend/app/cad_analysis.py`)
-- `POST /api/analyze-cad` — loads a mesh and returns candidate fillet seams:
-  internal edges with a dihedral angle near 90° that are **concave**. Returns
-  3D start/end segments for the frontend to highlight in red.
-- STL/OBJ/PLY/GLB load natively; **STEP** needs an extra converter
-  (`pip install cascadio`, or a `gmsh` backend). B-Rep-accurate seam
-  recognition really needs OpenCASCADE (`pythonocc-core`) — see limitations.
+### Backend
+- `POST /api/calculate-ik` — path IK seeded from cell home
+- `POST /api/generate-jbi` — production **PULSE** when IK joints provided; otherwise opt-in `PREVIEW_RECTAN_DO_NOT_LOAD`
+- `generate_station_master_jbi` — optional `STACJA_n` + `CALL JOB:` wrapper
+- `POST /api/analyze-cad` — fillet seam heuristics (STL/…)
 
 ---
 
 ## Live preview (GitHub Pages)
 
-A static export of the 3D workspace is auto-deployed on every push to `main`:
-
 **https://mqcia.github.io/yaskawa-cadcam/**
 
-The preview runs entirely client-side: you can select the robot model
-(AR2010 / MA2010 URDF) and positioner (MotoPos D500), and jog all axes. Backend-powered
-features (CAD seam analysis, IK, `.JBI` generation) require the FastAPI server
-and are **not** available on the static preview — run the backend locally or
-deploy it separately, and point `NEXT_PUBLIC_API_URL` at it.
+Static 3D / jog only. IK, CAD analysis, and controller-grade JBI need the FastAPI backend (`NEXT_PUBLIC_API_URL`).
 
-The static build is produced with `STATIC_EXPORT=1 NEXT_PUBLIC_BASE_PATH=/yaskawa-cadcam
-npm run build` (see `.github/workflows/pages.yml`).
-
-## Quick start (Docker)
+## Quick start
 
 ```bash
 docker compose up --build
 # frontend -> http://localhost:3000   backend -> http://localhost:8000 (/docs)
 ```
 
-Or use the Makefile: `make help` lists all targets (`backend-dev`,
-`frontend-dev`, `backend-test`, `pipeline`, `up`, …).
-
-## End-to-end pipeline demo
-
-Runs every phase without a server (CAD mesh → seam detection → path planning →
-inverse kinematics → DX200 `.JBI`) and writes `backend/out/WELD_AUTO.JBI`:
-
 ```bash
-cd backend && . .venv/bin/activate && python pipeline_example.py
+# backend
+cd backend && python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt requirements-dev.txt
+uvicorn app.main:app --reload
+python -m pytest -q
+
+# frontend
+cd frontend && npm install && npm run dev
 ```
 
-The combined `POST /api/plan-path` endpoint turns detected seams into an ordered
-TCP path (approach → welded points → retract) plus the weld ranges for ARCON/ARCOF.
-
-## Tests
+Pipeline without server:
 
 ```bash
-cd backend && . .venv/bin/activate && pip install -r requirements-dev.txt && python -m pytest -q
+cd backend && source .venv/bin/activate && python pipeline_example.py
 ```
 
-## Running locally
+Golden pulse check:
 
-### Backend
 ```bash
-cd backend
-python -m virtualenv .venv && source .venv/bin/activate   # or python -m venv
-pip install -r requirements.txt
-uvicorn app.main:app --reload            # http://localhost:8000  (/docs for Swagger)
-python smoke_test.py                     # offline verification of all modules
-```
-
-### Frontend
-```bash
-cd frontend
-npm install
-npm run dev                              # http://localhost:3000
-# set NEXT_PUBLIC_API_URL if the backend is not on http://localhost:8000
+python3 tools/compare_pulses.py --check-golden
 ```
 
 ---
 
-## Known limitations / honest status
-- **Kinematics are placeholder DH parameters** — approximate a ~1.4 m welding
-  arm topology, not any real MA/AR model. Not verified against MotoSim.
-- **IK** is unconstrained numeric IK: no collision avoidance, singularity
-  handling, reach/limit strategy, or turn-number (RCONF) management.
-- **`.JBI`** structure is plausible but unvalidated against a real DX200;
-  pulse↔degree scaling, weld schedules and frames are placeholders.
-- **STEP** import is optional and not wired by default; seam detection is a
-  tessellation heuristic on single solids — multi-body contact detection needs
-  a real CAD kernel.
-- No authentication, persistence, path smoothing, or reachability planning.
+## Honest status
 
-These are the pieces that must be filled in with your real data and validated
-in simulation before any production use.
+| Area | Status |
+|------|--------|
+| MA2010 URDF FK/IK + TOOL 0 | In code; pendant XYZ sign-off open |
+| PULSE export (IK → C#/BC#/EC#) | Hard-gated; no invented pulses |
+| ST1–ST4 GROUP2 + zone BC | Done |
+| Motoweld ARGF / WEV UI | See Motoweld PRs / `CELL_WELD_MAP.md` |
+| IO / GO_LIVE | [`CELL_IO.md`](docs/CELL_IO.md), [`GO_LIVE.md`](docs/GO_LIVE.md) |
+| RECT-X lead mm | Unverified placeholder |
+| Auto DX200 load | **Out of scope** |
 
 ---
 
-## Publishing this repository
+## Docs index
 
-This repository was initialised locally (branch
-`cursor/yaskawa-cadcam-prototype-868a`). To publish it to your own remote:
-
-```bash
-# from the repo root
-git remote add origin <your-repo-url>     # e.g. git@github.com:you/yaskawa-cadcam.git
-git push -u origin cursor/yaskawa-cadcam-prototype-868a
-# or publish it as main:
-git branch -M main && git push -u origin main
-```
-
-Create the empty remote repo first (e.g. `gh repo create yaskawa-cadcam --private`).
+| Doc | Topic |
+|-----|--------|
+| [`docs/ROADMAP.md`](docs/ROADMAP.md) | Milestones M0–M6 |
+| [`docs/GO_LIVE.md`](docs/GO_LIVE.md) | Offline → MotoSim → DX200 checklist |
+| [`docs/CELL_IO.md`](docs/CELL_IO.md) | Curtains / stations / YSFLOGIC note |
+| [`docs/CELL_TOUCHSENSE.md`](docs/CELL_TOUCHSENSE.md) | `SRCH-*` / `CALL JOB` pattern |
+| [`docs/CELL_POSES.md`](docs/CELL_POSES.md) | Golden poses |
+| [`docs/MODELS.md`](docs/MODELS.md) | URDF / meshes |
