@@ -658,11 +658,8 @@ export default function Home() {
   function loadJbiSource(text: string, opts?: { keepEditor?: boolean }) {
     const parsed = parseJbi(text);
     const stIdx = mountStationIndex(parsed.program.mount) as 0 | 1;
-    // PULSE jobs: path already includes BC→Z; start carriage at first BC (Z≈0).
-    const railZ =
-      parsed.postype === "PULSE"
-        ? 0
-        : parsed.program.mount[2];
+    // PULSE jobs are rigidly aligned to ST1 faceplate — park carriage on mount Z.
+    const railZ = parsed.program.mount[2];
     applyProgram(parsed.program, railZ, stIdx);
     setLastJbiText(opts?.keepEditor ? text : parsed.sourceText);
     setJbiDirty(false);
@@ -832,9 +829,9 @@ export default function Home() {
   const activePositioner = POSITIONER_MODELS.find((p) => p.id === positionerId);
   const sample = program ? sampleProgram(program, simT) : null;
 
-  // Keep RECT-X carriage on the same BC→Z map used when importing PULSE .JBI.
+  // Optional BC→rail scrub only when the import kept BC in the path frame.
   useEffect(() => {
-    if (!program || manualJog) return;
+    if (!program || manualJog || program.meta?.importedPulse) return;
     const ref = program.meta?.bcRefPulse;
     const bc = sample?.bc;
     if (ref == null || bc == null || !Number.isFinite(bc)) return;
@@ -1566,13 +1563,17 @@ export default function Home() {
                               className="flex min-w-0 flex-1 items-center gap-2 text-left"
                             >
                               <span className="w-12 shrink-0 text-slate-500">
-                                {informCLabel(i)}
+                                {informCLabel(i, wp.cIndex)}
                               </span>
                               <span className="w-10 shrink-0">{wp.move}</span>
                               <span className="w-14 shrink-0 truncate text-[10px] uppercase text-slate-400">
                                 {t(`program.kind.${wp.kind}`)}
                               </span>
-                              <span className="min-w-0 flex-1 truncate">{wp.speedLabel}</span>
+                              <span className="min-w-0 flex-1 truncate">
+                                {wp.jointsDeg
+                                  ? wp.jointsDeg.map((d) => d.toFixed(0)).join(",")
+                                  : wp.speedLabel}
+                              </span>
                               <span
                                 className={
                                   diag?.ik === "collision"

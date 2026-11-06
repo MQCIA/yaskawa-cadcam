@@ -17,11 +17,10 @@ import {
   type WeldScheduleRow,
 } from "@/lib/weldProgram";
 import { computeDx200Durations } from "@/lib/dx200Sim";
-import { TSL_CARRIAGE_TOP_Y } from "@/lib/trackMesh";
 
 /**
  * RECT-X placeholder lead (matches backend dx200_trajectory heuristic):
- * ~0.002 mm/pulse → metres.
+ * ~0.002 mm/pulse → metres. Used only for carriage slider sync, not path XYZ.
  */
 export const BC_M_PER_PULSE = 0.002 / 1000;
 
@@ -29,6 +28,9 @@ export const BC_M_PER_PULSE = 0.002 / 1000;
 export function railZFromBc(bc: number, refBc: number): number {
   return (bc - refBc) * BC_M_PER_PULSE;
 }
+
+/** Default faceplate mount (station 1) — PULSE paths are rigidly aligned here. */
+export const JBI_ALIGN_MOUNT: Vec3 = [1.1, 0.98, -1.2];
 
 export type ParsedJbi = {
   program: WeldProgram;
@@ -244,10 +246,10 @@ function resolvePose(
   entry: PosEntry | undefined,
   warnings: string[],
   cIdx: number,
-): { pos: Vec3; dir: Vec3; jointsDeg?: number[] } {
+): { pos: Vec3; dir: Vec3; jointsDeg?: number[]; pulses?: number[] } {
   if (!entry) {
     warnings.push(`Brak pozycji C${String(cIdx).padStart(5, "0")}`);
-    return { pos: [1.1, 0.98, -1.2], dir: [0, -Math.SQRT1_2, -Math.SQRT1_2] };
+    return { pos: [...JBI_ALIGN_MOUNT], dir: [0, -Math.SQRT1_2, -Math.SQRT1_2] };
   }
   if (entry.kind === "rectan") {
     return {
@@ -261,23 +263,52 @@ function resolvePose(
   }
   const jointsDeg = jointPulsesToDeg(entry.pulses);
   const fk = fkTcp(jointsDeg);
-  return { pos: fk.pos, dir: fk.dir, jointsDeg };
+  return { pos: fk.pos, dir: fk.dir, jointsDeg, pulses: entry.pulses };
 }
 
-function inferKind(
-  move: MoveType,
-  arcOn: boolean,
-  index: number,
-  total: number,
-  prevWasWeld: boolean,
-): Waypoint["kind"] {
-  if (move === "MOVS") return "sense";
-  if (arcOn) return "weld";
-  if (index === 0) return "approach";
-  if (index === total - 1) return "retract";
-  if (prevWasWeld) return "retract";
-  if (move === "MOVJ") return "clearance";
-  return "travel";
+/**
+ * Motoman approximate DH puts absolute TCP in a nonsense cell frame.
+ * Keep relative shape, rigidly map weld (or path) centroid → station faceplate.
+ */
+function alignPulsePathToStation(
+  waypoints: Waypoint[],
+  mount: Vec3 = JBI_ALIGN_MOUNT,
+): Vec3 {
+  const anchors =
+    waypoints.filter((w) => w.kind === "weld").map((w) => w.pos).length > 0
+      ? waypoints.filter((w) => w.kind === "weld").map((w) => w.pos)
+      : waypoints.map((w) => w.pos);
+  const cx = anchors.reduce((s, p) => s + p[0], 0) / anchors.length;
+  const cy = anchors.reduce((s, p) => s + p[1], 0) / anchors.length;
+  const cz = anchors.reduce((s, p) => s + p[2], 0) / anchors.length;
+  const d: Vec3 = [mount[0] - cx, mount[1] - cy, mount[2] - cz];
+  for (const w of waypoints) {
+    w.pos = [w.pos[0] + d[0], w.pos[1] + d[1], w.pos[2] + d[2]];
+  }
+  return d;
+}
+
+/** Assign approach / clearance / retract around weld & sense runs. */
+function assignAirKinds(waypoints: Waypoint[]): void {
+  const firstWeld = waypoints.findIndex((w) => w.kind === "weld");
+  let lastWeld = -1;
+  for (let i = waypoints.length - 1; i >= 0; i--) {
+    if (waypoints[i].kind === "weld") {
+      lastWeld = i;
+      break;
+    }
+  }
+  for (let i = 0; i < waypoints.length; i++) {
+    const w = waypoints[i];
+    if (w.kind === "weld" || w.kind === "sense") continue;
+    if (firstWeld < 0) {
+      w.kind = i === 0 ? "approach" : i === waypoints.length - 1 ? "retract" : "travel";
+      continue;
+    }
+    if (i < firstWeld) w.kind = i === 0 ? "approach" : "travel";
+    else if (i > lastWeld) w.kind = "retract";
+    else w.kind = "clearance";
+  }
 }
 
 /**
@@ -389,11 +420,6 @@ export function parseJbi(text: string): ParsedJbi {
   }
 
   const waypoints: Waypoint[] = [];
-  const torchFrames: { pos: Vec3; dir: Vec3 }[] = [];
-  const seam: Vec3[] = [];
-  let prevWasWeld = false;
-
-  // Anchor RECT-X so the first BC sits at carriage Z = 0.
   let bcRef: number | undefined;
   for (const m of moveBuf) {
     const v = bc.get(m.c);
@@ -403,78 +429,75 @@ export function parseJbi(text: string): ParsedJbi {
     }
   }
 
+  const isPulseJob = Array.from(positions.values()).some((p) => p.kind === "pulse");
+
   moveBuf.forEach((m, i) => {
     const pose = resolvePose(positions.get(m.c), warnings, m.c);
-    const kind = inferKind(m.move, m.arc, i, moveBuf.length, prevWasWeld);
-    const bcPulse = bc.get(m.c);
-    let pos = pose.pos;
-    // PULSE C# is arm-base frame — lift by carriage deck and slide by BC.
-    if (positions.get(m.c)?.kind === "pulse") {
-      const railZ =
-        typeof bcPulse === "number" && bcRef != null
-          ? railZFromBc(bcPulse, bcRef)
-          : 0;
-      pos = [
-        pose.pos[0],
-        pose.pos[1] + TSL_CARRIAGE_TOP_Y,
-        pose.pos[2] + railZ,
-      ];
-    }
+    const kind: Waypoint["kind"] = m.move === "MOVS" ? "sense" : m.arc ? "weld" : "travel";
     const wp: Waypoint = {
-      id: pad(i + 1),
-      pos,
+      id: `C${String(m.c).padStart(5, "0")}`,
+      cIndex: m.c,
+      pos: pose.pos,
       move: m.move,
       speedLabel: m.speedLabel,
       arc: m.arc,
       kind,
       tag: m.tag,
       timerSec: m.timerSec,
-      bc: bcPulse,
+      bc: bc.get(m.c),
       ec: ec.get(m.c),
       jointsDeg: pose.jointsDeg,
+      pulses: pose.pulses,
     };
     waypoints.push(wp);
-    if (kind === "weld") {
-      seam.push(pos);
-      torchFrames.push({ pos, dir: pose.dir });
-      prevWasWeld = true;
-    } else if (kind === "sense") {
-      prevWasWeld = false;
-    } else if (kind === "retract" || kind === "clearance" || kind === "travel") {
-      prevWasWeld = kind === "retract" ? false : prevWasWeld;
-    }
+    void i;
   });
 
-  // Ensure ARCON/ARCOF tags on contiguous weld runs.
-  let i = 0;
-  while (i < waypoints.length) {
-    if (waypoints[i].kind !== "weld") {
-      i++;
-      continue;
-    }
-    const start = i;
-    while (i < waypoints.length && waypoints[i].kind === "weld") i++;
-    const end = i - 1;
-    waypoints[start] = {
-      ...waypoints[start],
-      tag: "ARCON",
-      arc: true,
-      timerSec: waypoints[start].timerSec,
-    };
-    if (start === end) {
+  assignAirKinds(waypoints);
+
+  // Tag ARCON/ARCOF on contiguous weld runs; keep tack TIMER only when already set.
+  {
+    let i = 0;
+    while (i < waypoints.length) {
+      if (waypoints[i].kind !== "weld") {
+        i++;
+        continue;
+      }
+      const start = i;
+      while (i < waypoints.length && waypoints[i].kind === "weld") i++;
+      const end = i - 1;
+      const startTimer = waypoints[start].timerSec;
       waypoints[start] = {
         ...waypoints[start],
-        timerSec: waypoints[start].timerSec ?? 2.0,
+        tag: "ARCON",
+        arc: true,
+        timerSec: startTimer,
       };
-    } else {
-      waypoints[end] = { ...waypoints[end], tag: "ARCOF", arc: true };
-      for (let j = start + 1; j < end; j++) {
-        waypoints[j] = { ...waypoints[j], tag: undefined, arc: true };
+      if (start !== end) {
+        waypoints[end] = { ...waypoints[end], tag: "ARCOF", arc: true };
+        for (let j = start + 1; j < end; j++) {
+          waypoints[j] = { ...waypoints[j], tag: undefined, arc: true };
+        }
       }
     }
   }
 
+  if (isPulseJob) {
+    alignPulsePathToStation(waypoints, JBI_ALIGN_MOUNT);
+    warnings.push(
+      "PULSE: pozycje XYZ to przybliżone DH wyrównane do stołu ST1 — kształt względny; waliduj w MotoSim.",
+    );
+  }
+
   const weldPts = waypoints.filter((w) => w.kind === "weld").map((w) => w.pos);
+  const seam = [...weldPts];
+  const torchFrames = waypoints
+    .filter((w) => w.kind === "weld")
+    .map((w) => ({
+      pos: w.pos,
+      dir: [0, -Math.SQRT1_2, -Math.SQRT1_2] as Vec3,
+    }));
+
   let weldLenMm = 0;
   for (let k = 1; k < weldPts.length; k++) {
     weldLenMm +=
@@ -492,7 +515,7 @@ export function parseJbi(text: string): ParsedJbi {
           weldPts.reduce((s, p) => s + p[1], 0) / weldPts.length,
           weldPts.reduce((s, p) => s + p[2], 0) / weldPts.length,
         ]
-      : waypoints[0]?.pos ?? [1.1, 0.98, -1.2];
+      : [...JBI_ALIGN_MOUNT];
 
   const denseJointAnglesDeg = waypoints.every((w) => w.jointsDeg?.length === 6)
     ? waypoints.map((w) => w.jointsDeg as number[])
@@ -522,6 +545,7 @@ export function parseJbi(text: string): ParsedJbi {
       activeWeaveNo: weaveNo,
       denseJointAnglesDeg,
       bcRefPulse: bcRef,
+      importedPulse: isPulseJob,
     },
   };
 

@@ -279,7 +279,7 @@ const pl: Dict = {
   "status.exportRectan":
     "Wyeksportowano RECTAN review .JBI (brak IK / backend). EC/BC w impulsach komórki.",
   "status.jbiOpened":
-    "Otwarto {name}.JBI · {n} pkt · {postype}{warn}. Edytuj w zakładce .JBI lub Program.",
+    "Otwarto {name} · {n} pkt · {postype}{warn}. Lista C# w Programie; PULSE XYZ ≈ wyrównane do ST1.",
   "status.jbiOpenFail": "Nie udało się otworzyć .JBI: {err}",
   "status.jbiApplied": "Zastosowano edycję .JBI ({n} linii) → punkty programu odświeżone.",
   "status.jbiReloaded": "Tekst .JBI przebudowany z aktualnego programu.",
@@ -561,7 +561,7 @@ const en: Dict = {
   "status.exportRectan":
     "Exported RECTAN review .JBI (no IK / backend). EC/BC use cell pulse units.",
   "status.jbiOpened":
-    "Opened {name}.JBI · {n} pts · {postype}{warn}. Edit under .JBI or Program.",
+    "Opened {name} · {n} pts · {postype}{warn}. C# list in Program; PULSE XYZ ≈ aligned to ST1.",
   "status.jbiOpenFail": "Failed to open .JBI: {err}",
   "status.jbiApplied": "Applied .JBI edits ({n} lines) → program waypoints refreshed.",
   "status.jbiReloaded": ".JBI text rebuilt from the current program.",
