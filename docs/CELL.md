@@ -85,6 +85,26 @@ Full map: **[CELL_WELD_MAP.md](CELL_WELD_MAP.md)** · **[BACKUP_AND_LORCH_ANALYS
 
 Large binaries (`CMOS.BIN`, `ALL.PRM`, …) stay under `reference/` (gitignored).
 
+## HSES · UnderAutomation (optional live .JBI push)
+
+Commercial SDK ([Yaskawa.py](https://github.com/underautomation/Yaskawa.py) /
+[Yaskawa.NET](https://github.com/underautomation/Yaskawa.NET)) talks to the
+DX200 over **High-Speed Ethernet Server** (and FTP). Used only to **upload /
+start** jobs this app already generated — it does **not** replace seam
+planning or the INFORM postprocessor.
+
+```bash
+pip install -r backend/requirements-hses.txt
+# Linux: install .NET 8 runtime, then:
+export PYTHONNET_RUNTIME=coreclr
+export YASKAWA_ROBOT_HOST=192.168.x.x
+# without a robot on the LAN:
+export YASKAWA_UA_DRY_RUN=1
+```
+
+API: `GET /api/hses`, `GET /api/hses/status`, `POST /api/hses/upload-jbi`,
+`POST /api/hses/start-job`. UI: Robot dock → **HSES · UnderAutomation**.
+
 ## MotoROS2 on this DX200 (optional telemetry)
 
 Official docs: [Yaskawa-Global/motoros2](https://github.com/Yaskawa-Global/motoros2)

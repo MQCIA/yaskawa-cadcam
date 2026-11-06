@@ -452,13 +452,77 @@ async def analyze_cad(
 
 @app.get("/api/robot-link")
 def robot_link():
-    """Execution path for this cell: INFORM .JBI, plus optional MotoROS2 status.
+    """Execution path for this cell: INFORM .JBI, plus optional MotoROS2 / HSES.
 
     ArcNC does not expose an API. ROS is reported only when a micro-ROS Agent
-    address is configured; this endpoint never commands motion. Motoweld
+    address is configured. Optional UnderAutomation HSES can upload/start
+    generated ``.JBI`` when ``YASKAWA_ROBOT_HOST`` is set. Motoweld
     ``WVON`` / ``MACRO1`` always go through native ``.JBI``.
     """
     return describe_robot_link()
+
+
+class HsesUploadRequest(BaseModel):
+    jbi: str = Field(..., description="Full INFORM .JBI job text")
+    job_name: str | None = Field(
+        default=None, description="Controller job name without .JBI (default CADCAM)"
+    )
+    start: bool = Field(
+        default=False, description="If true, SelectJob + StartJob after upload"
+    )
+    line: int = 0
+
+
+class HsesStartRequest(BaseModel):
+    job_name: str
+    line: int = 0
+    servo_on: bool = True
+
+
+@app.get("/api/hses")
+def hses_info():
+    """UnderAutomation HSES adapter status (optional live DX200 link)."""
+    from .yaskawa_hses import describe_hses_link
+
+    return describe_hses_link()
+
+
+@app.get("/api/hses/status")
+def hses_status():
+    """Read controller status via HSES (or dry-run)."""
+    from .yaskawa_hses import get_status
+
+    try:
+        return get_status()
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(503, str(exc)) from exc
+
+
+@app.post("/api/hses/upload-jbi")
+def hses_upload(req: HsesUploadRequest):
+    """Upload a generated .JBI to the DX200; optionally start it."""
+    from .yaskawa_hses import select_and_start_job, upload_and_start, upload_jbi
+
+    if not req.jbi.strip():
+        raise HTTPException(400, "Empty JBI")
+    try:
+        if req.start:
+            return upload_and_start(req.jbi, job_name=req.job_name, line=req.line)
+        up = upload_jbi(req.jbi, job_name=req.job_name)
+        return {"upload": up}
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(503, str(exc)) from exc
+
+
+@app.post("/api/hses/start-job")
+def hses_start(req: HsesStartRequest):
+    """SelectJob + StartJob on the controller (remote/play/servo required)."""
+    from .yaskawa_hses import select_and_start_job
+
+    try:
+        return select_and_start_job(req.job_name, line=req.line, servo_on=req.servo_on)
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(503, str(exc)) from exc
 
 
 @app.get("/")

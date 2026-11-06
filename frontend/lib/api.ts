@@ -64,3 +64,69 @@ export async function generateJbi(body: unknown) {
   if (!res.ok) throw new Error(`JBI generation failed: ${res.status}`);
   return res.text();
 }
+
+export type HsesInfo = {
+  provider: string;
+  host: string | null;
+  host_configured: boolean;
+  dry_run: boolean;
+  license_registered: boolean;
+  sdk: {
+    available: boolean;
+    package?: string;
+    runtime?: string;
+    hint?: string | null;
+    error?: string;
+  };
+  role?: string;
+};
+
+export async function hsesInfo() {
+  const res = await fetch(`${BASE}/api/hses`);
+  if (!res.ok) throw new Error(`HSES info failed: ${res.status}`);
+  return res.json() as Promise<HsesInfo>;
+}
+
+export async function hsesStatus() {
+  const res = await fetch(`${BASE}/api/hses/status`);
+  if (!res.ok) {
+    const t = await res.text();
+    throw new Error(t || `HSES status failed: ${res.status}`);
+  }
+  return res.json() as Promise<Record<string, unknown>>;
+}
+
+export async function hsesUploadJbi(body: {
+  jbi: string;
+  job_name?: string;
+  start?: boolean;
+  line?: number;
+}) {
+  const res = await fetch(`${BASE}/api/hses/upload-jbi`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const t = await res.text();
+    throw new Error(t || `HSES upload failed: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function hsesStartJob(body: {
+  job_name: string;
+  line?: number;
+  servo_on?: boolean;
+}) {
+  const res = await fetch(`${BASE}/api/hses/start-job`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const t = await res.text();
+    throw new Error(t || `HSES start failed: ${res.status}`);
+  }
+  return res.json();
+}

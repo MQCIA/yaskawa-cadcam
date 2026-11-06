@@ -20,6 +20,7 @@ import AxisSliders, {
 } from "@/components/AxisSliders";
 import TorchCalibrationPanel from "@/components/TorchCalibrationPanel";
 import Dx200MotorosChecklist from "@/components/Dx200MotorosChecklist";
+import HsesExecPanel from "@/components/HsesExecPanel";
 import { useI18n, LanguageToggle } from "@/lib/i18n";
 import type { SeamSegment } from "@/components/RobotWorkspace";
 import { analyzeCad, calculateIk } from "@/lib/api";
@@ -164,6 +165,7 @@ export default function Home() {
   const [sketchMode, setSketchMode] = useState<SketchMode>("orbit");
   const [sketchSnap, setSketchSnap] = useState(true);
   const [sketchDraft, setSketchDraft] = useState<DraftPoint[]>([]);
+  const [lastJbiText, setLastJbiText] = useState<string | null>(null);
 
   // Verbotics-style: joint jog is always available; ON until the user plays a plan.
   const [manualJog, setManualJog] = useState(true);
@@ -650,6 +652,7 @@ export default function Home() {
       jointAnglesDeg,
       weaveNo,
     });
+    setLastJbiText(text);
     const blob = new Blob([text], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -1842,6 +1845,24 @@ export default function Home() {
               {t("exec.title")}
             </div>
             <p className="mb-1 text-[10px] leading-snug text-slate-500">{t("exec.summary")}</p>
+            <HsesExecPanel
+              jbiText={lastJbiText}
+              defaultJobName={program?.name ?? "CADCAM"}
+              labels={{
+                title: t("hses.title"),
+                summary: t("hses.summary"),
+                host: t("hses.host"),
+                refresh: t("hses.refresh"),
+                upload: t("hses.upload"),
+                uploadStart: t("hses.uploadStart"),
+                startOnly: t("hses.startOnly"),
+                jobName: t("hses.jobName"),
+                dryRun: t("hses.dryRun"),
+                sdkOk: t("hses.sdkOk"),
+                sdkMissing: t("hses.sdkMissing"),
+                needJbi: t("hses.needJbi"),
+              }}
+            />
             <Dx200MotorosChecklist
               title={t("exec.checklistTitle")}
               firmwareWarn={t("exec.firmwareWarn")}
