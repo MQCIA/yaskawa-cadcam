@@ -40,7 +40,14 @@ from .pulse_config import (
     station_deg_to_ec,
 )
 from .robot_config import CELL_HOME_PULSES, CELL_STATIONS, cell_home_deg
-from .welding_config import LORCH_S8_SCHEDULES, WeldSchedule
+from .welding_config import (
+    DEFAULT_ARGF,
+    DEFAULT_WEAVE_NO,
+    MOTOWELD_SCHEDULES,
+    WPS_UNQUALIFIED_WARNING,
+    WeldSchedule,
+    get_schedule_by_argf,
+)
 
 StationId = Literal["ST1", "ST2", "ST3", "ST4"]
 
@@ -57,7 +64,7 @@ class WeldSegment:
     end_index: int
     weld_speed: float = 5.0  # V= travel (matches cell jobs ~5.0–7.5)
     arc_file: int = 1
-    weave_no: int = 21  # WEV# used on the production cell
+    weave_no: int | None = DEFAULT_WEAVE_NO  # None → no WVON (Brak)
 
 
 @dataclass
@@ -78,8 +85,8 @@ class PostprocessorConfig:
     joint_approach: bool = True
     # Production TOOL 0 tip Z ≈ 415.7 mm (informational / comments).
     tool_tcp_mm: tuple[float, float, float] = (-54.280, 1.052, 415.702)
-    default_weave: int = 21
-    macro_arg: int = 8  # MACRO1 MJ#(0) ARGF8 seen before ARCON
+    default_weave: int | None = DEFAULT_WEAVE_NO
+    macro_arg: int = DEFAULT_ARGF  # MACRO1 MJ#(0) ARGF — production default 1
     # Production PULSE requires IK joints. Preview RECTAN is opt-in only.
     prefer_pulse: bool = True
     allow_preview_rectan: bool = False
@@ -107,13 +114,17 @@ def _fmt1(v: float) -> str:
 
 
 def _weld_comment(cond_no: int) -> str:
-    sched: WeldSchedule | None = LORCH_S8_SCHEDULES.get(cond_no)
+    sched: WeldSchedule | None = MOTOWELD_SCHEDULES.get(cond_no)
     if not sched:
-        return f"' weld condition {cond_no}"
+        try:
+            sched = get_schedule_by_argf(cond_no)
+        except KeyError:
+            return f"' Motoweld ARGF{cond_no} (no UI schedule)"
     return (
-        f"' Motoweld cond {cond_no} / ARGF{sched.lorch_job}: "
+        f"' Motoweld ARGF{sched.argf} / USER-{sched.weldudef_user}: "
         f"{sched.current_a:.0f}A / {sched.voltage_v:.1f}V / "
-        f"wire {sched.wire_speed:.1f} m/min / {sched.process}"
+        f"wire {sched.wire_speed:.1f} m/min / {sched.process} "
+        f"[UNQUALIFIED WPS heuristic]"
     )
 
 
@@ -396,6 +407,11 @@ def _generate_ma2010_cell(
         f"RECT_X_LEAD_VERIFIED={RECT_X_LEAD_VERIFIED}"
     )
     lines.append(rect_x_jbi_warning_comment())
+    lines.append(f"' NOTE: {WPS_UNQUALIFIED_WARNING}")
+    lines.append(
+        f"' MACRO1 ARGF{cfg.macro_arg}; default WEV#="
+        f"{cfg.default_weave if cfg.default_weave is not None else 'NONE'}"
+    )
     lines.append("//POS")
     lines.append(f"///NPOS {npos},{npos},{npos},0,0,0")
     lines.append(f"///TOOL {cfg.tool_no}")
@@ -467,8 +483,10 @@ def _generate_ma2010_cell(
             lines.append(f"MACRO1 MJ#(0) ARGF{cfg.macro_arg}")
             lines.append(_weld_comment(seg.arc_file))
             lines.append("ARCON")
-            lines.append(f"WVON WEV#({seg.weave_no})")
-            weave_on = True
+            wev = seg.weave_no if seg.weave_no is not None else cfg.default_weave
+            if wev is not None:
+                lines.append(f"WVON WEV#({wev})")
+                weave_on = True
             lines.append(
                 f"MOVL {c} {bc} V={_fmt1(seg.weld_speed)} DEC=20  "
                 f"+MOVJ {ec} VJ={_fmt(cfg.joint_speed_pct, 2)}"

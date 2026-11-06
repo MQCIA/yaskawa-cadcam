@@ -31,7 +31,11 @@ from .robot_config import (
     TOOL0_XYZ_MM,
     cell_stations_public,
 )
-from .welding_config import ACTIVE_POWER_SOURCE, LORCH_S8_SCHEDULES
+from .welding_config import (
+    ACTIVE_POWER_SOURCE,
+    schedules_public,
+    weave_options_public,
+)
 
 app = FastAPI(
     title="Yaskawa CAD/CAM prototype API",
@@ -184,12 +188,14 @@ def cell_config():
         "power_source": {
             "name": ACTIVE_POWER_SOURCE.name,
             "interface": ACTIVE_POWER_SOURCE.interface,
-            "schedules": [
-                {"condition_no": s.condition_no, "lorch_job": s.lorch_job,
-                 "current_a": s.current_a, "voltage_v": s.voltage_v,
-                 "wire_speed": s.wire_speed, "process": s.process, "gas": s.gas}
-                for s in LORCH_S8_SCHEDULES.values()
-            ],
+            "cell_label": ACTIVE_POWER_SOURCE.cell_label,
+            "schedules": schedules_public(),
+            "weaves": weave_options_public(),
+            "wps_status": "UNQUALIFIED_HEURISTIC",
+            "wps_warning": (
+                "UI A/V are APP_ESTIMATE only — verify MACRO1 ARGF + WEAV on "
+                "pendant / MotoSim before DX200 load (see docs/CELL_WELD_MAP.md)."
+            ),
         },
         "tool0": {
             "xyz_mm": list(TOOL0_XYZ_MM),
