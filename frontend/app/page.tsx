@@ -28,6 +28,8 @@ import {
   ensureTouchSense,
   optimizeSequence,
   planMotions,
+  CELL_STATIONS,
+  type StationId,
   type WeldProgram,
 } from "@/lib/weldProgram";
 
@@ -79,6 +81,7 @@ export default function Home() {
   const [ribbon, setRibbon] = useState<Ribbon>("plan");
   const [leftTab, setLeftTab] = useState<LeftTab>("workspace");
   const [selectedStation, setSelectedStation] = useState<0 | 1 | null>(null);
+  const [exportStation, setExportStation] = useState<StationId>("ST1");
 
   const rafRef = useRef<number | undefined>(undefined);
   const lastRef = useRef<number | undefined>(undefined);
@@ -225,10 +228,12 @@ export default function Home() {
 
     const pulseOk = Array.isArray(jointAnglesDeg) && jointAnglesDeg.length === program.waypoints.length;
     const text = generateJbi(program, {
+      station: exportStation,
       stationDeg: stationAngle,
       jointAnglesDeg: pulseOk ? jointAnglesDeg : undefined,
       allowPreviewRectan: !pulseOk,
-      baseMm,
+      baseMm: baseMm !== 0 ? baseMm * 1000 : undefined, // UI rail is metres
+      homeBookends: true,
     });
     const blob = new Blob([text], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
@@ -587,6 +592,28 @@ export default function Home() {
                     {activePositioner?.label ?? t("workspace.positioner")}
                   </button>
                 ))}
+                <div className="mt-2 px-1 text-[10px] font-semibold uppercase text-slate-500">
+                  GROUP2 / JBI station
+                </div>
+                <div className="flex flex-wrap gap-1 px-1">
+                  {(Object.keys(CELL_STATIONS) as StationId[]).map((id) => (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => setExportStation(id)}
+                      className={`rounded px-2 py-1 text-[11px] font-medium ${
+                        exportStation === id
+                          ? "bg-[#e87722] text-white"
+                          : "bg-white text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50"
+                      }`}
+                    >
+                      {id}
+                      <span className="ml-1 opacity-70">
+                        BC {CELL_STATIONS[id].defaultBc}
+                      </span>
+                    </button>
+                  ))}
+                </div>
                 <div className="mt-3 px-1 text-[10px] font-semibold uppercase text-slate-500">{t("workspace.parts")}</div>
                 <div className="rounded px-2 py-1 text-slate-700">
                   {program ? (

@@ -27,6 +27,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
+from typing import Literal
 
 from .pulse_config import (
     BC_HOME_PULSE,
@@ -38,7 +39,10 @@ from .pulse_config import (
     rect_x_jbi_warning_comment,
     station_deg_to_ec,
 )
+from .robot_config import CELL_HOME_PULSES, CELL_STATIONS, cell_home_deg
 from .welding_config import LORCH_S8_SCHEDULES, WeldSchedule
+
+StationId = Literal["ST1", "ST2", "ST3", "ST4"]
 
 
 class PulseExportError(ValueError):
@@ -63,6 +67,8 @@ class PostprocessorConfig:
     user_frame: int = 1
     # "ma2010_cell" | "cartesian_review"
     profile: str = "ma2010_cell"
+    # M2.2 — INFORM GROUP2 target station.
+    station: StationId = "ST1"
     move_speed: float = 80.0  # air VJ= on the production cell
     weld_speed: float = 5.0
     joint_speed_pct: float = 80.0
@@ -77,9 +83,11 @@ class PostprocessorConfig:
     # Production PULSE requires IK joints. Preview RECTAN is opt-in only.
     prefer_pulse: bool = True
     allow_preview_rectan: bool = False
+    # When True and path lacks role=home ends, prepend/append cell home.
+    home_bookends: bool = True
     # Rail X in mm relative to BC_HOME (0 → home bookend). Per-point overrides
-    # via ``base_mm`` argument to ``generate_jbi``.
-    base_mm: float = 0.0
+    # via ``base_mm`` argument to ``generate_jbi``. None → use station zone BC.
+    base_mm: float | None = None
     base_park_pulse: int = CELL_PULSE.base_park_pulse
     robot_pulses_per_degree: list[float] = field(
         default_factory=lambda: list(CELL_PULSE.robot_pulses_per_degree)
@@ -131,6 +139,139 @@ def _joints_ready(
     return True
 
 
+def _normalize_station(station: str) -> StationId:
+    key = str(station).upper().strip()
+    if key not in CELL_STATIONS:
+        raise ValueError(f"Unknown station '{station}'. Expected ST1..ST4.")
+    return key  # type: ignore[return-value]
+
+
+def _ensure_home_bookends(
+    cartesian_points: list[dict],
+    weld_segments: list[WeldSegment],
+    joint_angles_deg: list[list[float]] | None,
+    station_deg: list[float] | None,
+    station_deg2: list[float] | None,
+    base_mm: list[float] | float | None,
+    cfg: PostprocessorConfig,
+) -> tuple[
+    list[dict],
+    list[WeldSegment],
+    list[list[float]] | None,
+    list[float] | None,
+    list[float] | None,
+    list[float] | float | None,
+]:
+    """Prepend/append cell-home poses when missing (M2.3)."""
+    if not cfg.home_bookends or not cartesian_points:
+        return (
+            cartesian_points,
+            weld_segments,
+            joint_angles_deg,
+            station_deg,
+            station_deg2,
+            base_mm,
+        )
+
+    def is_home(p: dict) -> bool:
+        return str(p.get("role", "")).lower() == "home"
+
+    need_pre = not is_home(cartesian_points[0])
+    need_post = not is_home(cartesian_points[-1])
+    if not need_pre and not need_post:
+        return (
+            cartesian_points,
+            weld_segments,
+            joint_angles_deg,
+            station_deg,
+            station_deg2,
+            base_mm,
+        )
+
+    from .kinematics_engine import forward_kinematics
+
+    home_q = cell_home_deg(CELL_HOME_PULSES)
+    fk = forward_kinematics(home_q, frame="tcp")
+    home_pt = {
+        "x": float(fk["x"]),
+        "y": float(fk["y"]),
+        "z": float(fk["z"]),
+        "rx": float(cartesian_points[0].get("rx", 180.0)),
+        "ry": float(cartesian_points[0].get("ry", 0.0)),
+        "rz": float(cartesian_points[0].get("rz", 0.0)),
+        "role": "home",
+    }
+
+    pts = list(cartesian_points)
+    segs = list(weld_segments)
+    joints = list(joint_angles_deg) if joint_angles_deg is not None else None
+    sd = list(station_deg) if station_deg is not None else None
+    sd2 = list(station_deg2) if station_deg2 is not None else None
+    shift = 0
+    if need_pre:
+        pts = [home_pt, *pts]
+        segs = [
+            WeldSegment(
+                start_index=s.start_index + 1,
+                end_index=s.end_index + 1,
+                weld_speed=s.weld_speed,
+                arc_file=s.arc_file,
+                weave_no=s.weave_no,
+            )
+            for s in segs
+        ]
+        if joints is not None:
+            joints = [home_q, *joints]
+        if sd is not None:
+            sd = [sd[0] if sd else 0.0, *sd]
+        if sd2 is not None:
+            sd2 = [sd2[0] if sd2 else 0.0, *sd2]
+        if isinstance(base_mm, list):
+            base_mm = [0.0, *base_mm]
+        shift = 1
+    if need_post:
+        pts = [*pts, dict(home_pt)]
+        if joints is not None:
+            joints = [*joints, home_q]
+        if sd is not None:
+            sd = [*sd, sd[-1] if sd else 0.0]
+        if sd2 is not None:
+            sd2 = [*sd2, sd2[-1] if sd2 else 0.0]
+        if isinstance(base_mm, list):
+            base_mm = [*base_mm, 0.0]
+    _ = shift
+    return pts, segs, joints, sd, sd2, base_mm
+
+
+def _resolve_bc_pulses(
+    points: list[dict],
+    cfg: PostprocessorConfig,
+    base_mm: list[float] | float | None,
+) -> list[int]:
+    """Per-point BC#: home → BC_HOME; else base_mm_to_bc or station default zone."""
+    st = CELL_STATIONS[_normalize_station(cfg.station)]
+    zone_bc = st.default_bc
+    n = len(points)
+    out: list[int] = []
+    for i, p in enumerate(points):
+        role = str(p.get("role", "")).lower()
+        is_bookend = cfg.home_bookends and (i == 0 or i == n - 1)
+        if role == "home" or is_bookend:
+            out.append(BC_HOME_PULSE)
+            continue
+        if isinstance(base_mm, list) and i < len(base_mm) and base_mm[i] is not None:
+            out.append(base_mm_to_bc(float(base_mm[i])))
+        elif isinstance(base_mm, (int, float)):
+            out.append(base_mm_to_bc(float(base_mm)))
+        elif cfg.base_mm is not None:
+            out.append(base_mm_to_bc(float(cfg.base_mm)))
+        else:
+            # Station zone BC (kosz-style stable rail pose for the selected ST).
+            # Equivalent mm: bc_to_base_mm(zone_bc) under the unverified scale.
+            out.append(zone_bc)
+    return out
+
+
 def generate_jbi(
     cartesian_points: list[dict],
     weld_segments: list[WeldSegment] | None = None,
@@ -138,6 +279,7 @@ def generate_jbi(
     station_deg: list[float] | None = None,
     joint_angles_deg: list[list[float]] | None = None,
     base_mm: list[float] | float | None = None,
+    station_deg2: list[float] | None = None,
 ) -> str:
     """Generate a DX200 ``.JBI`` job from Cartesian TCP points.
 
@@ -147,6 +289,7 @@ def generate_jbi(
     never invents C# pulse integers.
     """
     cfg = config or PostprocessorConfig()
+    cfg.station = _normalize_station(cfg.station)
     weld_segments = weld_segments or []
     if station_deg is not None:
         cfg.use_station_axis = True
@@ -155,6 +298,22 @@ def generate_jbi(
         station_deg = [0.0] * len(cartesian_points)
 
     if cfg.profile == "ma2010_cell":
+        (
+            cartesian_points,
+            weld_segments,
+            joint_angles_deg,
+            station_deg,
+            station_deg2,
+            base_mm,
+        ) = _ensure_home_bookends(
+            cartesian_points,
+            weld_segments,
+            joint_angles_deg,
+            station_deg,
+            station_deg2,
+            base_mm,
+            cfg,
+        )
         return _generate_ma2010_cell(
             cartesian_points,
             weld_segments,
@@ -162,6 +321,7 @@ def generate_jbi(
             station_deg,
             joint_angles_deg,
             base_mm,
+            station_deg2,
         )
     return _generate_cartesian_review(cartesian_points, weld_segments, cfg, station_deg)
 
@@ -173,10 +333,23 @@ def _generate_ma2010_cell(
     station_deg: list[float] | None,
     joint_angles_deg: list[list[float]] | None,
     base_mm: list[float] | float | None,
+    station_deg2: list[float] | None,
 ) -> str:
-    """INST layout matching ``000.JBI`` from the production MA2010 cell."""
+    """INST layout matching production MA2010 cell jobs (GROUP2 STn)."""
     npos = len(cartesian_points)
     station_deg = station_deg or [0.0] * npos
+    if len(station_deg) < npos:
+        station_deg = list(station_deg) + [station_deg[-1] if station_deg else 0.0] * (
+            npos - len(station_deg)
+        )
+    st_meta = CELL_STATIONS[cfg.station]
+    if station_deg2 is None:
+        station_deg2 = [0.0] * npos
+    elif len(station_deg2) < npos:
+        station_deg2 = list(station_deg2) + [
+            station_deg2[-1] if station_deg2 else 0.0
+        ] * (npos - len(station_deg2))
+
     joints_ok = _joints_ready(joint_angles_deg, npos)
     use_pulse = bool(cfg.prefer_pulse) and joints_ok
 
@@ -188,20 +361,20 @@ def _generate_ma2010_cell(
             "PREVIEW_RECTAN_DO_NOT_LOAD only."
         )
 
-    if isinstance(base_mm, (int, float)):
-        base_xs = [float(base_mm)] * npos
-    elif base_mm is None:
-        base_xs = [float(cfg.base_mm)] * npos
-    else:
-        base_xs = [float(base_mm[i] if i < len(base_mm) else cfg.base_mm) for i in range(npos)]
+    bc_pulses = _resolve_bc_pulses(cartesian_points, cfg, base_mm)
 
     arc_on_at: dict[int, WeldSegment] = {s.start_index: s for s in weld_segments}
     arc_off_at: set[int] = {s.end_index for s in weld_segments}
+    # Inter-seam air moves: retract → next approach (and home bookends).
+    travel_indices = {
+        i
+        for i, p in enumerate(cartesian_points)
+        if str(p.get("role", "")).lower() in ("approach", "retract", "home", "travel")
+    }
     lines: list[str] = []
 
     job_name = cfg.job_name
     if not use_pulse:
-        # Diagnostic-only RECTAN — never load on DX200.
         if "PREVIEW_RECTAN_DO_NOT_LOAD" not in job_name.upper():
             job_name = f"PREVIEW_RECTAN_DO_NOT_LOAD_{cfg.job_name}"
 
@@ -214,12 +387,13 @@ def _generate_ma2010_cell(
         lines.append("' PREVIEW_RECTAN_DO_NOT_LOAD — offline diagnostic only")
         lines.append("' NOT for DX200 load — IK missing or unreachable; no PULSE C#")
     lines.append(
-        f"' Cell: MA2010 + RECT-X (BS1) + TURN (ST1); TOOL0 TCP mm "
+        f"' Cell: MA2010 + RECT-X (BS1) + TURN ({cfg.station}); TOOL0 TCP mm "
         f"{cfg.tool_tcp_mm[0]},{cfg.tool_tcp_mm[1]},{cfg.tool_tcp_mm[2]}"
     )
     lines.append(
         f"' Station pulses/deg~{cfg.station_pulses_per_deg:.4f}; "
-        f"BC_HOME={BC_HOME_PULSE}; RECT_X_LEAD_VERIFIED={RECT_X_LEAD_VERIFIED}"
+        f"BC_HOME={BC_HOME_PULSE}; zone_BC={st_meta.default_bc}; "
+        f"RECT_X_LEAD_VERIFIED={RECT_X_LEAD_VERIFIED}"
     )
     lines.append(rect_x_jbi_warning_comment())
     lines.append("//POS")
@@ -245,23 +419,30 @@ def _generate_ma2010_cell(
             )
 
     lines.append(
-        f"' BC# via base_mm_to_bc (origin BC_HOME={BC_HOME_PULSE})"
+        f"' BC# home={BC_HOME_PULSE}; work zone={st_meta.default_bc} ({cfg.station})"
     )
-    for i in range(npos):
-        lines.append(f"BC{i:05d}={base_mm_to_bc(base_xs[i])}")
+    for i, bc in enumerate(bc_pulses):
+        lines.append(f"BC{i:05d}={bc}")
 
     if not use_pulse:
         lines.append("///POSTYPE PULSE")
         lines.append("///PULSE")
     for i, ang in enumerate(station_deg):
         e1, e2 = station_deg_to_ec(ang, pulses_per_degree=cfg.station_pulses_per_deg)
+        if st_meta.ec_axes >= 2:
+            e2, _ = station_deg_to_ec(
+                station_deg2[i], pulses_per_degree=cfg.station_pulses_per_deg
+            )
+        else:
+            e2 = 0
+        # Always emit two comma-separated values (production INFORM style).
         lines.append(f"EC{i:05d}={e1},{e2}")
 
     lines.append("//INST")
     lines.append(f"///DATE {datetime.now().strftime('%Y/%m/%d %H:%M')}")
     lines.append("///ATTR SC,RW")
     lines.append("///GROUP1 RB1,BS1")
-    lines.append("///GROUP2 ST1")
+    lines.append(f"///GROUP2 {cfg.station}")
     lines.append("NOP")
 
     weave_on = False
@@ -269,7 +450,16 @@ def _generate_ma2010_cell(
         c = f"C{i:05d}"
         bc = f"BC{i:05d}"
         ec = f"EC{i:05d}"
-        use_joint = cfg.joint_approach and i == 0 and i not in arc_on_at
+        role = str(cartesian_points[i].get("role", "")).lower()
+        use_joint = (
+            cfg.joint_approach
+            and i not in arc_on_at
+            and (
+                i == 0
+                or role in ("home", "approach", "retract", "travel")
+                or i in travel_indices
+            )
+        )
 
         if i in arc_on_at:
             seg = arc_on_at[i]

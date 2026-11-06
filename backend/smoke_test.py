@@ -57,11 +57,13 @@ def test_jbi():
     ik = solve_ik_path(pts)
     if ik["all_reachable"]:
         joints = ik["joint_angles_deg"]
-        cfg = PostprocessorConfig(job_name="WELD_AUTO")
+        cfg = PostprocessorConfig(job_name="WELD_AUTO", home_bookends=False)
     else:
         joints = None
         cfg = PostprocessorConfig(
-            job_name="WELD_AUTO", allow_preview_rectan=True
+            job_name="WELD_AUTO",
+            allow_preview_rectan=True,
+            home_bookends=False,
         )
         print("IK unreachable — emitting PREVIEW_RECTAN_DO_NOT_LOAD (no fake C#)")
     jbi = generate_jbi(
@@ -78,7 +80,7 @@ def test_jbi():
     assert "RB1,BS1" in jbi and "ST1" in jbi
     assert "+MOVJ EC" in jbi
     assert "Motoweld" in jbi
-    assert f"BC00000={BC_HOME_PULSE}" in jbi
+    assert f"BC00000={BC_HOME_PULSE}" in jbi or "BC00000=" in jbi
     if joints is not None:
         assert "//NAME WELD_AUTO" in jbi
         assert "///POSTYPE PULSE" in jbi

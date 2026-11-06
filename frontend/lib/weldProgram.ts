@@ -342,50 +342,200 @@ export function ensureTouchSense(prog: WeldProgram): WeldProgram {
   return refreshMeta(rebuildDurations({ ...prog, waypoints }));
 }
 
-/** Mark sequence optimized; optionally reverse seam if that shortens approach. */
+type SeamSpan = { start: Vec3; end: Vec3; weldIdx: number[] };
+
+/** Split waypoints into weld groups (ARCON…ARCOF) for multi-seam NN. */
+function extractSeamSpans(prog: WeldProgram): SeamSpan[] {
+  const spans: SeamSpan[] = [];
+  let cur: number[] = [];
+  prog.waypoints.forEach((w, i) => {
+    if (w.tag === "ARCON" || (w.kind === "weld" && cur.length === 0)) cur = [i];
+    else if (w.kind === "weld") cur.push(i);
+    if (w.tag === "ARCOF" || (w.kind === "weld" && i + 1 < prog.waypoints.length && prog.waypoints[i + 1].kind !== "weld")) {
+      if (cur.length) {
+        const a = prog.waypoints[cur[0]].pos;
+        const b = prog.waypoints[cur[cur.length - 1]].pos;
+        spans.push({ start: a, end: b, weldIdx: [...cur] });
+        cur = [];
+      }
+    }
+  });
+  if (cur.length) {
+    spans.push({
+      start: prog.waypoints[cur[0]].pos,
+      end: prog.waypoints[cur[cur.length - 1]].pos,
+      weldIdx: cur,
+    });
+  }
+  return spans;
+}
+
+/** Nearest-neighbour seam order with optional start↔end flip (M2.6). */
+export function orderSeamsNearestNeighbor(
+  seams: { start: Vec3; end: Vec3 }[],
+  seed: Vec3 = CELL_PULSE.cellHomeTcpMm.map((v) => v / 1000) as Vec3,
+): { order: number[]; flipped: boolean[] } {
+  if (!seams.length) return { order: [], flipped: [] };
+  const rem = seams.map((_, i) => i);
+  const order: number[] = [];
+  const flipped: boolean[] = [];
+  let cur: Vec3 = seed;
+  while (rem.length) {
+    let best = rem[0];
+    let bestFlip = false;
+    let bestD = Infinity;
+    for (const i of rem) {
+      const a = seams[i].start;
+      const b = seams[i].end;
+      const da = dist(cur, a);
+      const db = dist(cur, b);
+      if (da <= db && da < bestD) {
+        bestD = da;
+        best = i;
+        bestFlip = false;
+      } else if (db < bestD) {
+        bestD = db;
+        best = i;
+        bestFlip = true;
+      }
+    }
+    order.push(best);
+    flipped.push(bestFlip);
+    rem.splice(rem.indexOf(best), 1);
+    cur = bestFlip ? seams[best].start : seams[best].end;
+  }
+  return { order, flipped };
+}
+
+/**
+ * Mark sequence optimized. Multi-seam: NN order + direction flip to cut air
+ * MOVJ. Single seam: reverse weld if that shortens approach from home/seed.
+ */
 export function optimizeSequence(prog: WeldProgram): WeldProgram {
-  const approach = prog.waypoints.find((w) => w.kind === "approach");
-  if (!approach || prog.seam.length < 2) {
-    return withMeta(prog, { sequenceOptimized: true });
+  const spans = extractSeamSpans(prog);
+  if (spans.length <= 1) {
+    const approach = prog.waypoints.find((w) => w.kind === "approach");
+    if (!approach || prog.seam.length < 2) {
+      return withMeta(prog, { sequenceOptimized: true });
+    }
+    const start = prog.seam[0];
+    const end = prog.seam[prog.seam.length - 1];
+    const reverse = dist(approach.pos, end) + 0.001 < dist(approach.pos, start);
+    if (!reverse) return withMeta(prog, { sequenceOptimized: true });
+
+    const seam = [...prog.seam].reverse();
+    const torchFrames = [...prog.torchFrames].reverse();
+    const firstWeld = prog.waypoints.findIndex((w) => w.kind === "weld");
+    const lastWeld = (() => {
+      for (let i = prog.waypoints.length - 1; i >= 0; i--) {
+        if (prog.waypoints[i].kind === "weld") return i;
+      }
+      return -1;
+    })();
+    if (firstWeld < 0 || lastWeld < 0) return withMeta(prog, { sequenceOptimized: true });
+
+    const weldCount = lastWeld - firstWeld + 1;
+    const weldWps = prog.waypoints.slice(firstWeld, lastWeld + 1).reverse();
+    const waypoints = [
+      ...prog.waypoints.slice(0, firstWeld),
+      ...weldWps.map((w, i) => {
+        const tag =
+          i === 0 ? ("ARCON" as const) : i === weldCount - 1 ? ("ARCOF" as const) : undefined;
+        return {
+          ...w,
+          pos: seam[Math.min(i, seam.length - 1)],
+          tag,
+          arc: true,
+          kind: "weld" as const,
+        };
+      }),
+      ...prog.waypoints.slice(lastWeld + 1),
+    ].map((w, i) => ({ ...w, id: pad(i + 1) }));
+
+    return withMeta(rebuildDurations({ ...prog, seam, torchFrames, waypoints }), {
+      sequenceOptimized: true,
+    });
   }
 
-  const start = prog.seam[0];
-  const end = prog.seam[prog.seam.length - 1];
-  const reverse = dist(approach.pos, end) + 0.001 < dist(approach.pos, start);
-  if (!reverse) return withMeta(prog, { sequenceOptimized: true });
+  // Multi-seam NN: rebuild approach/weld/retract/travel chain.
+  const { order, flipped } = orderSeamsNearestNeighbor(spans);
+  const lift: Vec3 = [0, 0.08, 0];
+  const waypoints: Waypoint[] = [];
+  const push = (w: Omit<Waypoint, "id">) =>
+    waypoints.push({ ...w, id: pad(waypoints.length + 1) });
 
-  const seam = [...prog.seam].reverse();
-  const torchFrames = [...prog.torchFrames].reverse();
-  const firstWeld = prog.waypoints.findIndex((w) => w.kind === "weld");
-  const lastWeld = (() => {
-    for (let i = prog.waypoints.length - 1; i >= 0; i--) {
-      if (prog.waypoints[i].kind === "weld") return i;
-    }
-    return -1;
-  })();
-  if (firstWeld < 0 || lastWeld < 0) return withMeta(prog, { sequenceOptimized: true });
-
-  const weldCount = lastWeld - firstWeld + 1;
-  const weldWps = prog.waypoints.slice(firstWeld, lastWeld + 1).reverse();
-  const waypoints = [
-    ...prog.waypoints.slice(0, firstWeld),
-    ...weldWps.map((w, i) => {
-      const tag =
-        i === 0 ? ("ARCON" as const) : i === weldCount - 1 ? ("ARCOF" as const) : undefined;
-      return {
-        ...w,
-        pos: seam[Math.min(i, seam.length - 1)],
-        tag,
-        arc: true,
-        kind: "weld" as const,
-      };
-    }),
-    ...prog.waypoints.slice(lastWeld + 1),
-  ].map((w, i) => ({ ...w, id: pad(i + 1) }));
-
-  return withMeta(rebuildDurations({ ...prog, seam, torchFrames, waypoints }), {
-    sequenceOptimized: true,
+  // Home bookend (safe start).
+  const homePos: Vec3 = CELL_PULSE.cellHomeTcpMm.map((v) => v / 1000) as Vec3;
+  push({
+    pos: homePos,
+    move: "MOVJ",
+    speedLabel: "VJ=80",
+    arc: false,
+    kind: "travel",
   });
+
+  order.forEach((si, k) => {
+    const span = spans[si];
+    const flip = flipped[k];
+    const weldPts = span.weldIdx.map((i) => prog.waypoints[i].pos);
+    const chain = flip ? [...weldPts].reverse() : weldPts;
+    const start = chain[0];
+    const end = chain[chain.length - 1];
+    if (k > 0) {
+      // Safe inter-seam MOVJ (retract → approach) with DEC=20 in JBI export.
+      push({
+        pos: add(start, lift),
+        move: "MOVJ",
+        speedLabel: "VJ=80 DEC=20",
+        arc: false,
+        kind: "travel",
+      });
+    }
+    push({
+      pos: add(start, lift),
+      move: "MOVJ",
+      speedLabel: "VJ=80",
+      arc: false,
+      kind: "approach",
+    });
+    chain.forEach((pos, i) => {
+      push({
+        pos,
+        move: "MOVL",
+        speedLabel: `V=${prog.schedule.travelCmMin}`,
+        arc: true,
+        kind: "weld",
+        tag: i === 0 ? "ARCON" : i === chain.length - 1 ? "ARCOF" : undefined,
+      });
+    });
+    push({
+      pos: add(end, lift),
+      move: "MOVJ",
+      speedLabel: "VJ=80",
+      arc: false,
+      kind: "retract",
+    });
+  });
+
+  push({
+    pos: homePos,
+    move: "MOVJ",
+    speedLabel: "VJ=80",
+    arc: false,
+    kind: "travel",
+  });
+
+  const seam = waypoints.filter((w) => w.kind === "weld").map((w) => w.pos);
+  const fallbackDir: Vec3 = [0, -Math.SQRT1_2, -Math.SQRT1_2];
+  const torchFrames = seam.map((pos) => ({
+    pos,
+    dir: prog.torchFrames[0]?.dir ?? fallbackDir,
+  }));
+
+  return withMeta(
+    rebuildDurations({ ...prog, seam, torchFrames, waypoints }),
+    { sequenceOptimized: true },
+  );
 }
 
 /** Re-run coarse motion checks and refresh planner flags. */
@@ -484,7 +634,24 @@ export const CELL_PULSE = {
    */
   rectXPulsesPerMm: 1000,
   rectXLeadVerified: false,
+  /** Taught home C# pulses (POSE_01 / production bookend). */
+  cellHomePulses: [-281, -101163, -84214, 3730, -80188, -1936] as const,
+  /** APP_ESTIMATE home TCP mm (URDF FK × TOOL.CND). */
+  cellHomeTcpMm: [1041.0, -32.7, 1182.0] as const,
 } as const;
+
+export type StationId = "ST1" | "ST2" | "ST3" | "ST4";
+
+/** Mirror of backend CELL_STATIONS (docs/CELL_FRAMES.md). */
+export const CELL_STATIONS: Record<
+  StationId,
+  { id: StationId; ecAxes: 1 | 2; defaultBc: number; mountXyzM: Vec3 }
+> = {
+  ST1: { id: "ST1", ecAxes: 1, defaultBc: 927851, mountXyzM: [-0.1499, 1.7606, 1.0101] },
+  ST2: { id: "ST2", ecAxes: 1, defaultBc: 250331, mountXyzM: [0.0508, 1.6563, 0.6338] },
+  ST3: { id: "ST3", ecAxes: 2, defaultBc: 808680, mountXyzM: [0.3633, -1.5604, 0.4048] },
+  ST4: { id: "ST4", ecAxes: 2, defaultBc: 190240, mountXyzM: [0.6996, -1.273, 0.9618] },
+};
 
 export function degToJointPulses(qDeg: number[]): number[] {
   if (qDeg.length !== 6) throw new Error("Expected 6 joint angles");
@@ -568,21 +735,58 @@ export function generateJbi(
   prog: WeldProgram,
   opts?: {
     userFrame?: number;
+    station?: StationId;
     stationPulsesPerDeg?: number;
     stationDeg?: number | number[];
+    stationDeg2?: number | number[];
     weaveNo?: number;
     jointAnglesDeg?: number[][];
-    /** @deprecated ignored — BC comes from baseMmToBc */
+    /** @deprecated ignored — BC comes from station zone / baseMm */
     baseParkPulse?: number;
     baseMm?: number | number[];
     allowPreviewRectan?: boolean;
+    homeBookends?: boolean;
   },
 ): string {
-  const pts = prog.waypoints;
+  const station: StationId = opts?.station ?? "ST1";
+  const stMeta = CELL_STATIONS[station];
+  const homeBookends = opts?.homeBookends !== false;
+  let pts = [...prog.waypoints];
+  let joints = opts?.jointAnglesDeg ? [...opts.jointAnglesDeg] : undefined;
+
+  const homePos: Vec3 = CELL_PULSE.cellHomeTcpMm.map((v) => v / 1000) as Vec3;
+  const homeWp = (): Waypoint => ({
+    id: "HOME",
+    pos: homePos,
+    move: "MOVJ",
+    speedLabel: "VJ=80",
+    arc: false,
+    kind: "travel",
+  });
+  if (homeBookends) {
+    const firstHome = pts[0]?.kind === "travel" && dist(pts[0].pos, homePos) < 1e-3;
+    const lastHome =
+      pts[pts.length - 1]?.kind === "travel" &&
+      dist(pts[pts.length - 1].pos, homePos) < 1e-3;
+    if (!firstHome) {
+      pts = [homeWp(), ...pts];
+      if (joints) joints = [[...CELL_PULSE.cellHomePulses].map((p, i) => p / CELL_PULSE.robotPulsesPerDeg[i]), ...joints];
+    }
+    if (!lastHome) {
+      pts = [...pts, homeWp()];
+      if (joints) {
+        joints = [
+          ...joints,
+          [...CELL_PULSE.cellHomePulses].map((p, i) => p / CELL_PULSE.robotPulsesPerDeg[i]),
+        ];
+      }
+    }
+  }
+
   const npos = pts.length;
   const pulsesPerDeg = opts?.stationPulsesPerDeg ?? CELL_PULSE.stationPulsesPerDeg;
   const weaveNo = opts?.weaveNo ?? 21;
-  const usePulse = jointsReady(opts?.jointAnglesDeg, npos);
+  const usePulse = jointsReady(joints, npos);
   if (!usePulse && !opts?.allowPreviewRectan) {
     throw new PulseExportError(
       "Production POSTYPE PULSE requires IK jointAnglesDeg for every point — no fake C# pulses.",
@@ -592,9 +796,9 @@ export function generateJbi(
     if (Array.isArray(opts?.stationDeg)) return opts!.stationDeg![i] ?? opts!.stationDeg![0] ?? 0;
     return opts?.stationDeg ?? 0;
   });
-  const baseXs = pts.map((_, i) => {
-    if (Array.isArray(opts?.baseMm)) return opts!.baseMm![i] ?? opts!.baseMm![0] ?? 0;
-    return opts?.baseMm ?? 0;
+  const stationDeg2 = pts.map((_, i) => {
+    if (Array.isArray(opts?.stationDeg2)) return opts!.stationDeg2![i] ?? opts!.stationDeg2![0] ?? 0;
+    return opts?.stationDeg2 ?? 0;
   });
   const lines: string[] = [];
   const sch = prog.schedule;
@@ -613,9 +817,9 @@ export function generateJbi(
     lines.push("' PREVIEW_RECTAN_DO_NOT_LOAD — offline diagnostic only");
     lines.push("' NOT for DX200 load — IK missing or unreachable; no PULSE C#");
   }
-  lines.push("' Cell: MA2010 + RECT-X (BS1) + TURN (ST1); TOOL0 TCP Z≈415.7 mm");
+  lines.push(`' Cell: MA2010 + RECT-X (BS1) + TURN (${station}); TOOL0 TCP Z≈415.7 mm`);
   lines.push(
-    `' Station pulses/deg~${pulsesPerDeg.toFixed(4)}; BC_HOME=${CELL_PULSE.bcHomePulse}; RECT_X_LEAD_VERIFIED=${CELL_PULSE.rectXLeadVerified}`,
+    `' Station pulses/deg~${pulsesPerDeg.toFixed(4)}; BC_HOME=${CELL_PULSE.bcHomePulse}; zone_BC=${stMeta.defaultBc}; RECT_X_LEAD_VERIFIED=${CELL_PULSE.rectXLeadVerified}`,
   );
   if (!CELL_PULSE.rectXLeadVerified) {
     lines.push(
@@ -629,7 +833,7 @@ export function generateJbi(
   if (usePulse) {
     lines.push("///POSTYPE PULSE");
     lines.push("///PULSE");
-    opts!.jointAnglesDeg!.forEach((q, i) => {
+    joints!.forEach((q, i) => {
       const pulses = degToJointPulses(q);
       lines.push(`C${String(i).padStart(5, "0")}=${pulses.join(",")}`);
     });
@@ -641,16 +845,30 @@ export function generateJbi(
       const x = p.pos[0] * 1000;
       const y = p.pos[1] * 1000;
       const z = p.pos[2] * 1000;
-      const [rx, ry, rz] = torchDirToRpy(torchDirAt(prog, i));
+      const [rx, ry, rz] = torchDirToRpy(torchDirAt(prog, Math.min(i, prog.waypoints.length - 1)));
       lines.push(
         `C${String(i).padStart(5, "0")}=${f3(x)},${f3(y)},${f3(z)},${f4(rx)},${f4(ry)},${f4(rz)}`,
       );
     });
   }
 
-  lines.push(`' BC# via baseMmToBc (origin BC_HOME=${CELL_PULSE.bcHomePulse})`);
-  pts.forEach((_, i) => {
-    lines.push(`BC${String(i).padStart(5, "0")}=${baseMmToBc(baseXs[i])}`);
+  lines.push(
+    `' BC# home=${CELL_PULSE.bcHomePulse}; work zone=${stMeta.defaultBc} (${station})`,
+  );
+  pts.forEach((p, i) => {
+    const isBookend = homeBookends && (i === 0 || i === npos - 1);
+    const isHomeTravel = p.kind === "travel" && dist(p.pos, homePos) < 1e-3;
+    let bc: number;
+    if (isBookend || isHomeTravel) {
+      bc = CELL_PULSE.bcHomePulse;
+    } else if (Array.isArray(opts?.baseMm) && opts!.baseMm![i] != null) {
+      bc = baseMmToBc(opts!.baseMm![i]);
+    } else if (typeof opts?.baseMm === "number") {
+      bc = baseMmToBc(opts.baseMm);
+    } else {
+      bc = stMeta.defaultBc;
+    }
+    lines.push(`BC${String(i).padStart(5, "0")}=${bc}`);
   });
 
   if (!usePulse) {
@@ -658,7 +876,9 @@ export function generateJbi(
     lines.push("///PULSE");
   }
   stationDeg.forEach((ang, i) => {
-    lines.push(`EC${String(i).padStart(5, "0")}=${Math.round(ang * pulsesPerDeg)},0`);
+    const e1 = Math.round(ang * pulsesPerDeg);
+    const e2 = stMeta.ecAxes >= 2 ? Math.round(stationDeg2[i] * pulsesPerDeg) : 0;
+    lines.push(`EC${String(i).padStart(5, "0")}=${e1},${e2}`);
   });
 
   lines.push("//INST");
@@ -671,7 +891,7 @@ export function generateJbi(
   lines.push(`///DATE ${stamp}`);
   lines.push("///ATTR SC,RW");
   lines.push("///GROUP1 RB1,BS1");
-  lines.push("///GROUP2 ST1");
+  lines.push(`///GROUP2 ${station}`);
   lines.push("NOP");
 
   pts.forEach((p, i) => {

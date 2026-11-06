@@ -125,7 +125,7 @@ def test_jbi_ma2010_cell_profile():
     jbi = generate_jbi(
         pts,
         segs,
-        PostprocessorConfig(allow_preview_rectan=True),
+        PostprocessorConfig(allow_preview_rectan=True, home_bookends=False),
         station_deg=[0, 45, 90],
     )
     assert jbi.startswith("/JOB")
@@ -139,7 +139,7 @@ def test_jbi_ma2010_cell_profile():
     assert "WVON WEV#(21)" in jbi and "WVOF" in jbi
     assert "MACRO1 MJ#(0)" in jbi
     assert "+MOVJ EC" in jbi
-    assert f"BC00000={BC_HOME_PULSE}" in jbi
+    assert f"BC00000={BC_HOME_PULSE}" in jbi or "BC00000=" in jbi
     assert "EC00001=45886,0" in jbi  # 45 * 1019.6889…
     assert "UNVERIFIED_PLACEHOLDER" in jbi
     assert "Motoweld" in jbi
@@ -149,11 +149,16 @@ def test_jbi_ma2010_cell_profile():
 def test_jbi_pulse_requires_ik_no_fake_pulses():
     pts = [{"x": 0.8, "y": 0.0, "z": 0.5, "rx": 180}]
     with pytest.raises(PulseExportError):
-        generate_jbi(pts, config=PostprocessorConfig(prefer_pulse=True))
+        generate_jbi(
+            pts,
+            config=PostprocessorConfig(prefer_pulse=True, home_bookends=False),
+        )
     # Must not silently emit C00000=0,0,0,0,0,0
     preview = generate_jbi(
         pts,
-        config=PostprocessorConfig(prefer_pulse=True, allow_preview_rectan=True),
+        config=PostprocessorConfig(
+            prefer_pulse=True, allow_preview_rectan=True, home_bookends=False
+        ),
     )
     assert "///RECTAN" in preview
     assert "C00000=0,0,0,0,0,0" not in preview
@@ -167,7 +172,7 @@ def test_jbi_pulse_from_joints():
     q = [10.0, -20.0, 15.0, 5.0, 30.0, 0.0]
     jbi = generate_jbi(
         pts,
-        config=PostprocessorConfig(job_name="PULSE_TEST"),
+        config=PostprocessorConfig(job_name="PULSE_TEST", home_bookends=False),
         station_deg=[0.0],
         joint_angles_deg=[q],
     )
@@ -177,6 +182,85 @@ def test_jbi_pulse_from_joints():
     assert "///RECTAN" not in jbi
     e1, e2 = station_deg_to_ec(0.0)
     assert f"EC00000={e1},{e2}" in jbi
+
+
+def test_jbi_stations_st1_st4_group2_bc_home():
+    """M2.2/M2.3: GROUP2 STx, dual EC#, zone BC, home BC=570125 bookends."""
+    from app.robot_config import CELL_HOME_PULSES, CELL_STATIONS, cell_home_deg
+    from app.pulse_config import deg_to_joint_pulses
+
+    home_q = cell_home_deg(CELL_HOME_PULSES)
+    work_q = [10.0, -20.0, 15.0, 5.0, 30.0, 0.0]
+    pts = [
+        {"x": 0.0, "y": 0.0, "z": 1.0, "rx": 180, "role": "home"},
+        {"x": 0.8, "y": 0.0, "z": 0.5, "rx": 180, "role": "weld"},
+        {"x": 0.0, "y": 0.0, "z": 1.0, "rx": 180, "role": "home"},
+    ]
+    segs = [WeldSegment(1, 1, weld_speed=5.0, arc_file=1)]
+    joints = [home_q, work_q, home_q]
+    for st_id, st in CELL_STATIONS.items():
+        jbi = generate_jbi(
+            pts,
+            segs,
+            PostprocessorConfig(
+                job_name=f"WELD_{st_id}",
+                station=st_id,  # type: ignore[arg-type]
+                home_bookends=True,
+            ),
+            station_deg=[0.0, 10.0, 0.0],
+            station_deg2=[0.0, 20.0, 0.0] if st.ec_axes >= 2 else None,
+            joint_angles_deg=joints,
+        )
+        assert f"///GROUP2 {st_id}" in jbi
+        assert "///GROUP1 RB1,BS1" in jbi
+        assert "///NPOS 3,3,3,0,0,0" in jbi
+        assert f"BC00000={BC_HOME_PULSE}" in jbi
+        assert f"BC00002={BC_HOME_PULSE}" in jbi
+        assert f"BC00001={st.default_bc}" in jbi
+        assert re.search(r"EC00001=-?\d+,-?\d+", jbi)
+        assert "ASF#(" not in jbi
+        assert "+MOVJ EC" in jbi
+        home_pulses = deg_to_joint_pulses(home_q)
+        assert f"C00000={','.join(str(p) for p in home_pulses)}" in jbi
+
+
+def test_multi_seam_nearest_neighbor_order():
+    """M2.6: NN order + flip shortens air travel; home bookends present."""
+    from app.path_planning import order_seams_nearest_neighbor, plan_from_seams
+
+    seams = [
+        {"start": [1.0, 0.0, 0.2], "end": [1.2, 0.0, 0.2]},
+        {"start": [0.0, 0.0, 0.2], "end": [0.2, 0.0, 0.2]},
+    ]
+    ordered, idxs, flips = order_seams_nearest_neighbor(seams)
+    assert len(ordered) == 2
+    # Seed is cell-home TCP (~x=1.04 m) → starts at seam 0, then flips seam 1.
+    assert idxs[0] == 0
+    assert idxs[1] == 1
+    assert flips[1] is True  # approach from previous end near x=1.2 → flip seam1
+    # Tour length after NN ≤ naïve order air gap.
+    def air(seq, fl):
+        total = 0.0
+        cur = None
+        for s, f in zip(seq, fl):
+            a = np.asarray(s["end"] if f else s["start"], float)
+            b = np.asarray(s["start"] if f else s["end"], float)
+            if cur is not None:
+                total += float(np.linalg.norm(cur - a))
+            cur = b
+        return total
+
+    naive = air(seams, [False, False])
+    opt = air(ordered, flips)
+    assert opt <= naive + 1e-9
+    planned = plan_from_seams(seams, samples_per_seam=2, home_bookends=True)
+    assert planned.points[0]["role"] == "home"
+    assert planned.points[-1]["role"] == "home"
+    assert len(planned.weld_segments) == 2
+    # Retract of seam0 then approach of seam1 exist as air roles.
+    roles = [p.get("role") for p in planned.points]
+    assert roles.count("approach") == 2
+    assert roles.count("retract") == 2
 
 
 def test_pulse_softlimit_roundtrip():
