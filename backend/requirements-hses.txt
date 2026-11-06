@@ -1,0 +1,15 @@
+# Optional live DX200 link (UnderAutomation commercial SDK).
+# Does not replace offline CAD/CAM — only upload/start of generated .JBI.
+#
+#   pip install -r requirements-hses.txt
+#   # Linux/macOS:
+#   sudo apt-get install -y dotnet-runtime-8.0
+#   export PYTHONNET_RUNTIME=coreclr
+#   export YASKAWA_ROBOT_HOST=192.168.0.1
+#   # optional trial unlock:
+#   export YASKAWA_UA_LICENSE_COMPANY="Your Co"
+#   export YASKAWA_UA_LICENSE_KEY="…"
+#   # without a robot on the network:
+#   export YASKAWA_UA_DRY_RUN=1
+#
+UnderAutomation.Yaskawa>=3.0.0

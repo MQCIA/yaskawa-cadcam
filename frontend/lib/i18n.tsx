@@ -197,7 +197,20 @@ const pl: Dict = {
   // Execution / MotoROS2 checklist
   "exec.title": "Wykonanie na robocie",
   "exec.summary":
-    "Spawanie: natywny .JBI (ARCON / WVON / MACRO1). MotoROS2 — opcjonalna telemetria i dojazdy po DN2.44+.",
+    "Spawanie: natywny .JBI (ARCON / WVON / MACRO1). HSES (UnderAutomation) — upload/start joba; MotoROS2 — telemetria po DN2.44+.",
+  "hses.title": "HSES · UnderAutomation (opcjonalnie)",
+  "hses.summary":
+    "Wgrywa wygenerowany .JBI na DX200 (FTP/HSES) i uruchamia job. Wymaga pip UnderAutomation.Yaskawa + .NET 8 oraz YASKAWA_ROBOT_HOST (lub YASKAWA_UA_DRY_RUN=1).",
+  "hses.host": "Host",
+  "hses.refresh": "Odśwież",
+  "hses.upload": "Wgraj .JBI",
+  "hses.uploadStart": "Wgraj i Start",
+  "hses.startOnly": "Start job",
+  "hses.jobName": "Nazwa joba",
+  "hses.dryRun": "Tryb DRY-RUN (bez robota)",
+  "hses.sdkOk": "SDK gotowe",
+  "hses.sdkMissing": "SDK / .NET niedostępne — zainstaluj requirements-hses.txt",
+  "hses.needJbi": "Najpierw wygeneruj kod (.JBI).",
   "exec.checklistTitle": "Specyfikacja i Checklista DX200 (JBI vs MotoROS2)",
   "exec.firmwareWarn":
     "Dump komórki jest na DN2.27 — przed MotoROS2 wymagany upgrade do DN2.44.00-00 lub nowszego.",
@@ -453,7 +466,20 @@ const en: Dict = {
 
   "exec.title": "Robot execution",
   "exec.summary":
-    "Welding: native .JBI (ARCON / WVON / MACRO1). MotoROS2 — optional telemetry and air moves after DN2.44+.",
+    "Welding: native .JBI (ARCON / WVON / MACRO1). HSES (UnderAutomation) — upload/start job; MotoROS2 — telemetry after DN2.44+.",
+  "hses.title": "HSES · UnderAutomation (optional)",
+  "hses.summary":
+    "Pushes the generated .JBI to the DX200 (FTP/HSES) and starts the job. Needs pip UnderAutomation.Yaskawa + .NET 8 and YASKAWA_ROBOT_HOST (or YASKAWA_UA_DRY_RUN=1).",
+  "hses.host": "Host",
+  "hses.refresh": "Refresh",
+  "hses.upload": "Upload .JBI",
+  "hses.uploadStart": "Upload & Start",
+  "hses.startOnly": "Start job",
+  "hses.jobName": "Job name",
+  "hses.dryRun": "DRY-RUN mode (no robot)",
+  "hses.sdkOk": "SDK ready",
+  "hses.sdkMissing": "SDK / .NET missing — install requirements-hses.txt",
+  "hses.needJbi": "Generate code (.JBI) first.",
   "exec.checklistTitle": "DX200 Spec & Checklist (JBI vs MotoROS2)",
   "exec.firmwareWarn":
     "Cell dump is DN2.27 — upgrade to DN2.44.00-00 or newer before installing MotoROS2.",

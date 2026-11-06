@@ -343,7 +343,22 @@ def describe_robot_link() -> dict[str, Any]:
                 "INFORM .JBI (WVON + MACRO1), not ROS trajectories."
             ),
         },
+        "hses": _describe_hses_optional(),
     }
+
+
+def _describe_hses_optional() -> dict[str, Any]:
+    """UnderAutomation HSES adapter — optional live .JBI push / job start."""
+    try:
+        from .yaskawa_hses import describe_hses_link
+
+        return describe_hses_link()
+    except Exception as exc:  # noqa: BLE001
+        return {
+            "provider": "UnderAutomation.Yaskawa",
+            "available": False,
+            "error": str(exc),
+        }
 
 
 def _tcp_open(host: str, port: int, timeout: float = 0.4) -> tuple[bool, str]:
