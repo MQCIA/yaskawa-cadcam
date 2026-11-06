@@ -39,8 +39,8 @@ This skill + dump catalog cover the **CF text dump**. A complete “production c
 
 ### IO & safety
 
-- [ ] IO map for curtains/gates (`OTWORZ-BRAMA` / `ZAMKNIJ-KURTYNA` SOUT/SIN numbers)
-- [ ] Cube / interference zones named ↔ `CUBEINTF` ↔ station masters
+- [x] IO map for curtains/gates (names + `STACJA_*` CALL pattern) — `docs/CELL_IO.md`; SOUT/SIN # still TODO vs CIO/schematic
+- [ ] Cube / interference zones named ↔ `CUBEINTF` ↔ station masters (partial: STACJA_1/2 named)
 - [ ] Safety logic summary (`YSFLOGIC.DAT`) in plain language
 
 ### Ops packaging
@@ -51,9 +51,9 @@ This skill + dump catalog cover the **CF text dump**. A complete “production c
 
 ### CAD/CAM product
 
-- [ ] Offline → online checklist (MotoSim → CF load)
-- [ ] Explicit non-goals (e.g. never auto-load CMOS from CI)
-- [ ] Multi-station export: ST1 vs ST2/ST3/ST4 group selection
+- [x] Offline → online checklist (MotoSim → CF load) — `docs/GO_LIVE.md`
+- [x] Explicit non-goals (e.g. never auto-load CMOS from CI) — GO_LIVE + ROADMAP
+- [x] Multi-station export: ST1 vs ST2/ST3/ST4 group selection (+ optional `generate_station_master_jbi`)
 
 ## Suggested future artifacts
 

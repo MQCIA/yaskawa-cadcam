@@ -2,7 +2,7 @@
 
 Cel produktu: **offline CAD/CAM**, które z modelu 3D prowadzi do `.JBI` zgodnego z produkcyjną komórką (MA2010 + RECT-X + TURN + Motoweld), z walidacją w MotoSim **zanim** plik trafi na DX200.
 
-Stan dziś: prototyp UI + IK + eksport `ma2010_cell` (RECTAN albo PULSE po IK), dump CF skatalogowany, skalowanie impulsów z RC1G/RBCALIB, **MA2010 FK/IK na URDF ROS-Industrial + TOOL 0**. Layout komórki / RECT-X mm i XYZ z pendantu nadal otwarte — **nie gotowe na produkcję**.
+Stan dziś: prototyp UI + IK + eksport `ma2010_cell` (PULSE po IK), dump CF skatalogowany, skalowanie impulsów z RC1G/RBCALIB, **MA2010 FK/IK na URDF ROS-Industrial + TOOL 0**, stacje ST1–ST4, mapa IO + checklista [GO_LIVE.md](GO_LIVE.md). Layout / RECT-X lead i XYZ z pendantu nadal otwarte — **nie gotowe na produkcję**.
 
 ---
 
@@ -122,12 +122,12 @@ flowchart LR
 
 | # | Zadanie | Done when |
 |---|---------|-----------|
-| 4.1 | Mapa IO z jobów bram/kurtyn | `docs/CELL_IO.md` |
-| 4.2 | Opcja „opakuj w STACJA_n” (CALL pattern) | Master job + child weld |
-| 4.3 | YSFLOGIC / shock — skrót dla integratora | Notatka w docs |
-| 4.4 | Checklist offline→online (MotoSim → CF) | `docs/GO_LIVE.md` |
+| 4.1 | Mapa IO z jobów bram/kurtyn | **Done** — [CELL_IO.md](CELL_IO.md) (`IONAME` + wzorzec `STACJA_*`; SIN/SOUT → TODO CIO) |
+| 4.2 | Opcja „opakuj w STACJA_n” (CALL pattern) | **Done** — `generate_station_master_jbi` (`ATTR CJ` + `CALL JOB:`) |
+| 4.3 | YSFLOGIC / shock — skrót dla integratora | Otwarte (dump nieczytelny bez schematu) |
+| 4.4 | Checklist offline→online (MotoSim → CF) | **Done** — [GO_LIVE.md](GO_LIVE.md) |
 
-**Wyjście M4:** Ścieżka wdrożenia zrozumiała dla integratora Yaskawy.
+**Wyjście M4:** Ścieżka wdrożenia zrozumiała dla integratora Yaskawy (4.1 / 4.2 / 4.4).
 
 ---
 
@@ -172,13 +172,15 @@ M3.1 weld map  →  M4.4 go-live checklist  →  M5.4 docs sync
 
 ## Definition of Done — „można próbować w MotoSim”
 
-- [ ] Golden poses: błąd pozycji TCP w limicie uzgodnionym z integratorem  
+Szczegółowa procedura: **[GO_LIVE.md](GO_LIVE.md)**.
+
+- [ ] Golden poses: błąd pozycji TCP w limicie uzgodnionym z integratorem (`tools/compare_pulses.py --check-golden`)
 - [ ] Eksport PULSE przechodzi parse / load w MotoSim bez alarmu formatu  
 - [ ] Brak kolizji w modelu komórki na ścieżce demo  
 - [ ] Warunek spawania zmapowany do istniejącego EN/USER na kontrolerze  
 - [ ] Checklist GO_LIVE podpisany przez osobę odpowiedzialną za komórkę  
 
-Dopiero potem: load na DX200 w trybie teach / restricted.
+Dopiero potem: load na DX200 w trybie teach / restricted (DRY RUN, bez łuku).
 
 ---
 
