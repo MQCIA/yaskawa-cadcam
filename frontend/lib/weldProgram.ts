@@ -57,6 +57,13 @@ export type Waypoint = {
   cIndex?: number;
   /** Raw PULSE S..T when imported from .JBI. */
   pulses?: number[];
+  /** Active WEV#(n) at this point (from WVON). */
+  weaveNo?: number;
+  /**
+   * TIMER immediately before ARCON (e.g. ``TIMER T=0.50`` in ``000.JBI``).
+   * Distinct from tack ``timerSec`` after ARCON.
+   */
+  preArcTimerSec?: number;
 };
 
 export type WeldScheduleRow = {
@@ -115,8 +122,10 @@ export type WeldProgram = {
     activeWeaveNo?: number;
     /** BC pulse at carriage Z = 0 (PULSE .JBI import). */
     bcRefPulse?: number;
-    /** True when program came from a PULSE .JBI (XYZ aligned, not pendant world). */
+    /** True when program came from a PULSE .JBI. */
     importedPulse?: boolean;
+    /** TCP poses baked with MA2010 URDF + TOOL 0 (matches 3D robot). */
+    urdfBaked?: boolean;
   };
 };
 
@@ -1700,7 +1709,8 @@ export function generateJbi(
     if (p.tag === "ARCON") {
       const isTack = (p.timerSec ?? 0) >= 1.5;
       if (!isTack) {
-        lines.push("TIMER T=0.50");
+        const pre = p.preArcTimerSec ?? 0.5;
+        lines.push(`TIMER T=${pre.toFixed(2)}`);
         lines.push(`MACRO1 MJ#(0) ARGF${sch.job}`);
         lines.push(
           `' Lorch Tiptronic PROG-NR/ARGF${sch.job} (UI cond ${sch.condition}): ` +
@@ -1713,7 +1723,8 @@ export function generateJbi(
         // 12.JBI tack: ARCON / TIMER T=2.00 / ARCOF (no weave).
         lines.push(`TIMER T=${(p.timerSec ?? 2).toFixed(2)}`);
       } else {
-        lines.push(`WVON WEV#(${weaveNo})`);
+        const wev = p.weaveNo ?? weaveNo;
+        if (wev > 0) lines.push(`WVON WEV#(${wev})`);
       }
     }
 
@@ -1745,6 +1756,13 @@ export function generateJbi(
     } else if (p.tag === "ARCON" && (p.timerSec ?? 0) >= 1.5) {
       // Tack: ARCON + TIMER already written; close without weave.
       lines.push("ARCOF");
+    } else if (p.tag === "ARCON") {
+      // Single-point weld run (ARCON … ARCOF with one C#) — close after the move.
+      const nxt = pts[i + 1];
+      if (!nxt || nxt.kind !== "weld") {
+        lines.push("ARCOF");
+        lines.push("WVOF");
+      }
     }
   });
   lines.push("END");

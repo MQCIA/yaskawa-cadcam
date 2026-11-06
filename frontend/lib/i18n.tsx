@@ -279,11 +279,12 @@ const pl: Dict = {
   "status.exportRectan":
     "Wyeksportowano RECTAN review .JBI (brak IK / backend). EC/BC w impulsach komórki.",
   "status.jbiOpened":
-    "Otwarto {name} · {n} pkt · {postype}{warn}. Lista C# w Programie; PULSE XYZ ≈ wyrównane do ST1.",
+    "Otwarto {name} · {n} pkt · {postype}{warn}. C# / ARCON z INST; TCP z URDF gdy PULSE.",
   "status.jbiOpenFail": "Nie udało się otworzyć .JBI: {err}",
   "status.jbiApplied": "Zastosowano edycję .JBI ({n} linii) → punkty programu odświeżone.",
   "status.jbiReloaded": "Tekst .JBI przebudowany z aktualnego programu.",
   "status.jbiEmpty": "Brak tekstu .JBI do zastosowania.",
+  "status.jbiBaking": "Liczenie TCP z URDF MA2010 (TOOL 0)…",
   "arcnc.workflow": "Przepływ ArcNC",
   "arcnc.cad": "1. CAD",
   "arcnc.detect": "2. Spoiny",
@@ -561,11 +562,12 @@ const en: Dict = {
   "status.exportRectan":
     "Exported RECTAN review .JBI (no IK / backend). EC/BC use cell pulse units.",
   "status.jbiOpened":
-    "Opened {name} · {n} pts · {postype}{warn}. C# list in Program; PULSE XYZ ≈ aligned to ST1.",
+    "Opened {name} · {n} pts · {postype}{warn}. C# / ARCON from INST; TCP from URDF when PULSE.",
   "status.jbiOpenFail": "Failed to open .JBI: {err}",
   "status.jbiApplied": "Applied .JBI edits ({n} lines) → program waypoints refreshed.",
   "status.jbiReloaded": ".JBI text rebuilt from the current program.",
   "status.jbiEmpty": "No .JBI text to apply.",
+  "status.jbiBaking": "Computing TCP from MA2010 URDF (TOOL 0)…",
   "arcnc.workflow": "ArcNC workflow",
   "arcnc.cad": "1. CAD",
   "arcnc.detect": "2. Seams",

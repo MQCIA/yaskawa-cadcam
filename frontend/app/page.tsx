@@ -87,6 +87,7 @@ import type { DraftPoint } from "@/components/SeamSketchLayer";
 import SimTimeline from "@/components/SimTimeline";
 import JbiEditorPanel from "@/components/JbiEditorPanel";
 import { parseJbi, railZFromBc } from "@/lib/jbiParse";
+import { bakeJbiTcpFromUrdf } from "@/lib/jbiUrdfBake";
 
 const RobotWorkspace = dynamic(() => import("@/components/RobotWorkspace"), {
   ssr: false,
@@ -655,25 +656,36 @@ export default function Home() {
     });
   }
 
-  function loadJbiSource(text: string, opts?: { keepEditor?: boolean }) {
+  async function loadJbiSource(text: string, opts?: { keepEditor?: boolean }) {
     const parsed = parseJbi(text);
-    const stIdx = mountStationIndex(parsed.program.mount) as 0 | 1;
-    // PULSE jobs are rigidly aligned to ST1 faceplate — park carriage on mount Z.
-    const railZ = parsed.program.mount[2];
-    applyProgram(parsed.program, railZ, stIdx);
+    setStatus(t("status.jbiBaking"));
+    let prog = parsed.program;
+    let baked = false;
+    if (parsed.postype === "PULSE") {
+      try {
+        prog = await bakeJbiTcpFromUrdf(prog, { bcRef: parsed.bcRef });
+        baked = Boolean(prog.meta?.urdfBaked);
+      } catch (err) {
+        console.warn("URDF bake failed, keeping provisional FK", err);
+      }
+    }
+    const stIdx = mountStationIndex(prog.mount) as 0 | 1;
+    const railZ = prog.mount[2];
+    applyProgram(prog, railZ, stIdx);
+    if (prog.meta?.activeWeaveNo) setWeaveNo(prog.meta.activeWeaveNo);
     setLastJbiText(opts?.keepEditor ? text : parsed.sourceText);
     setJbiDirty(false);
-    setLeftTab("jbi");
-    setMobileTab("jbi");
+    setLeftTab("program");
+    setMobileTab("cad");
     const warn =
       parsed.warnings.length > 0
         ? ` · ${parsed.warnings.length} ostrz.`
         : "";
     setStatus(
       t("status.jbiOpened", {
-        name: parsed.program.name,
-        n: parsed.program.waypoints.length,
-        postype: parsed.postype,
+        name: prog.name,
+        n: prog.waypoints.length,
+        postype: baked ? "PULSE+URDF" : parsed.postype,
         warn,
       }),
     );
@@ -685,19 +697,19 @@ export default function Home() {
     if (!file) return;
     try {
       const text = await file.text();
-      loadJbiSource(text);
+      await loadJbiSource(text);
     } catch (err) {
       setStatus(t("status.jbiOpenFail", { err: (err as Error).message }));
     }
   }
 
-  function applyJbiEdits() {
+  async function applyJbiEdits() {
     if (!lastJbiText.trim()) {
       setStatus(t("status.jbiEmpty"));
       return;
     }
     try {
-      loadJbiSource(lastJbiText, { keepEditor: true });
+      await loadJbiSource(lastJbiText, { keepEditor: true });
       setStatus(t("status.jbiApplied", { n: lastJbiText.split(/\r?\n/).length }));
     } catch (err) {
       setStatus(t("status.jbiOpenFail", { err: (err as Error).message }));
@@ -829,9 +841,9 @@ export default function Home() {
   const activePositioner = POSITIONER_MODELS.find((p) => p.id === positionerId);
   const sample = program ? sampleProgram(program, simT) : null;
 
-  // Optional BC→rail scrub only when the import kept BC in the path frame.
+  // RECT-X follows BC for URDF-baked PULSE jobs (path Z already includes rail).
   useEffect(() => {
-    if (!program || manualJog || program.meta?.importedPulse) return;
+    if (!program || manualJog || !program.meta?.urdfBaked) return;
     const ref = program.meta?.bcRefPulse;
     const bc = sample?.bc;
     if (ref == null || bc == null || !Number.isFinite(bc)) return;
@@ -1573,6 +1585,13 @@ export default function Home() {
                                 {wp.jointsDeg
                                   ? wp.jointsDeg.map((d) => d.toFixed(0)).join(",")
                                   : wp.speedLabel}
+                                {wp.preArcTimerSec != null
+                                  ? ` · preT=${wp.preArcTimerSec}`
+                                  : ""}
+                                {wp.timerSec != null ? ` · T=${wp.timerSec}` : ""}
+                                {wp.weaveNo != null && wp.weaveNo > 0
+                                  ? ` · WEV#${wp.weaveNo}`
+                                  : ""}
                               </span>
                               <span
                                 className={
