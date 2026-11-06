@@ -16,6 +16,7 @@ from app.dx200_postprocessor import (
     PostprocessorConfig,
     WeldSegment,
     generate_jbi,
+    generate_station_master_jbi,
     load_reference_jbi,
 )
 from app.cad_analysis import detect_seams
@@ -327,6 +328,31 @@ def test_real_cell_000_jbi_grammar():
     tool = (CELL / "TOOL.CND").read_text(encoding="utf-8", errors="replace")
     assert "415.702" in tool
     assert load_reference_jbi("000.JBI").startswith("/JOB")
+
+
+def test_generate_station_master_jbi():
+    """M4.2 — optional STACJA_n wrapper with CALL JOB: child."""
+    jbi = generate_station_master_jbi("STACJA_1", "WELD_AUTO", station="ST1")
+    for token in (
+        "/JOB",
+        "//NAME STACJA_1",
+        "///NPOS 0,0,0,0,0,0",
+        "///ATTR SC,RW,CJ",
+        "///GROUP1 RB1,BS1",
+        "///GROUP2 ST1",
+        "CALL JOB:WELD_AUTO",
+        "END",
+    ):
+        assert token in jbi, f"missing {token!r}"
+    assert "DOUT" not in jbi
+    assert "SOUT" not in jbi
+    # .JBI suffix stripped; invalid station rejected
+    jbi2 = generate_station_master_jbi("STACJA_3.JBI", "CHILD.JBI", station="ST3")
+    assert "//NAME STACJA_3" in jbi2
+    assert "CALL JOB:CHILD" in jbi2
+    assert "///GROUP2 ST3" in jbi2
+    with pytest.raises(ValueError):
+        generate_station_master_jbi("STACJA_X", "WELD", station="ST9")
 
 
 def test_cad_seam_detection(lbracket):

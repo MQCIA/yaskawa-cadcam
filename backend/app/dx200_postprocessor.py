@@ -580,6 +580,54 @@ def _generate_cartesian_review(
     return "\n".join(lines) + "\n"
 
 
+def generate_station_master_jbi(
+    master_name: str,
+    child_job_name: str,
+    station: str = "ST1",
+) -> str:
+    """Optional station master that ``CALL JOB:`` the weld child (M4.2).
+
+    Matches the empty / call-only header convention from the cell
+    (``///NPOS 0,0,0,0,0,0``, ``///ATTR SC,RW,CJ``, ``GROUP1 RB1,BS1`` +
+    ``GROUP2 STn`` as in production ``STACJA_*.JBI``).
+
+    This does **not** emit curtain/gate ``DOUT`` or bypass FSU. Production
+    masters also ``CALL`` ``RESET-KURTYNY`` / ``ZAMKNIJ-KURTYNA-*`` /
+    ``OTWORZ-BRAMA-*`` — keep those jobs on the controller; see
+    ``docs/CELL_IO.md`` and ``docs/GO_LIVE.md``.
+    """
+    st = _normalize_station(station)
+    master = str(master_name).strip()
+    child = str(child_job_name).strip()
+    if not master:
+        raise ValueError("master_name must be non-empty")
+    if not child:
+        raise ValueError("child_job_name must be non-empty")
+    # INFORM job names are typically short; strip accidental .JBI suffix.
+    if master.upper().endswith(".JBI"):
+        master = master[:-4]
+    if child.upper().endswith(".JBI"):
+        child = child[:-4]
+
+    lines = [
+        "/JOB",
+        f"//NAME {master}",
+        "//POS",
+        "///NPOS 0,0,0,0,0,0",
+        "//INST",
+        f"///DATE {datetime.now().strftime('%Y/%m/%d %H:%M')}",
+        "///ATTR SC,RW,CJ",
+        "///GROUP1 RB1,BS1",
+        f"///GROUP2 {st}",
+        "NOP",
+        f"' CAD/CAM station wrapper → CALL {child}; curtains stay on controller",
+        f"' See docs/CELL_IO.md + docs/GO_LIVE.md — do not bypass FSU/kurtyny",
+        f"CALL JOB:{child}",
+        "END",
+    ]
+    return "\n".join(lines) + "\n"
+
+
 def load_reference_jbi(name: str = "DROP01.JBI") -> str:
     here = Path(__file__).resolve()
     candidates = [
