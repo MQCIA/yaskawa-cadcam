@@ -196,6 +196,123 @@ AXIS_NAMES = ["S", "L", "U", "R", "B", "T"]
 
 
 # ---------------------------------------------------------------------------
+# Cell stations ST1–ST4 (M2.1) — mined from production PULSE jobs.
+# Cartesian mount / AABB are APP_ESTIMATE (URDF FK × TOOL 0), not pendant.
+# See docs/CELL_FRAMES.md. No UFRAME inventing: dump has no UFRAME.CND and
+# jobs never use ///USER n.
+# ---------------------------------------------------------------------------
+@dataclass(frozen=True)
+class CellStation:
+    """One TURN station on the RECT-X rail (GROUP2 STn)."""
+
+    id: str
+    group2: str
+    # Active EC# components: 1 → EC=val,0 (TURN-1); 2 → EC=val1,val2 (TURN-2).
+    ec_axes: int
+    default_bc: int
+    bc_range: tuple[int, int]
+    ec1_range: tuple[int, int]
+    ec2_range: tuple[int, int]
+    # Weld-cloud centre (metres, robot/base frame) from ARCON→MOV* TCP FK.
+    mount_xyz_m: tuple[float, float, float]
+    aabb_xyz_mm: tuple[tuple[float, float, float], tuple[float, float, float]]
+    source_jobs: tuple[str, ...]
+    weld_point_count: int
+    notes: str = ""
+
+
+CELL_STATIONS: dict[str, CellStation] = {
+    "ST1": CellStation(
+        id="ST1",
+        group2="ST1",
+        ec_axes=1,
+        default_bc=927851,
+        bc_range=(927851, 927851),
+        ec1_range=(1163, 1163),
+        ec2_range=(0, 0),
+        mount_xyz_m=(-0.1499, 1.7606, 1.0101),
+        aabb_xyz_mm=((-149.9, 1760.6, 1010.1), (-149.9, 1760.6, 1010.1)),
+        source_jobs=("11.JBI",),
+        weld_point_count=1,
+        notes="TURN-1; single weld MOVL in 11.JBI",
+    ),
+    "ST2": CellStation(
+        id="ST2",
+        group2="ST2",
+        ec_axes=1,
+        default_bc=250331,
+        bc_range=(124171, 375361),
+        ec1_range=(-933, 120166),
+        ec2_range=(0, 0),
+        mount_xyz_m=(0.0508, 1.6563, 0.6338),
+        aabb_xyz_mm=((-915.8, 817.3, 201.5), (833.7, 2216.6, 1406.9)),
+        source_jobs=(
+            "12.JBI",
+            "02025_KOSZ_DO_RURY_70-PLUS-RAMKI.JBI",
+            "123123.JBI",
+        ),
+        weld_point_count=66,
+        notes="TURN-1; 123123.JBI has no ARCON (excluded from weld cloud)",
+    ),
+    "ST3": CellStation(
+        id="ST3",
+        group2="ST3",
+        ec_axes=2,
+        default_bc=808680,
+        bc_range=(808679, 808680),
+        ec1_range=(-2638, 119164),
+        ec2_range=(-726117, 167367),
+        mount_xyz_m=(0.3633, -1.5604, 0.4048),
+        aabb_xyz_mm=((22.0, -1807.8, 326.7), (776.5, -1207.8, 535.2)),
+        source_jobs=("1-DEFRO-5.JBI", "1-DEFRO-5-KOSZ.JBI", "123.JBI"),
+        weld_point_count=9,
+        notes="TURN-2; 123.JBI has no ARCON (excluded from weld cloud)",
+    ),
+    "ST4": CellStation(
+        id="ST4",
+        group2="ST4",
+        ec_axes=2,
+        default_bc=190240,
+        bc_range=(190240, 190240),
+        ec1_range=(-2, -2),
+        ec2_range=(-1, -1),
+        mount_xyz_m=(0.6996, -1.2730, 0.9618),
+        aabb_xyz_mm=((699.6, -1273.0, 961.8), (699.6, -1273.0, 961.8)),
+        source_jobs=("1KT.JBI",),
+        weld_point_count=1,
+        notes="TURN-2; EC near zero in 1KT.JBI sample",
+    ),
+}
+
+
+def cell_stations_public() -> list[dict]:
+    """JSON-friendly CELL_STATIONS for /api/config."""
+    out: list[dict] = []
+    for st in CELL_STATIONS.values():
+        out.append(
+            {
+                "id": st.id,
+                "group2": st.group2,
+                "ec_axes": st.ec_axes,
+                "default_bc": st.default_bc,
+                "bc_range": list(st.bc_range),
+                "ec1_range": list(st.ec1_range),
+                "ec2_range": list(st.ec2_range),
+                "mount_xyz_m": list(st.mount_xyz_m),
+                "aabb_xyz_mm": {
+                    "min": list(st.aabb_xyz_mm[0]),
+                    "max": list(st.aabb_xyz_mm[1]),
+                },
+                "source_jobs": list(st.source_jobs),
+                "weld_point_count": st.weld_point_count,
+                "notes": st.notes,
+                "cartesian_status": "APP_ESTIMATE_UNVERIFIED_ON_PENDANT",
+            }
+        )
+    return out
+
+
+# ---------------------------------------------------------------------------
 # External axes: production TURN station + optional H1000D placeholder.
 # ---------------------------------------------------------------------------
 @dataclass

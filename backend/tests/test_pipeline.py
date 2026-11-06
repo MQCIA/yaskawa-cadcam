@@ -62,6 +62,32 @@ def test_config_loaded():
     assert set(LORCH_S8_SCHEDULES) >= {1, 2, 3}
 
 
+def test_cell_stations_registry():
+    from app.robot_config import CELL_STATIONS, TOOL0_XYZ_MM, cell_stations_public
+    from app.main import cell_config
+
+    assert TOOL0_XYZ_MM == (-54.280, 1.052, 415.702)
+    assert set(CELL_STATIONS) == {"ST1", "ST2", "ST3", "ST4"}
+    assert CELL_STATIONS["ST1"].ec_axes == 1
+    assert CELL_STATIONS["ST2"].ec_axes == 1
+    assert CELL_STATIONS["ST3"].ec_axes == 2
+    assert CELL_STATIONS["ST4"].ec_axes == 2
+    assert CELL_STATIONS["ST1"].default_bc == 927851
+    assert CELL_STATIONS["ST4"].default_bc == 190240
+    assert len(CELL_STATIONS["ST2"].mount_xyz_m) == 3
+    pub = cell_stations_public()
+    assert len(pub) == 4
+    cfg = cell_config()
+    assert cfg["uframe"]["file_present"] is False
+    assert cfg["uframe"]["used_in_production_jobs"] is False
+    assert {s["id"] for s in cfg["stations"]} == {"ST1", "ST2", "ST3", "ST4"}
+    assert cfg["tool0"]["xyz_mm"] == list(TOOL0_XYZ_MM)
+    frames = Path(__file__).resolve().parents[2] / "docs" / "CELL_FRAMES.md"
+    assert frames.is_file()
+    text = frames.read_text(encoding="utf-8")
+    assert "TOOL 0" in text and "UFRAME.CND" in text and "ST1" in text
+
+
 def test_fk_ik_roundtrip():
     q = [10, -20, 15, 5, 30, 0]
     pose = forward_kinematics(q)

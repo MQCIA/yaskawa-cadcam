@@ -29,6 +29,7 @@ from .robot_config import (
     MODELS,
     TOOL0_RPY_DEG,
     TOOL0_XYZ_MM,
+    cell_stations_public,
 )
 from .welding_config import ACTIVE_POWER_SOURCE, LORCH_S8_SCHEDULES
 
@@ -178,6 +179,20 @@ def cell_config():
                 for s in LORCH_S8_SCHEDULES.values()
             ],
         },
+        "tool0": {
+            "xyz_mm": list(TOOL0_XYZ_MM),
+            "rpy_deg": list(TOOL0_RPY_DEG),
+            "source": "TOOL.CND ///TOOL 0 STANDARD TOOL11",
+        },
+        "uframe": {
+            "file_present": False,
+            "used_in_production_jobs": False,
+            "note": (
+                "UFRAME.CND absent from dump; jobs use POSTYPE PULSE + TOOL 0 "
+                "without ///USER n — see docs/CELL_FRAMES.md"
+            ),
+        },
+        "stations": cell_stations_public(),
         "warning": "Validate pulse jobs in MotoSim before loading the DX200.",
     }
 
