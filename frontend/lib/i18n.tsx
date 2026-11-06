@@ -42,6 +42,8 @@ const pl: Dict = {
   "plan.plan": "Planuj",
   "plan.simulate": "Symuluj",
   "plan.generateCode": "Generuj kod",
+  "plan.openJbi": "Otwórz .JBI",
+  "plan.editJbi": "Edytuj .JBI",
 
   // Settings
   "settings.weldCondition": "Warunek spoiny (ARCON)",
@@ -57,13 +59,20 @@ const pl: Dict = {
   "left.workspace": "Stanowisko",
   "left.welds": "Spoiny",
   "left.program": "Program",
+  "left.jbi": ".JBI",
+
+  "jbi.editorTitle": "Edytor INFORM .JBI",
+  "jbi.editorHint": "Edytuj tekst → Zastosuj, albo zmieniaj punkty w Programie",
+  "jbi.apply": "Zastosuj do programu",
+  "jbi.reload": "Przebuduj z programu",
+  "jbi.dirty": "Niezapisane zmiany w tekście — kliknij Zastosuj, by odświeżyć punkty / 3D.",
 
   // Mobile bottom navigation
   "mobile.scene": "Scena 3D",
   "mobile.cad": "CAD i Spoiny",
   "mobile.robot": "Robot i Jog",
   "mobile.jbi": "Kod .JBI",
-  "mobile.jbiEmpty": "Brak programu — załaduj demo lub zaimportuj CAD.",
+  "mobile.jbiEmpty": "Brak programu — otwórz .JBI, załaduj demo lub zaimportuj CAD.",
   "mobile.jbiDownload": "Pobierz .JBI",
   "mobile.argf": "Motoweld ARGF",
   "mobile.wev": "WEV# (weave)",
@@ -269,6 +278,12 @@ const pl: Dict = {
   "status.exportPulse": "Wyeksportowano PULSE .JBI ({n} punktów). Sprawdź w MotoSim.",
   "status.exportRectan":
     "Wyeksportowano RECTAN review .JBI (brak IK / backend). EC/BC w impulsach komórki.",
+  "status.jbiOpened":
+    "Otwarto {name}.JBI · {n} pkt · {postype}{warn}. Edytuj w zakładce .JBI lub Program.",
+  "status.jbiOpenFail": "Nie udało się otworzyć .JBI: {err}",
+  "status.jbiApplied": "Zastosowano edycję .JBI ({n} linii) → punkty programu odświeżone.",
+  "status.jbiReloaded": "Tekst .JBI przebudowany z aktualnego programu.",
+  "status.jbiEmpty": "Brak tekstu .JBI do zastosowania.",
   "arcnc.workflow": "Przepływ ArcNC",
   "arcnc.cad": "1. CAD",
   "arcnc.detect": "2. Spoiny",
@@ -322,6 +337,8 @@ const en: Dict = {
   "plan.plan": "Plan",
   "plan.simulate": "Simulate",
   "plan.generateCode": "Generate Code",
+  "plan.openJbi": "Open .JBI",
+  "plan.editJbi": "Edit .JBI",
 
   "settings.weldCondition": "Weld condition (ARCON)",
   "settings.robot": "Robot",
@@ -334,13 +351,20 @@ const en: Dict = {
   "left.workspace": "Workspace",
   "left.welds": "Welds",
   "left.program": "Program",
+  "left.jbi": ".JBI",
+
+  "jbi.editorTitle": "INFORM .JBI editor",
+  "jbi.editorHint": "Edit text → Apply, or change waypoints under Program",
+  "jbi.apply": "Apply to program",
+  "jbi.reload": "Rebuild from program",
+  "jbi.dirty": "Unsaved text edits — click Apply to refresh waypoints / 3D.",
 
   // Mobile bottom navigation
   "mobile.scene": "3D Scene",
   "mobile.cad": "CAD & Welds",
   "mobile.robot": "Robot & Jog",
   "mobile.jbi": ".JBI Code",
-  "mobile.jbiEmpty": "No program — load demo or import CAD.",
+  "mobile.jbiEmpty": "No program — open a .JBI, load demo, or import CAD.",
   "mobile.jbiDownload": "Download .JBI",
   "mobile.argf": "Motoweld ARGF",
   "mobile.wev": "WEV# (weave)",
@@ -536,6 +560,12 @@ const en: Dict = {
   "status.exportPulse": "Exported PULSE .JBI ({n} points). Validate in MotoSim.",
   "status.exportRectan":
     "Exported RECTAN review .JBI (no IK / backend). EC/BC use cell pulse units.",
+  "status.jbiOpened":
+    "Opened {name}.JBI · {n} pts · {postype}{warn}. Edit under .JBI or Program.",
+  "status.jbiOpenFail": "Failed to open .JBI: {err}",
+  "status.jbiApplied": "Applied .JBI edits ({n} lines) → program waypoints refreshed.",
+  "status.jbiReloaded": ".JBI text rebuilt from the current program.",
+  "status.jbiEmpty": "No .JBI text to apply.",
   "arcnc.workflow": "ArcNC workflow",
   "arcnc.cad": "1. CAD",
   "arcnc.detect": "2. Seams",

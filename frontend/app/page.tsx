@@ -11,7 +11,14 @@
  * Verbotics' Robot Positioning panel.
  */
 
-import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import {
+  useState,
+  useEffect,
+  useRef,
+  useMemo,
+  useCallback,
+  type ChangeEvent,
+} from "react";
 import dynamic from "next/dynamic";
 import AxisSliders, {
   cellHomeJoints,
@@ -78,6 +85,8 @@ import SeamInspector from "@/components/SeamInspector";
 import SeamSketchToolbar from "@/components/SeamSketchToolbar";
 import type { DraftPoint } from "@/components/SeamSketchLayer";
 import SimTimeline from "@/components/SimTimeline";
+import JbiEditorPanel from "@/components/JbiEditorPanel";
+import { parseJbi } from "@/lib/jbiParse";
 
 const RobotWorkspace = dynamic(() => import("@/components/RobotWorkspace"), {
   ssr: false,
@@ -127,7 +136,7 @@ function worldToProgramFrame(
   ];
 }
 
-type LeftTab = "workspace" | "welds" | "program";
+type LeftTab = "workspace" | "welds" | "program" | "jbi";
 type Ribbon = "plan" | "settings" | "view";
 type MobileTab = "scene" | "cad" | "robot" | "jbi";
 
@@ -165,7 +174,9 @@ export default function Home() {
   const [sketchMode, setSketchMode] = useState<SketchMode>("orbit");
   const [sketchSnap, setSketchSnap] = useState(true);
   const [sketchDraft, setSketchDraft] = useState<DraftPoint[]>([]);
-  const [lastJbiText, setLastJbiText] = useState<string | null>(null);
+  const [lastJbiText, setLastJbiText] = useState<string>("");
+  const [jbiDirty, setJbiDirty] = useState(false);
+  const jbiFileRef = useRef<HTMLInputElement>(null);
 
   // Verbotics-style: joint jog is always available; ON until the user plays a plan.
   const [manualJog, setManualJog] = useState(true);
@@ -244,6 +255,11 @@ export default function Home() {
     const seamsFound = discoverSeams(prog);
     setSelectedSeamId(seamsFound[0]?.id ?? null);
     if (seamsFound[0]?.weaveNo) setWeaveNo(seamsFound[0].weaveNo);
+    if (prog.meta?.activeWeaveNo) setWeaveNo(prog.meta.activeWeaveNo);
+    const cond =
+      LORCH_S8_SCHEDULES.find((s) => s.job === prog.schedule.job)?.condition ??
+      prog.schedule.condition;
+    setWeldCondition(cond);
     setLeftTab("welds");
     setStatus(
       t("status.programReady", {
@@ -630,39 +646,110 @@ export default function Home() {
     if (program) makeProgram(c);
   }
 
-  async function downloadJbi() {
-    if (!program) return;
-    // Export must not start path playback / IK following.
-    holdRobotStill();
+  function buildJbiText(prog: WeldProgram, jointAnglesDeg?: number[][]): string {
     const stIdx = selectedStation ?? 0;
-    const stationAngle = stations[stIdx]?.rotate ?? 0;
-    let jointAnglesDeg: number[][] | undefined;
-    try {
-      setStatus(t("status.exportIk"));
-      const ik = await calculateIk(waypointsToIkPoints(program));
-      if (ik?.all_reachable && Array.isArray(ik.joint_angles_deg)) {
-        jointAnglesDeg = ik.joint_angles_deg as number[][];
-      }
-    } catch {
-      // Backend offline — fall back to local RECTAN review export.
-    }
-    holdRobotStill();
-    const text = generateJbi(program, {
-      stationDeg: stationAngle,
+    return generateJbi(prog, {
+      stationDeg: stations[stIdx]?.rotate ?? 0,
       jointAnglesDeg,
-      weaveNo,
+      weaveNo: prog.meta?.activeWeaveNo ?? weaveNo,
     });
+  }
+
+  function loadJbiSource(text: string, opts?: { keepEditor?: boolean }) {
+    const parsed = parseJbi(text);
+    const stIdx = mountStationIndex(parsed.program.mount) as 0 | 1;
+    applyProgram(parsed.program, parsed.program.mount[2], stIdx);
+    setLastJbiText(opts?.keepEditor ? text : parsed.sourceText);
+    setJbiDirty(false);
+    setLeftTab("jbi");
+    setMobileTab("jbi");
+    const warn =
+      parsed.warnings.length > 0
+        ? ` · ${parsed.warnings.length} ostrz.`
+        : "";
+    setStatus(
+      t("status.jbiOpened", {
+        name: parsed.program.name,
+        n: parsed.program.waypoints.length,
+        postype: parsed.postype,
+        warn,
+      }),
+    );
+  }
+
+  async function onOpenJbiFile(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    try {
+      const text = await file.text();
+      loadJbiSource(text);
+    } catch (err) {
+      setStatus(t("status.jbiOpenFail", { err: (err as Error).message }));
+    }
+  }
+
+  function applyJbiEdits() {
+    if (!lastJbiText.trim()) {
+      setStatus(t("status.jbiEmpty"));
+      return;
+    }
+    try {
+      loadJbiSource(lastJbiText, { keepEditor: true });
+      setStatus(t("status.jbiApplied", { n: lastJbiText.split(/\r?\n/).length }));
+    } catch (err) {
+      setStatus(t("status.jbiOpenFail", { err: (err as Error).message }));
+    }
+  }
+
+  function reloadJbiFromProgram() {
+    if (!program) return;
+    const text = buildJbiText(program);
     setLastJbiText(text);
+    setJbiDirty(false);
+    setStatus(t("status.jbiReloaded"));
+  }
+
+  async function downloadJbi() {
+    if (!program && !lastJbiText) return;
+    holdRobotStill();
+    let text = lastJbiText;
+    let pulseN: number | undefined;
+    if (!jbiDirty && program) {
+      let jointAnglesDeg: number[][] | undefined;
+      const fromWp = program.waypoints.every(
+        (w) => Array.isArray(w.jointsDeg) && w.jointsDeg!.length === 6,
+      )
+        ? program.waypoints.map((w) => w.jointsDeg as number[])
+        : undefined;
+      if (fromWp) {
+        jointAnglesDeg = fromWp;
+      } else {
+        try {
+          setStatus(t("status.exportIk"));
+          const ik = await calculateIk(waypointsToIkPoints(program));
+          if (ik?.all_reachable && Array.isArray(ik.joint_angles_deg)) {
+            jointAnglesDeg = ik.joint_angles_deg as number[][];
+          }
+        } catch {
+          // Backend offline — RECTAN / stored joints.
+        }
+      }
+      text = buildJbiText(program, jointAnglesDeg);
+      setLastJbiText(text);
+      setJbiDirty(false);
+      pulseN = jointAnglesDeg?.length;
+    }
     const blob = new Blob([text], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${program.name}.JBI`;
+    a.download = `${program?.name ?? "JOB"}.JBI`;
     a.click();
     URL.revokeObjectURL(url);
     setStatus(
-      jointAnglesDeg
-        ? t("status.exportPulse", { n: jointAnglesDeg.length })
+      pulseN
+        ? t("status.exportPulse", { n: pulseN })
         : t("status.exportRectan"),
     );
   }
@@ -800,12 +887,28 @@ export default function Home() {
 
   const jbiPreview = useMemo(() => {
     if (!program) return "";
-    const stIdx = selectedStation ?? 0;
-    return generateJbi(program, {
-      stationDeg: stations[stIdx]?.rotate ?? 0,
-      weaveNo,
-    });
+    return buildJbiText(program);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- stations/weave mirrored in buildJbiText
   }, [program, selectedStation, stations, weaveNo]);
+
+  useEffect(() => {
+    if (!program) {
+      if (!jbiDirty) setLastJbiText("");
+      return;
+    }
+    if (jbiDirty) return;
+    setLastJbiText(jbiPreview);
+  }, [jbiPreview, program, jbiDirty]);
+
+  const jbiEditorLabels = {
+    title: t("jbi.editorTitle"),
+    hint: t("jbi.editorHint"),
+    apply: t("jbi.apply"),
+    reload: t("jbi.reload"),
+    download: t("mobile.jbiDownload"),
+    dirty: t("jbi.dirty"),
+    empty: t("mobile.jbiEmpty"),
+  };
 
   const activeSchedule =
     LORCH_S8_SCHEDULES.find((s) => s.condition === weldCondition) ?? LORCH_S8_SCHEDULES[0];
@@ -913,6 +1016,17 @@ export default function Home() {
                 <span className="text-base">🧱</span>{t("plan.loadDemo")}</button>
               <button onClick={loadHardDemo} className={btnRibbon}>
                 <span className="text-base">🧱</span>{t("plan.loadHardDemo")}</button>
+              <label className={btnRibbon}>
+                <span className="text-base">📄</span>
+                {t("plan.openJbi")}
+                <input
+                  ref={jbiFileRef}
+                  type="file"
+                  accept=".jbi,.JBI,.txt"
+                  onChange={(e) => void onOpenJbiFile(e)}
+                  className="hidden"
+                />
+              </label>
               <div className="mx-1 hidden h-8 w-px shrink-0 bg-slate-200 sm:block" />
               <button onClick={identifyWelds} className={btnRibbon}>
                 <span className="text-base">🔍</span>{t("plan.identifyWelds")}</button>
@@ -950,11 +1064,20 @@ export default function Home() {
                 <span className="text-base">▶</span>{t("plan.simulate")}</button>
               <button
                 onClick={() => {
+                  setLeftTab("jbi");
                   setMobileTab("jbi");
-                  void downloadJbi();
+                  if (!jbiDirty && program) reloadJbiFromProgram();
                 }}
                 className={btnRibbon}
-                disabled={!program}
+                disabled={!program && !lastJbiText}
+              >
+                <span className="text-base">{"{ }"}</span>
+                {t("plan.editJbi")}
+              </button>
+              <button
+                onClick={() => void downloadJbi()}
+                className={btnRibbon}
+                disabled={!program && !lastJbiText}
               >
                 <span className="text-base">💾</span>
                 {t("plan.generateCode")}
@@ -1082,6 +1205,7 @@ export default function Home() {
             {leftTabBtn("workspace", t("left.workspace"))}
             {leftTabBtn("welds", t("left.welds"))}
             {leftTabBtn("program", t("left.program"))}
+            {leftTabBtn("jbi", t("left.jbi"))}
           </div>
 
           <div className="flex-1 overflow-y-auto p-2 text-sm">
@@ -1478,6 +1602,24 @@ export default function Home() {
                 )}
               </div>
             )}
+
+            {leftTab === "jbi" && (
+              <div className="flex h-full min-h-[20rem] flex-col">
+                <JbiEditorPanel
+                  text={lastJbiText}
+                  dirty={jbiDirty}
+                  disabled={!program && !lastJbiText}
+                  onChange={(v) => {
+                    setLastJbiText(v);
+                    setJbiDirty(true);
+                  }}
+                  onApply={applyJbiEdits}
+                  onReloadFromProgram={reloadJbiFromProgram}
+                  onDownload={() => void downloadJbi()}
+                  labels={jbiEditorLabels}
+                />
+              </div>
+            )}
           </div>
 
           {/* Details */}
@@ -1846,7 +1988,7 @@ export default function Home() {
             </div>
             <p className="mb-1 text-[10px] leading-snug text-slate-500">{t("exec.summary")}</p>
             <HsesExecPanel
-              jbiText={lastJbiText}
+              jbiText={lastJbiText || null}
               defaultJobName={program?.name ?? "CADCAM"}
               labels={{
                 title: t("hses.title"),
@@ -1930,7 +2072,7 @@ export default function Home() {
           </div>
         </aside>
 
-        {/* JBI CODE — mobile-only panel */}
+        {/* JBI CODE — mobile-only panel (desktop: left dock → .JBI) */}
         <aside
           className={`${
             mobileTab === "jbi" ? "flex" : "hidden"
@@ -1945,23 +2087,30 @@ export default function Home() {
                 INFORM · ARGF{activeSchedule.job} · WEV#({weaveNo})
               </div>
             </div>
-            <button
-              type="button"
-              onClick={() => void downloadJbi()}
-              disabled={!program}
-              className={`${btnPrimary} !px-3 !py-2 text-xs`}
-            >
-              {t("mobile.jbiDownload")}
-            </button>
+            <label className={`${btnGhost} !px-3 !py-2 text-xs`}>
+              {t("plan.openJbi")}
+              <input
+                type="file"
+                accept=".jbi,.JBI,.txt"
+                onChange={(e) => void onOpenJbiFile(e)}
+                className="hidden"
+              />
+            </label>
           </div>
           <div className="min-h-0 flex-1 overflow-auto p-2">
-            {program ? (
-              <pre className="overflow-x-auto whitespace-pre rounded border border-slate-200 bg-[#0f172a] p-3 font-mono text-[11px] leading-relaxed text-emerald-300">
-                {jbiPreview}
-              </pre>
-            ) : (
-              <p className="px-1 text-xs text-slate-500">{t("mobile.jbiEmpty")}</p>
-            )}
+            <JbiEditorPanel
+              text={lastJbiText}
+              dirty={jbiDirty}
+              disabled={!program && !lastJbiText}
+              onChange={(v) => {
+                setLastJbiText(v);
+                setJbiDirty(true);
+              }}
+              onApply={applyJbiEdits}
+              onReloadFromProgram={reloadJbiFromProgram}
+              onDownload={() => void downloadJbi()}
+              labels={jbiEditorLabels}
+            />
           </div>
         </aside>
       </div>
