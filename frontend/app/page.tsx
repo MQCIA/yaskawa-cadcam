@@ -1766,7 +1766,7 @@ export default function Home() {
                 <div className="flex items-center gap-2">
                   <span
                     className={`inline-block h-2 w-2 rounded-full ${
-                      sample.arcOn ? "animate-pulse bg-orange-400" : "bg-slate-200"
+                      sample.arcOn ? "bg-orange-400" : "bg-slate-200"
                     }`}
                   />
                   ARC {sample.arcOn ? "ON" : "OFF"}
