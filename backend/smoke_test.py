@@ -51,33 +51,45 @@ def test_jbi():
         {"x": 1.0, "y": 0.2, "z": 0.5, "rx": 180, "ry": 0, "rz": 0},
     ]
     segs = [WeldSegment(start_index=1, end_index=2, weld_speed=8.0, arc_file=3)]
-    # Prefer real IK; if unreachable (placeholder DH), still exercise PULSE path.
+    # Prefer real IK; never invent C# pulses if unreachable (preview RECTAN only).
+    from app.pulse_config import BC_HOME_PULSE
+
     ik = solve_ik_path(pts)
     if ik["all_reachable"]:
         joints = ik["joint_angles_deg"]
+        cfg = PostprocessorConfig(job_name="WELD_AUTO")
     else:
-        joints = [[10.0, -20.0, 15.0, 5.0, 30.0, 0.0] for _ in pts]
-        print("IK unreachable for demo pts — using synthetic joints for PULSE demo")
+        joints = None
+        cfg = PostprocessorConfig(
+            job_name="WELD_AUTO", allow_preview_rectan=True
+        )
+        print("IK unreachable — emitting PREVIEW_RECTAN_DO_NOT_LOAD (no fake C#)")
     jbi = generate_jbi(
         pts,
         segs,
-        PostprocessorConfig(job_name="WELD_AUTO"),
+        cfg,
         station_deg=[0.0, 45.0, 90.0],
         joint_angles_deg=joints,
     )
     print("\n--- Generated JBI (MA2010 + TURN ST1 + Motoweld) ---")
     print(jbi)
     assert jbi.startswith("/JOB")
-    assert "//NAME WELD_AUTO" in jbi
     assert "ARCON" in jbi and "ARCOF" in jbi
     assert "RB1,BS1" in jbi and "ST1" in jbi
     assert "+MOVJ EC" in jbi
     assert "Motoweld" in jbi
-    assert "BC00000=878036" in jbi
-    assert "///POSTYPE PULSE" in jbi
-    assert "///RECTAN" not in jbi
-    pulses = deg_to_joint_pulses(joints[0])
-    assert f"C00000={','.join(str(p) for p in pulses)}" in jbi
+    assert f"BC00000={BC_HOME_PULSE}" in jbi
+    if joints is not None:
+        assert "//NAME WELD_AUTO" in jbi
+        assert "///POSTYPE PULSE" in jbi
+        assert "///RECTAN" not in jbi
+        pulses = deg_to_joint_pulses(joints[0])
+        assert f"C00000={','.join(str(p) for p in pulses)}" in jbi
+        assert "C00000=0,0,0,0,0,0" not in jbi
+    else:
+        assert "PREVIEW_RECTAN_DO_NOT_LOAD" in jbi
+        assert "///RECTAN" in jbi
+        assert "C00000=0,0,0,0,0,0" not in jbi
     assert "EC00001=45886,0" in jbi
     assert jbi.strip().endswith("END")
 

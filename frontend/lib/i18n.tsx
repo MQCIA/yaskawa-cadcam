@@ -148,6 +148,19 @@ const pl: Dict = {
   "status.exportPulse": "Wyeksportowano PULSE .JBI ({n} punktów). Sprawdź w MotoSim.",
   "status.exportRectan":
     "Wyeksportowano RECTAN review .JBI (brak IK / backend). EC/BC w impulsach komórki.",
+  "status.exportIkBlocked":
+    "Eksport PULSE zablokowany — brak rozwiązania IK dla: {c}. Pobrano tylko PREVIEW_RECTAN_DO_NOT_LOAD.",
+  "status.exportIkBackendDown":
+    "Backend IK niedostępny — eksport PULSE zablokowany. Pobrano PREVIEW_RECTAN_DO_NOT_LOAD.",
+  "status.exportPreviewOnly":
+    "Pobrano PREVIEW_RECTAN_DO_NOT_LOAD (bez fałszywych impulsów C#). Nie ładuj na DX200.",
+  "export.ikBannerTitle": "Eksport produkcyjny PULSE zablokowany / Production PULSE export blocked",
+  "export.ikBannerPl":
+    "PL: Brak rozwiązania IK (lub limity osi MA2010) dla kroku/kroków {c}. Nie wygenerowano fałszywych impulsów C#.",
+  "export.ikBannerEn":
+    "EN: No IK solution (or MA2010 joint limits) for step(s) {c}. No fake C# pulse values were generated.",
+  "export.ikBannerHint":
+    "Dozwolony tylko plik diagnostyczny PREVIEW_RECTAN_DO_NOT_LOAD. / Only PREVIEW_RECTAN_DO_NOT_LOAD diagnostic download is allowed.",
   "arcnc.workflow": "Przepływ ArcNC",
   "arcnc.cad": "1. CAD",
   "arcnc.detect": "2. Spoiny",
@@ -294,6 +307,19 @@ const en: Dict = {
   "status.exportPulse": "Exported PULSE .JBI ({n} points). Validate in MotoSim.",
   "status.exportRectan":
     "Exported RECTAN review .JBI (no IK / backend). EC/BC use cell pulse units.",
+  "status.exportIkBlocked":
+    "PULSE export blocked — no IK solution for: {c}. Downloaded PREVIEW_RECTAN_DO_NOT_LOAD only.",
+  "status.exportIkBackendDown":
+    "IK backend unavailable — PULSE export blocked. Downloaded PREVIEW_RECTAN_DO_NOT_LOAD.",
+  "status.exportPreviewOnly":
+    "Downloaded PREVIEW_RECTAN_DO_NOT_LOAD (no fake C# pulses). Do not load on DX200.",
+  "export.ikBannerTitle": "Eksport produkcyjny PULSE zablokowany / Production PULSE export blocked",
+  "export.ikBannerPl":
+    "PL: Brak rozwiązania IK (lub limity osi MA2010) dla kroku/kroków {c}. Nie wygenerowano fałszywych impulsów C#.",
+  "export.ikBannerEn":
+    "EN: No IK solution (or MA2010 joint limits) for step(s) {c}. No fake C# pulse values were generated.",
+  "export.ikBannerHint":
+    "Dozwolony tylko plik diagnostyczny PREVIEW_RECTAN_DO_NOT_LOAD. / Only PREVIEW_RECTAN_DO_NOT_LOAD diagnostic download is allowed.",
   "arcnc.workflow": "ArcNC workflow",
   "arcnc.cad": "1. CAD",
   "arcnc.detect": "2. Seams",

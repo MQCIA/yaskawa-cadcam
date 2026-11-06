@@ -12,15 +12,27 @@ from shapely.geometry import Polygon
 
 from app.kinematics_engine import forward_kinematics, solve_ik_path, get_robot
 from app.dx200_postprocessor import (
-    generate_jbi,
-    WeldSegment,
+    PulseExportError,
     PostprocessorConfig,
+    WeldSegment,
+    generate_jbi,
     load_reference_jbi,
 )
 from app.cad_analysis import detect_seams
 from app.path_planning import plan_from_seams
 from app.robot_config import ACTIVE_MODEL, ACTIVE_POSITIONER, MODELS
 from app.welding_config import ACTIVE_POWER_SOURCE, LORCH_S8_SCHEDULES
+from app.pulse_config import (
+    BC_HOME_PULSE,
+    BC_PARK_000_PULSE,
+    RECT_X_LEAD_VERIFIED,
+    RECT_X_PULSES_PER_MM,
+    ST1_BC_MAX,
+    ST2_BC_RANGE,
+    ST3_BC_RANGE,
+    base_mm_to_bc,
+    bc_to_base_mm,
+)
 
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -62,6 +74,20 @@ def test_fk_ik_roundtrip():
     assert err < 1e-3
 
 
+def test_rect_x_base_mm_bc_roundtrip():
+    """M1.3: base_mm_to_bc / bc_to_base_mm around dump reference pulses."""
+    assert RECT_X_LEAD_VERIFIED is False
+    assert RECT_X_PULSES_PER_MM == 1000.0  # UNVERIFIED_PLACEHOLDER
+    assert base_mm_to_bc(0.0) == BC_HOME_PULSE
+    assert bc_to_base_mm(BC_HOME_PULSE) == pytest.approx(0.0)
+    assert base_mm_to_bc(bc_to_base_mm(BC_PARK_000_PULSE)) == BC_PARK_000_PULSE
+    assert base_mm_to_bc(10.0) == BC_HOME_PULSE + 10_000
+    assert ST2_BC_RANGE == (124171, 375361)
+    assert ST3_BC_RANGE == (808680, 847209)
+    assert ST1_BC_MAX == 927851
+    assert BC_PARK_000_PULSE == 878036
+
+
 def test_jbi_ma2010_cell_profile():
     pts = [
         {"x": 0.8, "y": 0.0, "z": 0.5, "rx": 180},
@@ -69,8 +95,16 @@ def test_jbi_ma2010_cell_profile():
         {"x": 1.0, "y": 0.2, "z": 0.5, "rx": 180},
     ]
     segs = [WeldSegment(0, 2, weld_speed=5.0, arc_file=3)]
-    jbi = generate_jbi(pts, segs, PostprocessorConfig(), station_deg=[0, 45, 90])
+    # Without IK → diagnostic RECTAN only (no invented PULSE C#).
+    jbi = generate_jbi(
+        pts,
+        segs,
+        PostprocessorConfig(allow_preview_rectan=True),
+        station_deg=[0, 45, 90],
+    )
     assert jbi.startswith("/JOB")
+    assert "PREVIEW_RECTAN_DO_NOT_LOAD" in jbi
+    assert "///RECTAN" in jbi
     assert "///NPOS 3,3,3,0,0,0" in jbi
     assert "///GROUP1 RB1,BS1" in jbi
     assert "///GROUP2 ST1" in jbi
@@ -79,10 +113,25 @@ def test_jbi_ma2010_cell_profile():
     assert "WVON WEV#(21)" in jbi and "WVOF" in jbi
     assert "MACRO1 MJ#(0)" in jbi
     assert "+MOVJ EC" in jbi
-    assert "BC00000=878036" in jbi
+    assert f"BC00000={BC_HOME_PULSE}" in jbi
     assert "EC00001=45886,0" in jbi  # 45 * 1019.6889…
+    assert "UNVERIFIED_PLACEHOLDER" in jbi
     assert "Motoweld" in jbi
     assert jbi.strip().endswith("END")
+
+
+def test_jbi_pulse_requires_ik_no_fake_pulses():
+    pts = [{"x": 0.8, "y": 0.0, "z": 0.5, "rx": 180}]
+    with pytest.raises(PulseExportError):
+        generate_jbi(pts, config=PostprocessorConfig(prefer_pulse=True))
+    # Must not silently emit C00000=0,0,0,0,0,0
+    preview = generate_jbi(
+        pts,
+        config=PostprocessorConfig(prefer_pulse=True, allow_preview_rectan=True),
+    )
+    assert "///RECTAN" in preview
+    assert "C00000=0,0,0,0,0,0" not in preview
+    assert "PREVIEW_RECTAN_DO_NOT_LOAD" in preview
 
 
 def test_jbi_pulse_from_joints():
@@ -191,9 +240,10 @@ def test_full_pipeline(lbracket):
     )
     assert "///POSTYPE PULSE" in jbi
     assert "///RECTAN" not in jbi
-    assert "C00000=" in jbi and "BC00000=878036" in jbi
+    assert "C00000=" in jbi and f"BC00000={BC_HOME_PULSE}" in jbi
     assert "ARCON" in jbi and jbi.strip().endswith("END")
     assert "RB1,BS1" in jbi
+    assert "C00000=0,0,0,0,0,0" not in jbi
 
 
 def test_robot_dof():

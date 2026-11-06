@@ -6,9 +6,10 @@ Two profiles (``PostprocessorConfig.profile``):
 * ``ma2010_cell`` (default) — matches the production dump in
   ``reference/robot-cell-dx200``:
   TOOL 0, GROUP1 RB1,BS1 + GROUP2 ST1, ARCON/ARCOF, WVON, MACRO1, coordinated
-  ``+MOVJ EC#``. When ``joint_angles_deg`` is supplied, C#/BC#/EC# are emitted
-  as ``///POSTYPE PULSE`` (cell teach format). Otherwise C# stays RECTAN for
-  offline review and only EC#/BC# use pulse units.
+  ``+MOVJ EC#``. Production ``///POSTYPE PULSE`` requires a full
+  ``joint_angles_deg`` list from IK — never invents C# pulses. Without IK,
+  only a diagnostic RECTAN preview named ``PREVIEW_RECTAN_DO_NOT_LOAD`` is
+  allowed (``allow_preview_rectan=True``).
 
 * ``cartesian_review`` — earlier DROP01-style USER/RECTAN + single-group ST1
   layout (handy for MotoSim / docs).
@@ -28,13 +29,20 @@ from datetime import datetime
 from pathlib import Path
 
 from .pulse_config import (
+    BC_HOME_PULSE,
     CELL_PULSE,
+    RECT_X_LEAD_VERIFIED,
     STATION_PULSES_PER_DEGREE,
     base_mm_to_bc,
     deg_to_joint_pulses,
+    rect_x_jbi_warning_comment,
     station_deg_to_ec,
 )
 from .welding_config import LORCH_S8_SCHEDULES, WeldSchedule
+
+
+class PulseExportError(ValueError):
+    """Raised when production PULSE export is requested without valid IK joints."""
 
 
 @dataclass
@@ -66,8 +74,12 @@ class PostprocessorConfig:
     tool_tcp_mm: tuple[float, float, float] = (-54.280, 1.052, 415.702)
     default_weave: int = 21
     macro_arg: int = 8  # MACRO1 MJ#(0) ARGF8 seen before ARCON
-    # Emit full PULSE C# when True and joint_angles_deg is provided.
+    # Production PULSE requires IK joints. Preview RECTAN is opt-in only.
     prefer_pulse: bool = True
+    allow_preview_rectan: bool = False
+    # Rail X in mm relative to BC_HOME (0 → home bookend). Per-point overrides
+    # via ``base_mm`` argument to ``generate_jbi``.
+    base_mm: float = 0.0
     base_park_pulse: int = CELL_PULSE.base_park_pulse
     robot_pulses_per_degree: list[float] = field(
         default_factory=lambda: list(CELL_PULSE.robot_pulses_per_degree)
@@ -105,17 +117,34 @@ def _station_pulse(deg: float, pulses_per_deg: float) -> int:
     return int(round(deg * pulses_per_deg))
 
 
+def _joints_ready(
+    joint_angles_deg: list[list[float]] | None,
+    npos: int,
+) -> bool:
+    if joint_angles_deg is None or len(joint_angles_deg) != npos:
+        return False
+    for q in joint_angles_deg:
+        if not isinstance(q, (list, tuple)) or len(q) != 6:
+            return False
+        if any(v is None for v in q):
+            return False
+    return True
+
+
 def generate_jbi(
     cartesian_points: list[dict],
     weld_segments: list[WeldSegment] | None = None,
     config: PostprocessorConfig | None = None,
     station_deg: list[float] | None = None,
     joint_angles_deg: list[list[float]] | None = None,
+    base_mm: list[float] | float | None = None,
 ) -> str:
     """Generate a DX200 ``.JBI`` job from Cartesian TCP points.
 
-    Pass ``joint_angles_deg`` (one [S,L,U,R,B,T] per point) to emit production
-    ``///POSTYPE PULSE`` C# values using ``pulse_config`` scaling.
+    Pass ``joint_angles_deg`` (one [S,L,U,R,B,T] per point from IK) to emit
+    production ``///POSTYPE PULSE`` C#. Without IK, set
+    ``config.allow_preview_rectan=True`` for a diagnostic RECTAN file only —
+    never invents C# pulse integers.
     """
     cfg = config or PostprocessorConfig()
     weld_segments = weld_segments or []
@@ -127,7 +156,12 @@ def generate_jbi(
 
     if cfg.profile == "ma2010_cell":
         return _generate_ma2010_cell(
-            cartesian_points, weld_segments, cfg, station_deg, joint_angles_deg
+            cartesian_points,
+            weld_segments,
+            cfg,
+            station_deg,
+            joint_angles_deg,
+            base_mm,
         )
     return _generate_cartesian_review(cartesian_points, weld_segments, cfg, station_deg)
 
@@ -138,33 +172,56 @@ def _generate_ma2010_cell(
     cfg: PostprocessorConfig,
     station_deg: list[float] | None,
     joint_angles_deg: list[list[float]] | None,
+    base_mm: list[float] | float | None,
 ) -> str:
     """INST layout matching ``000.JBI`` from the production MA2010 cell."""
     npos = len(cartesian_points)
     station_deg = station_deg or [0.0] * npos
-    use_pulse = (
-        bool(cfg.prefer_pulse)
-        and joint_angles_deg is not None
-        and len(joint_angles_deg) == npos
-    )
+    joints_ok = _joints_ready(joint_angles_deg, npos)
+    use_pulse = bool(cfg.prefer_pulse) and joints_ok
+
+    if cfg.prefer_pulse and not joints_ok and not cfg.allow_preview_rectan:
+        raise PulseExportError(
+            "Production POSTYPE PULSE requires IK joint_angles_deg for every "
+            "point (no fake C# pulses). Retry after /api/calculate-ik "
+            "all_reachable=true, or set allow_preview_rectan for "
+            "PREVIEW_RECTAN_DO_NOT_LOAD only."
+        )
+
+    if isinstance(base_mm, (int, float)):
+        base_xs = [float(base_mm)] * npos
+    elif base_mm is None:
+        base_xs = [float(cfg.base_mm)] * npos
+    else:
+        base_xs = [float(base_mm[i] if i < len(base_mm) else cfg.base_mm) for i in range(npos)]
+
     arc_on_at: dict[int, WeldSegment] = {s.start_index: s for s in weld_segments}
     arc_off_at: set[int] = {s.end_index for s in weld_segments}
     lines: list[str] = []
 
+    job_name = cfg.job_name
+    if not use_pulse:
+        # Diagnostic-only RECTAN — never load on DX200.
+        if "PREVIEW_RECTAN_DO_NOT_LOAD" not in job_name.upper():
+            job_name = f"PREVIEW_RECTAN_DO_NOT_LOAD_{cfg.job_name}"
+
     lines.append("/JOB")
-    lines.append(f"//NAME {cfg.job_name}")
+    lines.append(f"//NAME {job_name}")
     if use_pulse:
         lines.append("' PULSE export — MA2010 cell (RC1G / RBCALIB scaling)")
+        lines.append("' C# from IK → deg_to_joint_pulses (no invented pulses)")
     else:
-        lines.append("' Offline RECTAN review — supply IK joints for PULSE C#")
+        lines.append("' PREVIEW_RECTAN_DO_NOT_LOAD — offline diagnostic only")
+        lines.append("' NOT for DX200 load — IK missing or unreachable; no PULSE C#")
     lines.append(
         f"' Cell: MA2010 + RECT-X (BS1) + TURN (ST1); TOOL0 TCP mm "
         f"{cfg.tool_tcp_mm[0]},{cfg.tool_tcp_mm[1]},{cfg.tool_tcp_mm[2]}"
     )
     lines.append(
         f"' Station pulses/deg~{cfg.station_pulses_per_deg:.4f}; "
-        f"BC park={cfg.base_park_pulse}"
+        f"BC_HOME={BC_HOME_PULSE}; RECT_X_LEAD_VERIFIED={RECT_X_LEAD_VERIFIED}"
     )
+    lines.append(rect_x_jbi_warning_comment())
     lines.append("//POS")
     lines.append(f"///NPOS {npos},{npos},{npos},0,0,0")
     lines.append(f"///TOOL {cfg.tool_no}")
@@ -173,7 +230,7 @@ def _generate_ma2010_cell(
         lines.append("///POSTYPE PULSE")
         lines.append("///PULSE")
         for i, q in enumerate(joint_angles_deg):  # type: ignore[arg-type]
-            pulses = deg_to_joint_pulses(q, cfg.robot_pulses_per_degree)
+            pulses = deg_to_joint_pulses(list(q), cfg.robot_pulses_per_degree)
             lines.append(f"C{i:05d}={','.join(str(p) for p in pulses)}")
     else:
         lines.append("///POSTYPE USER")
@@ -187,9 +244,11 @@ def _generate_ma2010_cell(
                 f"{_fmt(rx)},{_fmt(ry)},{_fmt(rz)}"
             )
 
-    lines.append(f"' BC# RECT-X park pulse ({cfg.base_park_pulse})")
+    lines.append(
+        f"' BC# via base_mm_to_bc (origin BC_HOME={BC_HOME_PULSE})"
+    )
     for i in range(npos):
-        lines.append(f"BC{i:05d}={base_mm_to_bc(park_pulse=cfg.base_park_pulse)}")
+        lines.append(f"BC{i:05d}={base_mm_to_bc(base_xs[i])}")
 
     if not use_pulse:
         lines.append("///POSTYPE PULSE")
