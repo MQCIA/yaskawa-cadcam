@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Round-trip production INFORM PULSE jobs through the cell scale and MA2010 URDF.
+"""Round-trip production INFORM PULSE jobs through the cell scale and DH model.
 
 Usage
 -----
@@ -10,15 +10,17 @@ Usage
 For every ``C#`` the script:
 
 1. Converts pulses to degrees with ``app.pulse_config.joint_pulses_to_deg``.
-2. Runs MA2010 FK (ROS-Industrial URDF chain) and applies TOOL 0 so the
-   reported pose is the torch TCP, not the flange.
-3. Solves IK for that TCP seeded with the previous taught point, or with
-   ``C00000`` / cell home when there is no previous point.
+2. Runs forward kinematics and applies TOOL 0
+   (xyz ``-54.280, 1.052, 415.702`` mm, RPY ``1.3119, -42.6215, -6.8387`` deg)
+   so the reported pose is the torch TCP, not the flange.
+3. Solves IK for that TCP (tool removed again, so the chain is consistent)
+   seeded with the previous solution, or with ``C00000`` when there is no
+   previous point.
 4. Converts the IK joints back to pulses with ``deg_to_joint_pulses``.
 
-``ΔPULSE`` / ``ΔDEG`` measure numeric IK consistency on the URDF model.
-They are not the error against the pendant XYZ (still needs MotoSim /
-pendant golden Cartesian for M1.4 sign-off).
+``ΔPULSE`` / ``ΔDEG`` measure numeric IK consistency on the *placeholder* DH
+model. They are not the error against the pendant. TCP millimetres will not
+match taught XYZ until M1.4 replaces the DH lengths.
 
 ``BC#`` stays in pulses (RECT-X mm/pulse is not certified). ``EC#`` is two
 components: axis 1 uses the RBCALIB TURN scale (91771 pulse / 90°); axis 2
@@ -28,15 +30,23 @@ is printed in pulses only.
 from __future__ import annotations
 
 import argparse
+import json
 import math
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
+
+from spatialmath import SE3
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "backend"))
 
-from app.kinematics_engine import forward_kinematics, solve_ik_path  # noqa: E402
+DEFAULT_GOLDEN = (
+    ROOT / "backend" / "tests" / "fixtures" / "robot-cell" / "golden_poses.json"
+)
+
+from app.kinematics_engine import _pose_to_se3, forward_kinematics, solve_ik_path  # noqa: E402
 from app.pulse_config import (  # noqa: E402
     CELL_PULSE,
     RC1G_SOFTLIMIT_NEG,
@@ -60,6 +70,10 @@ OPCODES = (
 )
 LIMIT_WARN_FRAC = 0.05
 
+# TOOL.CND / docs/CELL.md — tool frame relative to the flange.
+TOOL0_XYZ_MM = (-54.280, 1.052, 415.702)
+TOOL0_RPY_DEG = (1.3119, -42.6215, -6.8387)
+
 
 def pulses_to_degrees(pulses: list[int]) -> list[float]:
     """S,L,U,R,B,T pulses → degrees (``pulse_config.joint_pulses_to_deg``)."""
@@ -71,14 +85,35 @@ def degrees_to_pulses(q_deg: list[float]) -> list[int]:
     return deg_to_joint_pulses(q_deg)
 
 
+def tool0_se3() -> SE3:
+    xyz_m = [v / 1000.0 for v in TOOL0_XYZ_MM]
+    return SE3(xyz_m[0], xyz_m[1], xyz_m[2]) * SE3.RPY(list(TOOL0_RPY_DEG), unit="deg", order="xyz")
+
+
+def _se3_to_pose(T: SE3) -> dict:
+    rpy = T.rpy(unit="deg", order="xyz")
+    t = T.t
+    return {
+        "x": float(t[0]),
+        "y": float(t[1]),
+        "z": float(t[2]),
+        "rx": float(rpy[0]),
+        "ry": float(rpy[1]),
+        "rz": float(rpy[2]),
+    }
+
+
 def tcp_from_joints(q_deg: list[float]) -> dict:
-    """Torch TCP = URDF flange * TOOL 0."""
-    return forward_kinematics(q_deg, frame="tcp")
+    """Flange FK composed with TOOL 0. Translation in metres, RPY in degrees."""
+    flange = forward_kinematics(q_deg)
+    T_tcp = _pose_to_se3(flange) * tool0_se3()
+    return _se3_to_pose(T_tcp)
 
 
-def flange_from_joints(q_deg: list[float]) -> dict:
-    """URDF tool0 (mechanical flange)."""
-    return forward_kinematics(q_deg, frame="flange")
+def flange_pose_for_tcp(tcp: dict) -> dict:
+    """Invert TOOL 0 so IK targets the flange that produces this TCP."""
+    T_flange = _pose_to_se3(tcp) * tool0_se3().inv()
+    return _se3_to_pose(T_flange)
 
 
 @dataclass
@@ -280,7 +315,8 @@ def compare_job(job: JbiJob, *, do_ik: bool = True) -> list[PointReport]:
         tcp_err_mm: float | None = None
         if do_ik:
             used_seed = seed if seed is not None else q
-            solved = solve_ik_path([tcp], q_seed_deg=used_seed, frame="tcp")
+            flange = flange_pose_for_tcp(tcp)
+            solved = solve_ik_path([flange], q_seed_deg=used_seed)
             ik_ok = bool(solved["diagnostics"][0]["success"])
             ik_deg = [float(a) for a in solved["joint_angles_deg"][0]]
             ik_pulses = degrees_to_pulses(ik_deg)
@@ -344,7 +380,7 @@ def format_job(job: JbiJob, rows: list[PointReport]) -> str:
             f"POSTYPE={job.postype or '-'}  GROUP1={job.group1 or '-'}  GROUP2={job.group2 or '-'}"
         ),
         f"   instructions: {inst_txt or '(none)'}",
-        "   TCP = FK(MA2010 URDF) * TOOL0.  ΔPULSE/ΔDEG = IK round-trip on that model, not pendant error.",
+        "   TCP = FK(DH placeholder) * TOOL0.  ΔPULSE/ΔDEG = IK round-trip on that model, not pendant error.",
         "   EC axis1 deg uses RBCALIB 91771/90.  EC axis2 has no certified scale.  BC is pulses (mm unknown).",
         "",
         (
@@ -401,6 +437,128 @@ def format_job(job: JbiJob, rows: list[PointReport]) -> str:
     return "\n".join(lines)
 
 
+def load_golden_poses(path: Path | None = None) -> dict[str, Any]:
+    """Load ``golden_poses.json`` (M1.2 registry)."""
+    p = path or DEFAULT_GOLDEN
+    data = json.loads(p.read_text(encoding="utf-8"))
+    if "poses" not in data:
+        raise ValueError(f"{p}: missing 'poses' array")
+    return data
+
+
+def check_golden(
+    path: Path | None = None,
+    *,
+    do_ik: bool = True,
+) -> tuple[int, str]:
+    """Validate golden registry: pulses → deg → APP_ESTIMATE; never invent pendant XYZ.
+
+    Returns ``(exit_code, report_text)``. Exit 0 when all poses parse and any
+    verified pendant rows are consistent; exit 1 on structural / honesty errors.
+    """
+    data = load_golden_poses(path)
+    lines: list[str] = [
+        "=== compare_pulses --check-golden ===",
+        f"file: {path or DEFAULT_GOLDEN}",
+        f"poses: {len(data.get('poses', []))}",
+        "APP_ESTIMATE = FK(DH placeholder) × TOOL 0 — not pendant truth.",
+        "",
+        (
+            f"{'id':<28} {'flag':<14} {'status':<24} "
+            f"{'Xmm':>8} {'Ymm':>8} {'Zmm':>8} {'dP':>6} {'Δtcp':>8}"
+        ),
+    ]
+    errors: list[str] = []
+    n_unverified = 0
+    n_verified = 0
+
+    for pose in data["poses"]:
+        pid = pose.get("id", "?")
+        pulses = pose.get("pulses")
+        if not isinstance(pulses, list) or len(pulses) != 6:
+            errors.append(f"{pid}: pulses must be 6 ints")
+            continue
+        pulses_i = [int(v) for v in pulses]
+        status = str(pose.get("cartesian_status") or "UNVERIFIED_ON_PENDANT")
+        verified = bool(pose.get("verified_on_pendant"))
+        pendant = pose.get("pendant_or_motosim")
+
+        if verified and pendant is None:
+            errors.append(f"{pid}: verified_on_pendant=true but pendant_or_motosim is null")
+        if verified and status != "VERIFIED_ON_PENDANT":
+            errors.append(
+                f"{pid}: verified_on_pendant=true requires cartesian_status=VERIFIED_ON_PENDANT"
+            )
+        if not verified:
+            n_unverified += 1
+            if status != "UNVERIFIED_ON_PENDANT":
+                errors.append(
+                    f"{pid}: unverified pose must use cartesian_status=UNVERIFIED_ON_PENDANT "
+                    f"(got {status!r})"
+                )
+            # Honesty: APP numbers must not be smuggled in as pendant.
+            if isinstance(pendant, dict) and any(
+                pendant.get(k) is not None
+                for k in ("x_mm", "y_mm", "z_mm", "rx_deg", "ry_deg", "rz_deg")
+            ):
+                errors.append(
+                    f"{pid}: pendant_or_motosim filled while verified_on_pendant=false "
+                    "(set verified=true only after a real pendant/MotoSim reading)"
+                )
+        else:
+            n_verified += 1
+
+        q = pulses_to_degrees(pulses_i)
+        tcp = tcp_from_joints(q)
+        lim = softlimit_flag(pulses_i)
+        d_p: float | None = None
+        d_tcp: float | None = None
+        if do_ik:
+            flange = flange_pose_for_tcp(tcp)
+            solved = solve_ik_path([flange], q_seed_deg=q)
+            ik_ok = bool(solved["diagnostics"][0]["success"])
+            ik_deg = [float(a) for a in solved["joint_angles_deg"][0]]
+            ik_pulses = degrees_to_pulses(ik_deg)
+            d_p = max(abs(b - a) for a, b in zip(pulses_i, ik_pulses))
+            if not ik_ok:
+                errors.append(f"{pid}: IK failed for APP_ESTIMATE flange pose")
+        if verified and isinstance(pendant, dict):
+            try:
+                gx = float(pendant["x_mm"])
+                gy = float(pendant["y_mm"])
+                gz = float(pendant["z_mm"])
+            except (KeyError, TypeError, ValueError) as exc:
+                errors.append(f"{pid}: pendant_or_motosim missing x/y/z_mm ({exc})")
+            else:
+                d_tcp = math.dist(
+                    (tcp["x"] * 1000.0, tcp["y"] * 1000.0, tcp["z"] * 1000.0),
+                    (gx, gy, gz),
+                )
+
+        dp_txt = f"{d_p:.0f}" if d_p is not None else "-"
+        dt_txt = f"{d_tcp:.2f}" if d_tcp is not None else "-"
+        lines.append(
+            f"{pid:<28} {lim:<14} {status:<24} "
+            f"{tcp['x']*1000:8.1f} {tcp['y']*1000:8.1f} {tcp['z']*1000:8.1f} "
+            f"{dp_txt:>6} {dt_txt:>8}"
+        )
+        lines.append(
+            f"  source={pose.get('source_jbi')} C{int(pose.get('c_index', 0)):05d} "
+            f"BC={pose.get('bc')} EC={pose.get('ec')} "
+            f"pulses={pulses_i}"
+        )
+
+    lines.append("")
+    lines.append(
+        f"summary  unverified={n_unverified}  verified={n_verified}  errors={len(errors)}"
+    )
+    if errors:
+        lines.append("ERRORS:")
+        lines.extend(f"  - {e}" for e in errors)
+        return 1, "\n".join(lines)
+    return 0, "\n".join(lines)
+
+
 def format_markdown(jobs: list[tuple[JbiJob, list[PointReport]]]) -> str:
     """Compact Markdown table per job for ``--markdown-out``."""
     out: list[str] = [
@@ -454,9 +612,9 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument(
         "paths",
-        nargs="+",
+        nargs="*",
         type=Path,
-        help="`.JBI` file(s) and/or directories to scan",
+        help="`.JBI` file(s) and/or directories to scan (optional with --check-golden)",
     )
     parser.add_argument(
         "--no-ik",
@@ -471,7 +629,29 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help="Write a Markdown summary report to this path",
     )
+    parser.add_argument(
+        "--check-golden",
+        action="store_true",
+        help="Validate golden_poses.json (M1.2); APP_ESTIMATE only unless pendant verified",
+    )
+    parser.add_argument(
+        "--golden",
+        type=Path,
+        default=None,
+        help="Path to golden_poses.json (default: fixtures/robot-cell/golden_poses.json)",
+    )
     args = parser.parse_args(argv)
+
+    golden_code = 0
+    if args.check_golden:
+        golden_code, report = check_golden(args.golden, do_ik=not args.no_ik)
+        print(report)
+
+    if not args.paths:
+        if args.check_golden:
+            return golden_code
+        parser.error("path is required unless --check-golden is set")
+
     paths: list[Path] = []
     for target in args.paths:
         paths.extend(iter_jbi_paths(target))
@@ -501,7 +681,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"== skip {path}: {exc}")
             continue
         rendered.append((job, rows))
-        if i:
+        if i or args.check_golden:
             print()
         print(format_job(job, rows))
 
@@ -509,7 +689,7 @@ def main(argv: list[str] | None = None) -> int:
         args.markdown_out.parent.mkdir(parents=True, exist_ok=True)
         args.markdown_out.write_text(format_markdown(rendered), encoding="utf-8")
         print(f"\nWrote markdown → {args.markdown_out}")
-    return 0
+    return golden_code if args.check_golden else 0
 
 
 if __name__ == "__main__":

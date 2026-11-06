@@ -1,0 +1,128 @@
+{
+  "schema": "yaskawa-cadcam/golden_poses/v1",
+  "cell": "MA2010 + RECT-X (BS1) + TURN ST1–ST4 / DX200",
+  "tool0_mm_rpy": {
+    "xyz_mm": [-54.28, 1.052, 415.702],
+    "rpy_deg": [1.3119, -42.6215, -6.8387],
+    "source": "TOOL.CND //TOOL 0"
+  },
+  "notes": [
+    "Joint pulses are copied from production INFORM .JBI (not invented).",
+    "Cartesian pendant/MotoSim fields stay null until verified_on_pendant=true.",
+    "APP_ESTIMATE TCP is computed at check time by tools/compare_pulses.py (placeholder DH × TOOL 0) — never treat it as pendant truth."
+  ],
+  "poses": [
+    {
+      "id": "POSE_01_SAFE_HOME",
+      "role": "safe home / bookend on many production jobs",
+      "station": "rail-home",
+      "group2": null,
+      "source_jbi": "02025_KOSZ_DO_RURY_70-PLUS-RAMKI.JBI",
+      "c_index": 0,
+      "pulses": [-281, -101163, -84214, 3730, -80188, -1936],
+      "bc": 570125,
+      "ec": [192, 0],
+      "verified_on_pendant": false,
+      "cartesian_status": "UNVERIFIED_ON_PENDANT",
+      "pendant_or_motosim": null
+    },
+    {
+      "id": "POSE_02_PARK_000",
+      "role": "park rail + first MOVJ of reference 000.JBI (ST1)",
+      "station": "ST1",
+      "group2": "ST1",
+      "source_jbi": "000.JBI",
+      "c_index": 0,
+      "pulses": [95902, -19559, -65353, -68228, -62443, 70439],
+      "bc": 878036,
+      "ec": [-1746, 0],
+      "verified_on_pendant": false,
+      "cartesian_status": "UNVERIFIED_ON_PENDANT",
+      "pendant_or_motosim": null
+    },
+    {
+      "id": "POSE_03_ST1_WELD_START",
+      "role": "approach / pre-weld on ST1 (11.JBI C00003)",
+      "station": "ST1",
+      "group2": "ST1",
+      "source_jbi": "11.JBI",
+      "c_index": 3,
+      "pulses": [97267, 52739, -6802, 12719, -17839, -9459],
+      "bc": 927851,
+      "ec": [1163, 0],
+      "verified_on_pendant": false,
+      "cartesian_status": "UNVERIFIED_ON_PENDANT",
+      "pendant_or_motosim": null
+    },
+    {
+      "id": "POSE_04_ST2_KOSZ_WELD_1",
+      "role": "ST2 kosz weld — left rail zone",
+      "station": "ST2",
+      "group2": "ST2",
+      "source_jbi": "02025_KOSZ_DO_RURY_70-PLUS-RAMKI.JBI",
+      "c_index": 3,
+      "pulses": [150409, 61689, -12910, 81671, -34099, -23144],
+      "bc": 124171,
+      "ec": [-932, 0],
+      "verified_on_pendant": false,
+      "cartesian_status": "UNVERIFIED_ON_PENDANT",
+      "pendant_or_motosim": null
+    },
+    {
+      "id": "POSE_05_ST2_KOSZ_WELD_MID",
+      "role": "ST2 kosz weld — mid rail zone",
+      "station": "ST2",
+      "group2": "ST2",
+      "source_jbi": "02025_KOSZ_DO_RURY_70-PLUS-RAMKI.JBI",
+      "c_index": 100,
+      "pulses": [119061, 39982, -23058, 19092, -67348, 19868],
+      "bc": 352913,
+      "ec": [-933, 0],
+      "verified_on_pendant": false,
+      "cartesian_status": "UNVERIFIED_ON_PENDANT",
+      "pendant_or_motosim": null
+    },
+    {
+      "id": "POSE_06_ST2_ARC_MOVC",
+      "role": "ST2 MOVC arc point (12.JBI)",
+      "station": "ST2",
+      "group2": "ST2",
+      "source_jbi": "12.JBI",
+      "c_index": 13,
+      "pulses": [94466, 78056, 15184, 22601, -26793, -15578],
+      "bc": 262818,
+      "ec": [2712, 0],
+      "verified_on_pendant": false,
+      "cartesian_status": "UNVERIFIED_ON_PENDANT",
+      "pendant_or_motosim": null
+    },
+    {
+      "id": "POSE_07_ST3_ROTARY_WELD",
+      "role": "ST3 circumferential weld (TURN-2, two EC axes)",
+      "station": "ST3",
+      "group2": "ST3",
+      "source_jbi": "1-DEFRO-5.JBI",
+      "c_index": 4,
+      "pulses": [-83555, 68320, -11474, 26050, -31610, -59171],
+      "bc": 808680,
+      "ec": [-2638, -94527],
+      "verified_on_pendant": false,
+      "cartesian_status": "UNVERIFIED_ON_PENDANT",
+      "pendant_or_motosim": null
+    },
+    {
+      "id": "POSE_08_ST4_WELD",
+      "role": "ST4 weld point (1KT.JBI)",
+      "station": "ST4",
+      "group2": "ST4",
+      "source_jbi": "1KT.JBI",
+      "c_index": 3,
+      "pulses": [-103675, 64756, 3591, -48976, -53898, 45246],
+      "bc": 190240,
+      "ec": [-2, -1],
+      "verified_on_pendant": false,
+      "cartesian_status": "UNVERIFIED_ON_PENDANT",
+      "pendant_or_motosim": null
+    }
+  ]
+}
