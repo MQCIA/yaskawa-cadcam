@@ -19,7 +19,7 @@ This skill + dump catalog cover the **CF text dump**. A complete “production c
 
 - [ ] Certified DH / MotoSim robot definition (replace placeholder DH)
 - [ ] Measured cell layout: rail origin, station axes, fixture frames (mm)
-- [ ] USER frames used in production (`UF#` list + teach jobs → document numbers)
+- [x] USER frames used in production — **none** (`UFRAME.CND` absent; jobs PULSE+TOOL0); see `docs/CELL_FRAMES.md`
 - [ ] RECT-X **pulses/mm** (ballscrew lead / RC2 calibration) — park pulse alone is not enough
 - [ ] Station mechanical zero vs INFORM zero (ABSO + teach)
 
