@@ -68,17 +68,17 @@ flowchart LR
 
 ---
 
-## M1 — Zaufany PULSE (następny priorytet)
+## M1 — Zaufany PULSE
 
 **Wynik:** C#/BC#/EC# z aplikacji da się porównać z pendantem na kilku znanych pozach (± tolerancja).
 
 | # | Zadanie | Done when |
 |---|---------|-----------|
-| 1.1 | Skrypt `tools/compare_pulses.py`: C# z `jobs/*.JBI` → deg → FK/IK | Jest. Raportuje ΔPULSE, ΔDEG, błąd TCP i softlimity RC1G |
-| 1.2 | 5–10 **golden poses** (deg + pulse; XYZ z pendantu gdy będzie) | `docs/CELL_POSES.md` — home + `000.JBI` z FK URDF×TOOL0; XYZ pendantu brak |
-| 1.3 | RECT-X **pulses/mm** (lead / teach) | `base_mm_to_bc` bez samego park-pulse |
-| 1.4 | Geometria MA2010 = URDF / MotoSim; FK vs pendant | **URDF + TOOL 0 w kodzie.** Sign-off vs pendant XYZ nadal otwarty |
-| 1.5 | Eksport UI: zawsze ścieżka IK → PULSE; jasny status gdy IK fail | Status PL/EN już częściowo; dokończyć UX |
+| 1.1 | Skrypt `tools/compare_pulses.py`: C# z `jobs/*.JBI` → deg → FK/IK | **Done** |
+| 1.2 | 5–10 **golden poses** (deg + pulse; XYZ z pendantu gdy będzie) | **Done** rejestr — XYZ pendantu nadal `TODO` |
+| 1.3 | RECT-X **pulses/mm** (lead / teach) | **Done** helpers; `RECT_X_LEAD_VERIFIED=false` |
+| 1.4 | Geometria MA2010 = URDF / MotoSim; FK vs pendant | **Done** URDF+TOOL0; pendant sign-off otwarty |
+| 1.5 | Eksport UI: zawsze ścieżka IK → PULSE; jasny status gdy IK fail | **Done** hard gate + preview RECTAN only |
 
 **Wyjście M1:** „draft PULSE” nadający się do dry-run w MotoSim na prostej spoiny.
 
@@ -90,12 +90,12 @@ flowchart LR
 
 | # | Zadanie | Done when |
 |---|---------|-----------|
-| 2.1 | Rejestr ram: TOOL / USER (`docs/CELL_FRAMES.md`) z teach jobs | Znane `UF#` używane w produkcji |
-| 2.2 | Wybór stacji ST1–ST4 + group w eksporcie | JBI z właściwym `GROUP2` |
-| 2.3 | BC# z pozycji szyny (mm), nie stały park | Ruch bazy w ścieżce |
+| 2.1 | Rejestr ram: TOOL / USER (`docs/CELL_FRAMES.md`) z teach jobs | **Done** (brak UFRAME w dumpie) |
+| 2.2 | Wybór stacji ST1–ST4 + group w eksporcie | **Done** |
+| 2.3 | BC# z pozycji szyny (mm), nie stały park | **Done** zone BC + `base_mm_to_bc` |
 | 2.4 | TouchSense / search zgodne z `SRCH-*` / `SZUKAJ*` (wzorzec) | **Done** — `enable_touchsense` → `CALL JOB:SRCH-2D1`; [CELL_TOUCHSENSE.md](CELL_TOUCHSENSE.md) |
 | 2.5 | Kolizje: coarse AABB → modele cube z `CUBEINTF` | **Done** — `cubeintf.py` + `/api/check-cubes`; FE station AABB soft boxes |
-| 2.6 | Multi-seam sequence (kolejność, retract) | Już częściowo; domknąć pod 4 stacje |
+| 2.6 | Multi-seam sequence (kolejność, retract) | **Done** NN + home bookends |
 
 **Wyjście M2:** Program na jedną stację z sensowną sekwencją air/weld/retract.
 
@@ -137,9 +137,9 @@ flowchart LR
 
 | # | Zadanie | Done when |
 |---|---------|-----------|
-| 5.1 | Import CAD → spoiny → plan → symulacja → eksport jako jeden flow | Mniej „demo buttons” |
-| 5.2 | Podgląd JBI w UI (diff vs `000.JBI` grammar) | Panel kodu |
-| 5.3 | Symulacja TCP + opcjonalnie joint z IK | Suwak czasu już jest; dociągnąć joint |
+| 5.1 | Import CAD → spoiny → plan → symulacja → eksport jako jeden flow | Częściowo — pasek ArcNC workflow już w UI |
+| 5.2 | Podgląd JBI w UI (diff vs `000.JBI` grammar) | **Done** — zakładka JBI + checklist gramatyki vs komórka |
+| 5.3 | Symulacja TCP + opcjonalnie joint z IK | Częściowo — suwak TCP; joint-from-IK przy eksporcie |
 | 5.4 | README = MA2010 cell (sprzątnięcie AR/Lorch default) | **Done** — README = MA2010 + Motoweld + GO_LIVE |
 | 5.5 | Skan dumpa: `tools/scan_dx200_dump.py` odświeża katalog | **Done** — skrypt odświeża `_dump_scan.json` stub / katalog |
 
