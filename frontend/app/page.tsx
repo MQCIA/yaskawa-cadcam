@@ -31,6 +31,11 @@ import {
   type WeldProgram,
 } from "@/lib/weldProgram";
 
+type IkExportBlock = {
+  cIndices: number[];
+  reason: "unreachable" | "backend";
+};
+
 const RobotWorkspace = dynamic(() => import("@/components/RobotWorkspace"), {
   ssr: false,
 });
@@ -53,6 +58,7 @@ export default function Home() {
   const [joints, setJoints] = useState<Joints>(defaultJoints());
   const [seams, setSeams] = useState<SeamSegment[]>([]);
   const [status, setStatus] = useState("");
+  const [ikExportBlock, setIkExportBlock] = useState<IkExportBlock | null>(null);
 
   const [positionerId, setPositionerId] = useState<string | null>("turn_st1");
   const [railTravel, setRailTravel] = useState(0);
@@ -184,32 +190,61 @@ export default function Home() {
     if (!program) return;
     const stIdx = selectedStation ?? 0;
     const stationAngle = stations[stIdx]?.rotate ?? 0;
+    const baseMm = railTravel; // UI rail travel in mm relative to BC_HOME
+    setStatus(t("status.exportIk"));
+    setIkExportBlock(null);
+
     let jointAnglesDeg: number[][] | undefined;
+    let unreachable: number[] = [];
     try {
-      setStatus(t("status.exportIk"));
       const ik = await calculateIk(waypointsToIkPoints(program));
-      if (ik?.all_reachable && Array.isArray(ik.joint_angles_deg)) {
+      const diags = Array.isArray(ik?.diagnostics) ? ik.diagnostics : [];
+      unreachable = diags
+        .filter((d: { success?: boolean }) => d && d.success === false)
+        .map((d: { index?: number }, i: number) =>
+          typeof d.index === "number" ? d.index : i,
+        );
+      if (!ik?.all_reachable) {
+        if (unreachable.length === 0) {
+          unreachable = program.waypoints.map((_, i) => i);
+        }
+        setIkExportBlock({ cIndices: unreachable, reason: "unreachable" });
+        setStatus(
+          t("status.exportIkBlocked", {
+            c: unreachable.map((i) => `C${String(i).padStart(5, "0")}`).join(", "),
+          }),
+        );
+      } else if (Array.isArray(ik.joint_angles_deg) && ik.joint_angles_deg.length === program.waypoints.length) {
         jointAnglesDeg = ik.joint_angles_deg as number[][];
       }
     } catch {
-      // Backend offline — fall back to local RECTAN review export.
+      unreachable = program.waypoints.map((_, i) => i);
+      setIkExportBlock({ cIndices: unreachable, reason: "backend" });
+      setStatus(t("status.exportIkBackendDown"));
     }
+
+    const pulseOk = Array.isArray(jointAnglesDeg) && jointAnglesDeg.length === program.waypoints.length;
     const text = generateJbi(program, {
       stationDeg: stationAngle,
-      jointAnglesDeg,
+      jointAnglesDeg: pulseOk ? jointAnglesDeg : undefined,
+      allowPreviewRectan: !pulseOk,
+      baseMm,
     });
     const blob = new Blob([text], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${program.name}.JBI`;
+    a.download = pulseOk
+      ? `${program.name}.JBI`
+      : `PREVIEW_RECTAN_DO_NOT_LOAD_${program.name}.JBI`;
     a.click();
     URL.revokeObjectURL(url);
-    setStatus(
-      jointAnglesDeg
-        ? t("status.exportPulse", { n: jointAnglesDeg.length })
-        : t("status.exportRectan"),
-    );
+    if (pulseOk) {
+      setIkExportBlock(null);
+      setStatus(t("status.exportPulse", { n: jointAnglesDeg!.length }));
+    } else {
+      setStatus(t("status.exportPreviewOnly"));
+    }
   }
 
   function togglePlay() {
@@ -336,6 +371,30 @@ export default function Home() {
           <button onClick={downloadJbi} disabled={!program} className={btnPrimary}>{t("header.generateCode")}</button>
         </div>
       </header>
+
+      {ikExportBlock && (
+        <div
+          role="alert"
+          className="border-b border-red-300 bg-red-50 px-3 py-2 text-sm text-red-900"
+        >
+          <div className="font-semibold">{t("export.ikBannerTitle")}</div>
+          <p className="mt-0.5 text-[12px] leading-snug">
+            {t("export.ikBannerPl", {
+              c: ikExportBlock.cIndices
+                .map((i) => `C${String(i).padStart(5, "0")}`)
+                .join(", "),
+            })}
+          </p>
+          <p className="mt-0.5 text-[12px] leading-snug">
+            {t("export.ikBannerEn", {
+              c: ikExportBlock.cIndices
+                .map((i) => `C${String(i).padStart(5, "0")}`)
+                .join(", "),
+            })}
+          </p>
+          <p className="mt-1 text-[11px] text-red-800">{t("export.ikBannerHint")}</p>
+        </div>
+      )}
 
       {/* Ribbon */}
       <div className="border-b border-slate-200 bg-white">

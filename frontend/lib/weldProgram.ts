@@ -449,6 +449,9 @@ const f1 = (v: number) => v.toFixed(1);
 /**
  * Pulse scaling mined from the production DX200 dump
  * (`reference/robot-cell-dx200`: RC1G softlimits + RBCALIB station step).
+ *
+ * RECT-X lead is NOT in RC1G/RC2G → ``rectXLeadVerified=false`` and
+ * ``rectXPulsesPerMm`` is UNVERIFIED_PLACEHOLDER (mirror of pulse_config.py).
  */
 export const CELL_PULSE = {
   /** S,L,U,R,B,T pulses per degree (RC1G ↔ MA2010 URDF limits). */
@@ -462,13 +465,57 @@ export const CELL_PULSE = {
   ] as const,
   /** TURN ST1: RBCALIB ΔE≈91771 over ~90°. */
   stationPulsesPerDeg: 91771 / 90,
+  /** Production bookend BC# (1-DEFRO-5 / 02025_KOSZ… C00000). */
+  bcHomePulse: 570125,
   /** RECT-X park from jobs/000.JBI. */
+  bcPark000Pulse: 878036,
+  /** @deprecated alias of bcPark000Pulse */
   baseParkPulse: 878036,
+  st2BcRange: [124171, 375361] as const,
+  st3BcRange: [808680, 847209] as const,
+  st1BcMax: 927851,
+  /** SV1G encoder PPR. */
+  encoderResolution: 4096,
+  /** RC1G[8] travel softlimit hint. */
+  baseSoftlimitPulse: 1082000,
+  /**
+   * UNVERIFIED_PLACEHOLDER — dump has no ballscrew lead mm.
+   * TODO: replace after rail teach or RECT-X datasheet lead×gear.
+   */
+  rectXPulsesPerMm: 1000,
+  rectXLeadVerified: false,
 } as const;
 
 export function degToJointPulses(qDeg: number[]): number[] {
   if (qDeg.length !== 6) throw new Error("Expected 6 joint angles");
   return qDeg.map((q, i) => Math.round(q * CELL_PULSE.robotPulsesPerDeg[i]));
+}
+
+/** Rail mm → BC# (origin = BC_HOME). Scale is UNVERIFIED until lead verified. */
+export function baseMmToBc(
+  xMm: number,
+  originBc: number = CELL_PULSE.bcHomePulse,
+  pulsesPerMm: number = CELL_PULSE.rectXPulsesPerMm,
+): number {
+  if (pulsesPerMm === 0) throw new Error("RECT-X pulses/mm must be non-zero");
+  return Math.round(originBc + xMm * pulsesPerMm);
+}
+
+/** BC# → rail mm relative to BC_HOME. */
+export function bcToBaseMm(
+  bcPulse: number,
+  originBc: number = CELL_PULSE.bcHomePulse,
+  pulsesPerMm: number = CELL_PULSE.rectXPulsesPerMm,
+): number {
+  if (pulsesPerMm === 0) throw new Error("RECT-X pulses/mm must be non-zero");
+  return (bcPulse - originBc) / pulsesPerMm;
+}
+
+export class PulseExportError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "PulseExportError";
+  }
 }
 
 /** Approximate Motoman RECTAN Rx,Ry,Rz [deg] from torch direction (tool −Z). */
@@ -503,12 +550,19 @@ export function waypointsToIkPoints(
   });
 }
 
+function jointsReady(joints: number[][] | undefined, npos: number): boolean {
+  if (!Array.isArray(joints) || joints.length !== npos) return false;
+  return joints.every((q) => Array.isArray(q) && q.length === 6 && q.every((v) => Number.isFinite(v)));
+}
+
 /**
  * Client-side DX200 .JBI generator aligned with the production MA2010 cell
  * (`reference/robot-cell-dx200/jobs/000.JBI`): GROUP1 RB1,BS1 + GROUP2 ST1,
  * ARCON/WVON, coordinated +MOVJ EC#.
- * Pass `jointAnglesDeg` ([S,L,U,R,B,T] per waypoint) for full PULSE C# export;
- * otherwise C# stays RECTAN for offline review.
+ *
+ * Production PULSE requires `jointAnglesDeg` from IK for every waypoint.
+ * Without IK, pass `allowPreviewRectan: true` for a diagnostic
+ * `PREVIEW_RECTAN_DO_NOT_LOAD` file — never invents C# pulse integers.
  */
 export function generateJbi(
   prog: WeldProgram,
@@ -518,32 +572,56 @@ export function generateJbi(
     stationDeg?: number | number[];
     weaveNo?: number;
     jointAnglesDeg?: number[][];
+    /** @deprecated ignored — BC comes from baseMmToBc */
     baseParkPulse?: number;
+    baseMm?: number | number[];
+    allowPreviewRectan?: boolean;
   },
 ): string {
   const pts = prog.waypoints;
   const npos = pts.length;
   const pulsesPerDeg = opts?.stationPulsesPerDeg ?? CELL_PULSE.stationPulsesPerDeg;
-  const basePark = opts?.baseParkPulse ?? CELL_PULSE.baseParkPulse;
   const weaveNo = opts?.weaveNo ?? 21;
-  const usePulse =
-    Array.isArray(opts?.jointAnglesDeg) && opts!.jointAnglesDeg!.length === npos;
+  const usePulse = jointsReady(opts?.jointAnglesDeg, npos);
+  if (!usePulse && !opts?.allowPreviewRectan) {
+    throw new PulseExportError(
+      "Production POSTYPE PULSE requires IK jointAnglesDeg for every point — no fake C# pulses.",
+    );
+  }
   const stationDeg = pts.map((_, i) => {
     if (Array.isArray(opts?.stationDeg)) return opts!.stationDeg![i] ?? opts!.stationDeg![0] ?? 0;
     return opts?.stationDeg ?? 0;
   });
+  const baseXs = pts.map((_, i) => {
+    if (Array.isArray(opts?.baseMm)) return opts!.baseMm![i] ?? opts!.baseMm![0] ?? 0;
+    return opts?.baseMm ?? 0;
+  });
   const lines: string[] = [];
   const sch = prog.schedule;
+  const jobName = usePulse
+    ? prog.name
+    : prog.name.toUpperCase().includes("PREVIEW_RECTAN_DO_NOT_LOAD")
+      ? prog.name
+      : `PREVIEW_RECTAN_DO_NOT_LOAD_${prog.name}`;
 
   lines.push("/JOB");
-  lines.push(`//NAME ${prog.name}`);
+  lines.push(`//NAME ${jobName}`);
   if (usePulse) {
     lines.push("' PULSE export — MA2010 cell (RC1G / RBCALIB scaling)");
+    lines.push("' C# from IK → degToJointPulses (no invented pulses)");
   } else {
-    lines.push("' Offline RECTAN review — supply IK joints for PULSE C#");
+    lines.push("' PREVIEW_RECTAN_DO_NOT_LOAD — offline diagnostic only");
+    lines.push("' NOT for DX200 load — IK missing or unreachable; no PULSE C#");
   }
   lines.push("' Cell: MA2010 + RECT-X (BS1) + TURN (ST1); TOOL0 TCP Z≈415.7 mm");
-  lines.push(`' Station pulses/deg~${pulsesPerDeg.toFixed(4)}; BC park=${basePark}`);
+  lines.push(
+    `' Station pulses/deg~${pulsesPerDeg.toFixed(4)}; BC_HOME=${CELL_PULSE.bcHomePulse}; RECT_X_LEAD_VERIFIED=${CELL_PULSE.rectXLeadVerified}`,
+  );
+  if (!CELL_PULSE.rectXLeadVerified) {
+    lines.push(
+      `' WARN: RECT-X pulses/mm=${CELL_PULSE.rectXPulsesPerMm} UNVERIFIED_PLACEHOLDER (RC1G/RC2G lead TBD) — BC# mm mapping is APP_ESTIMATE only`,
+    );
+  }
   lines.push("//POS");
   lines.push(`///NPOS ${npos},${npos},${npos},0,0,0`);
   lines.push("///TOOL 0");
@@ -570,8 +648,10 @@ export function generateJbi(
     });
   }
 
-  lines.push(`' BC# RECT-X park pulse (${basePark})`);
-  pts.forEach((_, i) => lines.push(`BC${String(i).padStart(5, "0")}=${basePark}`));
+  lines.push(`' BC# via baseMmToBc (origin BC_HOME=${CELL_PULSE.bcHomePulse})`);
+  pts.forEach((_, i) => {
+    lines.push(`BC${String(i).padStart(5, "0")}=${baseMmToBc(baseXs[i])}`);
+  });
 
   if (!usePulse) {
     lines.push("///POSTYPE PULSE");

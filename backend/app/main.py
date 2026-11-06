@@ -15,7 +15,12 @@ from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel, Field
 
 from .kinematics_engine import forward_kinematics, get_robot, solve_ik_path
-from .dx200_postprocessor import PostprocessorConfig, WeldSegment, generate_jbi
+from .dx200_postprocessor import (
+    PostprocessorConfig,
+    PulseExportError,
+    WeldSegment,
+    generate_jbi,
+)
 from .path_planning import plan_from_seams
 from .robot_config import (
     ACTIVE_MODEL,
@@ -94,7 +99,18 @@ class JbiRequest(BaseModel):
     )
     joint_angles_deg: list[list[float]] | None = Field(
         default=None,
-        description="Optional per-point [S,L,U,R,B,T] deg — enables PULSE C# export.",
+        description="Per-point [S,L,U,R,B,T] deg from IK — required for PULSE C#.",
+    )
+    allow_preview_rectan: bool = Field(
+        default=False,
+        description=(
+            "If true and IK joints are missing, emit PREVIEW_RECTAN_DO_NOT_LOAD "
+            "instead of failing. Never invents PULSE C#."
+        ),
+    )
+    base_mm: list[float] | float | None = Field(
+        default=None,
+        description="RECT-X rail mm relative to BC_HOME (via base_mm_to_bc).",
     )
 
 
@@ -208,7 +224,11 @@ def generate_job(req: JbiRequest):
     if not req.points:
         raise HTTPException(400, "No points supplied")
     cfg = PostprocessorConfig(
-        job_name=req.job_name, tool_no=req.tool_no, move_speed=req.move_speed
+        job_name=req.job_name,
+        tool_no=req.tool_no,
+        move_speed=req.move_speed,
+        prefer_pulse=True,
+        allow_preview_rectan=req.allow_preview_rectan,
     )
     segments = [
         WeldSegment(
@@ -219,13 +239,27 @@ def generate_job(req: JbiRequest):
         )
         for s in req.weld_segments
     ]
-    return generate_jbi(
-        [p.model_dump() for p in req.points],
-        segments,
-        cfg,
-        station_deg=req.station_deg,
-        joint_angles_deg=req.joint_angles_deg,
-    )
+    try:
+        return generate_jbi(
+            [p.model_dump() for p in req.points],
+            segments,
+            cfg,
+            station_deg=req.station_deg,
+            joint_angles_deg=req.joint_angles_deg,
+            base_mm=req.base_mm,
+        )
+    except PulseExportError as exc:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "PULSE_REQUIRES_IK",
+                "message": str(exc),
+                "hint": (
+                    "Call /api/calculate-ik first; only export POSTYPE PULSE when "
+                    "all_reachable=true. For diagnostics set allow_preview_rectan."
+                ),
+            },
+        ) from exc
 
 
 @app.post("/api/analyze-cad")
