@@ -191,11 +191,11 @@
       "bytes": 1121,
       "lines": 29,
       "first": [
-        "﻿DX200 cell dump from production robot (2026-09-15)",
+        "\ufeffDX200 cell dump from production robot (2026-09-15)",
         "Source folder: D:\\YASKAWA\\z robota",
         "",
         "Cell (from SYSTEM.SYS):",
-        "  Controller: DN2.27.00A(US/PL) — ARC WELDING",
+        "  Controller: DN2.27.00A(US/PL) \u2014 ARC WELDING",
         "  Robot R1:   MA02010-A0* (MA2010)",
         "  Base B1:    RECT-X (linear travel)",
         "  Station:    S1..S4 TURN (positioner groups)",
@@ -204,9 +204,9 @@
         "              RPY deg = 1.3119, -42.6215, -6.8387",
         "",
         "Pulse scaling (see docs/CELL.md + backend/app/pulse_config.py):",
-        "  Robot: RC1G softlimits / URDF → S≈1341 L≈1908 U≈1593 R≈1023 B≈980 T≈455 pulse/deg",
-        "  Station TURN: RBCALIB ≈1019.7 pulse/deg (EC#=p,0)",
-        "  Base RECT-X: park BC≈878036 (mm lead not certified)",
+        "  Robot: RC1G softlimits / URDF \u2192 S\u22481341 L\u22481908 U\u22481593 R\u22481023 B\u2248980 T\u2248455 pulse/deg",
+        "  Station TURN: RBCALIB \u22481019.7 pulse/deg (EC#=p,0)",
+        "  Base RECT-X: park BC\u2248878036 (mm lead not certified)",
         "",
         "Job format (real INFORM on this cell):",
         "  ///NPOS n,n,n,0,0,0",
@@ -2887,7 +2887,7 @@
         "100",
         "95",
         "",
-        "1876,B��D MONIT. KARTY WEJ./WYJ. SYST,,[203],,ODTWARZANIE,MS#2",
+        "1876,B\ufffd\ufffdD MONIT. KARTY WEJ./WYJ. SYST,,[203],,ODTWARZANIE,MS#2",
         "2025-RAMKI-KANION14-60NOWE2,199,127,ALARM",
         ",0,0,********",
         ",0,0,********",
@@ -2899,7 +2899,7 @@
         "2026/09/11 09:33:15",
         "",
         "",
-        "1865,B��D KOM. KARTY WEJ./WYJ. SYST. ,,[105],,ODTWARZANIE,MS#2",
+        "1865,B\ufffd\ufffdD KOM. KARTY WEJ./WYJ. SYST. ,,[105],,ODTWARZANIE,MS#2",
         "2025-RAMKI-KANION14-60NOWE2,199,127,ALARM",
         ",0,0,********"
       ],
@@ -5625,5 +5625,828 @@
     "bytes": 24487040,
     "hex64": "24244e582e434d4f535459504520203074295fc3202031302e3030200000c04000002000ea07090f10382a00464145383545424632313731304334440d0a0000",
     "ascii": "$$NX.CMOSTYPE  0t)_.  10.00 ...@.. ......8*.FAE85EBF21710C4D...."
+  },
+  "scan_meta": {
+    "generated_at": "2026-11-06T16:13:24.720872+00:00",
+    "dump_dir": "/agent/repos/yaskawa-cadcam/reference/dx200-backup-20260915",
+    "jbi_count": 19,
+    "tool": "tools/scan_dx200_dump.py"
+  },
+  "jobs_scanned_here": [
+    {
+      "file": "-DEFRO-70-PRZYLACZE-70-KOPIA-.JBI",
+      "bytes": 5947,
+      "name": "-DEFRO-70-PRZYLACZE-70-KOPIA-",
+      "npos": "40,40,40,0,0,0",
+      "tool": 0,
+      "groups": [
+        "RB1,BS1",
+        "ST1"
+      ],
+      "flags": {
+        "ARCON": true,
+        "ARCOF": true,
+        "WVON": true,
+        "MACRO": true,
+        "CALL": false,
+        "PULSE": true,
+        "RECTAN": false,
+        "SRCH": false
+      },
+      "first_inst": [
+        "MOVJ C00000 BC00000 VJ=80.00 DEC=20  +MOVJ EC00000 VJ=80.00",
+        "MOVJ C00001 BC00001 VJ=80.00 DEC=20  +MOVJ EC00001 VJ=0.78",
+        "MOVJ C00002 BC00002 VJ=80.00 DEC=20  +MOVJ EC00002 VJ=80.00",
+        "MOVJ C00003 BC00003 VJ=80.00 DEC=20  +MOVJ EC00003 VJ=2.00",
+        "TIMER T=0.50",
+        "MACRO1 MJ#(0) ARGF8",
+        "ARCON",
+        "WVON WEV#(21)",
+        "MOVC C00004 BC00004 V=5.0 DEC=20  +MOVJ EC00004 VJ=80.00",
+        "MOVC C00005 BC00005 V=5.0 DEC=20  +MOVJ EC00005 VJ=80.00",
+        "MOVC C00006 BC00006 V=5.0 DEC=20  +MOVJ EC00006 VJ=80.00",
+        "MOVL C00007 BC00007 V=5.0 DEC=20  +MOVJ EC00007 VJ=80.00"
+      ]
+    },
+    {
+      "file": "-DEFRO-70-PRZYLACZE-70-KOPIA.JBI",
+      "bytes": 5946,
+      "name": "-DEFRO-70-PRZYLACZE-70-KOPIA",
+      "npos": "40,40,40,0,0,0",
+      "tool": 0,
+      "groups": [
+        "RB1,BS1",
+        "ST1"
+      ],
+      "flags": {
+        "ARCON": true,
+        "ARCOF": true,
+        "WVON": true,
+        "MACRO": true,
+        "CALL": false,
+        "PULSE": true,
+        "RECTAN": false,
+        "SRCH": false
+      },
+      "first_inst": [
+        "MOVJ C00000 BC00000 VJ=80.00 DEC=20  +MOVJ EC00000 VJ=80.00",
+        "MOVJ C00001 BC00001 VJ=80.00 DEC=20  +MOVJ EC00001 VJ=0.78",
+        "MOVJ C00002 BC00002 VJ=80.00 DEC=20  +MOVJ EC00002 VJ=80.00",
+        "MOVJ C00003 BC00003 VJ=80.00 DEC=20  +MOVJ EC00003 VJ=2.00",
+        "TIMER T=0.50",
+        "MACRO1 MJ#(0) ARGF8",
+        "ARCON",
+        "WVON WEV#(21)",
+        "MOVC C00004 BC00004 V=5.0 DEC=20  +MOVJ EC00004 VJ=80.00",
+        "MOVC C00005 BC00005 V=5.0 DEC=20  +MOVJ EC00005 VJ=80.00",
+        "MOVC C00006 BC00006 V=5.0 DEC=20  +MOVJ EC00006 VJ=80.00",
+        "MOVL C00007 BC00007 V=5.0 DEC=20  +MOVJ EC00007 VJ=80.00"
+      ]
+    },
+    {
+      "file": "-DEFRO-70-PRZYLACZE-70-NOWE.JBI",
+      "bytes": 8961,
+      "name": "-DEFRO-70-PRZYLACZE-70-NOWE",
+      "npos": "61,61,61,0,0,0",
+      "tool": 0,
+      "groups": [
+        "RB1,BS1",
+        "ST1"
+      ],
+      "flags": {
+        "ARCON": true,
+        "ARCOF": true,
+        "WVON": true,
+        "MACRO": true,
+        "CALL": false,
+        "PULSE": true,
+        "RECTAN": false,
+        "SRCH": false
+      },
+      "first_inst": [
+        "MOVJ C00000 BC00000 VJ=80.00 DEC=20  +MOVJ EC00000 VJ=80.00",
+        "MOVJ C00001 BC00001 VJ=80.00 DEC=20  +MOVJ EC00001 VJ=0.78",
+        "MOVJ C00002 BC00002 VJ=80.00 DEC=20  +MOVJ EC00002 VJ=80.00",
+        "MOVJ C00003 BC00003 VJ=80.00 DEC=20  +MOVJ EC00003 VJ=2.00",
+        "TIMER T=0.50",
+        "MACRO1 MJ#(0) ARGF8",
+        "ARCON",
+        "WVON WEV#(21)",
+        "MOVC C00004 BC00004 V=5.0 DEC=20  +MOVJ EC00004 VJ=80.00",
+        "MOVC C00005 BC00005 V=5.0 DEC=20  +MOVJ EC00005 VJ=80.00",
+        "MOVC C00006 BC00006 V=5.0 DEC=20  +MOVJ EC00006 VJ=80.00",
+        "MOVL C00007 BC00007 V=5.0 DEC=20  +MOVJ EC00007 VJ=80.00"
+      ]
+    },
+    {
+      "file": "-DEFRO-70-PRZYLACZE-70KASUJ.JBI",
+      "bytes": 17944,
+      "name": "-DEFRO-70-PRZYLACZE-70KASUJ",
+      "npos": "124,124,124,0,0,0",
+      "tool": 0,
+      "groups": [
+        "RB1,BS1",
+        "ST1"
+      ],
+      "flags": {
+        "ARCON": true,
+        "ARCOF": true,
+        "WVON": true,
+        "MACRO": true,
+        "CALL": false,
+        "PULSE": true,
+        "RECTAN": false,
+        "SRCH": false
+      },
+      "first_inst": [
+        "MOVJ C00000 BC00000 VJ=70.00 DEC=20  +MOVJ EC00000 VJ=70.00",
+        "MOVJ C00001 BC00001 VJ=40.00 DEC=20  +MOVJ EC00001 VJ=40.00",
+        "MOVJ C00002 BC00002 VJ=70.00 DEC=20  +MOVJ EC00002 VJ=70.00",
+        "MOVJ C00003 BC00003 VJ=80.00 DEC=20  +MOVJ EC00003 VJ=80.00",
+        "MACRO1 MJ#(0) ARGF10",
+        "WVON WEV#(2)",
+        "ARCON",
+        "MOVL C00004 BC00004 V=5.0 DEC=20  +MOVJ EC00004 VJ=80.00",
+        "MOVC C00005 BC00005 V=5.0 DEC=20  +MOVJ EC00005 VJ=80.00",
+        "WVON WEV#(1)",
+        "MOVC C00006 BC00006 V=5.0 DEC=20  +MOVJ EC00006 VJ=80.00",
+        "MOVC C00007 BC00007 V=5.0 DEC=20  +MOVJ EC00007 VJ=80.00"
+      ]
+    },
+    {
+      "file": "-DEFRO-70_PRZYLACZE_60-DL40.JBI",
+      "bytes": 20582,
+      "name": "-DEFRO-70_PRZYLACZE_60-DL40",
+      "npos": "145,145,145,0,0,0",
+      "tool": 0,
+      "groups": [
+        "RB1,BS1",
+        "ST1"
+      ],
+      "flags": {
+        "ARCON": true,
+        "ARCOF": true,
+        "WVON": false,
+        "MACRO": true,
+        "CALL": false,
+        "PULSE": true,
+        "RECTAN": false,
+        "SRCH": false
+      },
+      "first_inst": [
+        "MOVJ C00000 BC00000 VJ=70.00 DEC=20  +MOVJ EC00000 VJ=70.00",
+        "MOVJ C00001 BC00001 VJ=40.00 DEC=20  +MOVJ EC00001 VJ=40.00",
+        "MOVJ C00002 BC00002 VJ=70.00 DEC=20  +MOVJ EC00002 VJ=70.00",
+        "MACRO1 MJ#(0) ARGF8",
+        "MOVJ C00003 BC00003 VJ=70.00 DEC=20  +MOVJ EC00003 VJ=0.78",
+        "MOVJ C00004 BC00004 VJ=80.00 DEC=20  +MOVJ EC00004 VJ=0.78",
+        "ARCON",
+        "MOVC C00005 BC00005 V=4.2 DEC=20  +MOVJ EC00005 VJ=0.78",
+        "MOVC C00006 BC00006 V=4.2 DEC=20  +MOVJ EC00006 VJ=30.00",
+        "MOVC C00007 BC00007 V=4.2 DEC=20  +MOVJ EC00007 VJ=30.00",
+        "MOVC C00008 BC00008 V=5.8 DEC=20  +MOVJ EC00008 VJ=30.00",
+        "MOVC C00009 BC00009 V=4.2 DEC=20  +MOVJ EC00009 VJ=30.00"
+      ]
+    },
+    {
+      "file": "-DEFRO-70_PRZYLACZE_60_STARE.JBI",
+      "bytes": 23490,
+      "name": "-DEFRO-70_PRZYLACZE_60_STARE",
+      "npos": "165,165,165,0,0,0",
+      "tool": 0,
+      "groups": [
+        "RB1,BS1",
+        "ST1"
+      ],
+      "flags": {
+        "ARCON": true,
+        "ARCOF": true,
+        "WVON": true,
+        "MACRO": true,
+        "CALL": false,
+        "PULSE": true,
+        "RECTAN": false,
+        "SRCH": false
+      },
+      "first_inst": [
+        "MOVJ C00000 BC00000 VJ=70.00 DEC=20  +MOVJ EC00000 VJ=70.00",
+        "MOVJ C00001 BC00001 VJ=40.00 DEC=20  +MOVJ EC00001 VJ=40.00",
+        "MOVJ C00002 BC00002 VJ=70.00 DEC=20  +MOVJ EC00002 VJ=70.00",
+        "MOVJ C00003 BC00003 VJ=40.00 DEC=20  +MOVJ EC00003 VJ=70.00",
+        "MACRO1 MJ#(0) ARGF8",
+        "WVON WEV#(1)",
+        "ARCON",
+        "MOVC C00004 BC00004 V=4.2 DEC=20  +MOVJ EC00004 VJ=70.00",
+        "MOVC C00005 BC00005 V=4.2 DEC=20  +MOVJ EC00005 VJ=30.00",
+        "MOVC C00006 BC00006 V=4.2 DEC=20  +MOVJ EC00006 VJ=30.00",
+        "MOVC C00007 BC00007 V=4.2 DEC=20  +MOVJ EC00007 VJ=30.00",
+        "MOVC C00008 BC00008 V=4.2 DEC=20  +MOVJ EC00008 VJ=30.00"
+      ]
+    },
+    {
+      "file": "000.JBI",
+      "bytes": 3063,
+      "name": "000",
+      "npos": "20,20,20,0,0,0",
+      "tool": 0,
+      "groups": [
+        "RB1,BS1",
+        "ST1"
+      ],
+      "flags": {
+        "ARCON": true,
+        "ARCOF": true,
+        "WVON": true,
+        "MACRO": true,
+        "CALL": false,
+        "PULSE": true,
+        "RECTAN": false,
+        "SRCH": false
+      },
+      "first_inst": [
+        "MOVJ C00000 BC00000 VJ=80.00 DEC=20  +MOVJ EC00000 VJ=0.78",
+        "MOVJ C00001 BC00001 VJ=80.00 DEC=20  +MOVJ EC00001 VJ=2.00",
+        "TIMER T=0.50",
+        "MACRO1 MJ#(0) ARGF8",
+        "ARCON",
+        "WVON WEV#(25)",
+        "MOVC C00002 BC00002 V=5.0 DEC=20  +MOVJ EC00002 VJ=80.00",
+        "MOVC C00003 BC00003 V=5.0 DEC=20  +MOVJ EC00003 VJ=80.00",
+        "MOVC C00004 BC00004 V=5.0 DEC=20  +MOVJ EC00004 VJ=80.00",
+        "MOVL C00005 BC00005 V=5.0 DEC=20  +MOVJ EC00005 VJ=80.00",
+        "MOVL C00006 BC00006 V=7.5 DEC=20  +MOVJ EC00006 VJ=80.00",
+        "MOVL C00007 BC00007 V=6.7 DEC=20  +MOVJ EC00007 VJ=0.78"
+      ]
+    },
+    {
+      "file": "02025_KOSZ_DO_RURY_70-PLUS-RAMKI.JBI",
+      "bytes": 32258,
+      "name": "02025_KOSZ_DO_RURY_70-PLUS-RAMKI",
+      "npos": "218,218,218,0,0,0",
+      "tool": 0,
+      "groups": [
+        "RB1,BS1",
+        "ST2"
+      ],
+      "flags": {
+        "ARCON": true,
+        "ARCOF": true,
+        "WVON": true,
+        "MACRO": true,
+        "CALL": false,
+        "PULSE": true,
+        "RECTAN": false,
+        "SRCH": false
+      },
+      "first_inst": [
+        "MOVJ C00000 BC00000 VJ=80.00 DEC=20  +MOVJ EC00000 VJ=80.00",
+        "MOVJ C00001 BC00001 VJ=80.00 DEC=20  +MOVJ EC00001 VJ=80.00",
+        "MOVJ C00002 BC00002 VJ=80.00 DEC=20  +MOVJ EC00002 VJ=80.00",
+        "MOVJ C00003 BC00003 VJ=80.00 DEC=20  +MOVJ EC00003 VJ=80.00",
+        "MACRO1 MJ#(0) ARGF4",
+        "ARCON",
+        "WVON WEV#(15)",
+        "MOVL C00004 BC00004 V=5.0 DEC=20  +MOVJ EC00004 VJ=80.00",
+        "WVOF",
+        "ARCOF",
+        "MOVJ C00005 BC00005 VJ=80.00 DEC=20  +MOVJ EC00005 VJ=80.00",
+        "MOVJ C00006 BC00006 VJ=80.00 DEC=20  +MOVJ EC00006 VJ=80.00"
+      ]
+    },
+    {
+      "file": "1-DEFRO-5-KOSZ.JBI",
+      "bytes": 5779,
+      "name": "1-DEFRO-5-KOSZ",
+      "npos": "37,37,37,0,0,0",
+      "tool": 0,
+      "groups": [
+        "RB1,BS1",
+        "ST3"
+      ],
+      "flags": {
+        "ARCON": true,
+        "ARCOF": true,
+        "WVON": true,
+        "MACRO": true,
+        "CALL": false,
+        "PULSE": true,
+        "RECTAN": false,
+        "SRCH": false
+      },
+      "first_inst": [
+        "MOVJ C00000 BC00000 VJ=40.00 DEC=20  +MOVJ EC00000 VJ=40.00",
+        "MOVJ C00001 BC00001 VJ=40.00 DEC=20  +MOVJ EC00001 VJ=40.00",
+        "MOVJ C00002 BC00002 VJ=40.00 DEC=20  +MOVJ EC00002 VJ=40.00",
+        "MOVJ C00003 BC00003 VJ=20.00 DEC=20  +MOVJ EC00003 VJ=20.00",
+        "MOVJ C00004 BC00004 VJ=20.00 DEC=20  +MOVJ EC00004 VJ=20.00",
+        "MACRO1 MJ#(0) ARGF5",
+        "ARCON",
+        "MOVL C00005 BC00005 V=4.2 DEC=20  +MOVJ EC00005 VJ=20.00",
+        "ARCOF",
+        "MOVJ C00006 BC00006 VJ=20.00 DEC=20  +MOVJ EC00006 VJ=20.00",
+        "MOVJ C00007 BC00007 VJ=20.00 DEC=20  +MOVJ EC00007 VJ=20.00",
+        "MOVJ C00008 BC00008 VJ=20.00 DEC=20  +MOVJ EC00008 VJ=20.00"
+      ]
+    },
+    {
+      "file": "1-DEFRO-5.JBI",
+      "bytes": 1503,
+      "name": "1-DEFRO-5",
+      "npos": "9,9,9,0,0,0",
+      "tool": 0,
+      "groups": [
+        "RB1,BS1",
+        "ST3"
+      ],
+      "flags": {
+        "ARCON": true,
+        "ARCOF": true,
+        "WVON": false,
+        "MACRO": true,
+        "CALL": false,
+        "PULSE": true,
+        "RECTAN": false,
+        "SRCH": false
+      },
+      "first_inst": [
+        "MOVJ C00000 BC00000 VJ=40.00 DEC=20  +MOVJ EC00000 VJ=40.00",
+        "MOVJ C00001 BC00001 VJ=40.00 DEC=20  +MOVJ EC00001 VJ=40.00",
+        "MOVJ C00002 BC00002 VJ=40.00 DEC=20  +MOVJ EC00002 VJ=40.00",
+        "MOVJ C00003 BC00003 VJ=40.00 DEC=20  +MOVJ EC00003 VJ=40.00",
+        "MOVJ C00004 BC00004 VJ=40.00 DEC=20  +MOVJ EC00004 VJ=40.00",
+        "MACRO1 MJ#(0) ARGF4",
+        "ARCON",
+        "MOVJ C00005 BC00005 VJ=0.78 DEC=20  +MOVJ EC00005 VJ=20.00",
+        "ARCOF",
+        "MOVJ C00006 BC00006 VJ=40.00 DEC=20  +MOVJ EC00006 VJ=40.00",
+        "MOVJ C00007 BC00007 VJ=40.00 DEC=20  +MOVJ EC00007 VJ=40.00",
+        "MOVJ C00008 BC00008 VJ=40.00 DEC=20  +MOVJ EC00008 VJ=40.00"
+      ]
+    },
+    {
+      "file": "1-DEFRO-60.JBI",
+      "bytes": 138,
+      "name": "1-DEFRO-60",
+      "npos": "0,0,0,0,0,0",
+      "tool": null,
+      "groups": [
+        "RB1,BS1,ST3"
+      ],
+      "flags": {
+        "ARCON": false,
+        "ARCOF": false,
+        "WVON": false,
+        "MACRO": false,
+        "CALL": false,
+        "PULSE": false,
+        "RECTAN": false,
+        "SRCH": false
+      },
+      "first_inst": []
+    },
+    {
+      "file": "1.JBI",
+      "bytes": 22915,
+      "name": "1",
+      "npos": "162,162,162,0,0,0",
+      "tool": 0,
+      "groups": [
+        "RB1,BS1",
+        "ST1"
+      ],
+      "flags": {
+        "ARCON": true,
+        "ARCOF": true,
+        "WVON": false,
+        "MACRO": true,
+        "CALL": false,
+        "PULSE": true,
+        "RECTAN": false,
+        "SRCH": false
+      },
+      "first_inst": [
+        "MOVJ C00000 BC00000 VJ=70.00 DEC=20  +MOVJ EC00000 VJ=70.00",
+        "MOVJ C00001 BC00001 VJ=40.00 DEC=20  +MOVJ EC00001 VJ=40.00",
+        "MOVJ C00002 BC00002 VJ=70.00 DEC=20  +MOVJ EC00002 VJ=70.00",
+        "MOVJ C00003 BC00003 VJ=40.00 DEC=20  +MOVJ EC00003 VJ=70.00",
+        "MACRO1 MJ#(0) ARGF5",
+        "ARCON",
+        "MOVC C00004 BC00004 V=4.2 DEC=20  +MOVJ EC00004 VJ=70.00",
+        "MOVC C00005 BC00005 V=4.2 DEC=20  +MOVJ EC00005 VJ=30.00",
+        "MOVC C00006 BC00006 V=4.2 DEC=20  +MOVJ EC00006 VJ=30.00",
+        "MOVC C00007 BC00007 V=4.2 DEC=20  +MOVJ EC00007 VJ=30.00",
+        "MOVC C00008 BC00008 V=4.2 DEC=20  +MOVJ EC00008 VJ=30.00",
+        "MOVC C00009 BC00009 V=4.2 DEC=20  +MOVJ EC00009 VJ=30.00"
+      ]
+    },
+    {
+      "file": "11.JBI",
+      "bytes": 991,
+      "name": "11",
+      "npos": "6,6,6,0,0,0",
+      "tool": 0,
+      "groups": [
+        "RB1,BS1",
+        "ST1"
+      ],
+      "flags": {
+        "ARCON": true,
+        "ARCOF": true,
+        "WVON": false,
+        "MACRO": true,
+        "CALL": false,
+        "PULSE": true,
+        "RECTAN": false,
+        "SRCH": false
+      },
+      "first_inst": [
+        "MOVJ C00000 BC00000 VJ=0.78  +MOVJ EC00000 VJ=0.78",
+        "MOVJ C00001 BC00001 VJ=0.78  +MOVJ EC00001 VJ=0.78",
+        "MOVJ C00002 BC00002 VJ=0.78  +MOVJ EC00002 VJ=0.78",
+        "MOVJ C00003 BC00003 VJ=0.78  +MOVJ EC00003 VJ=0.78",
+        "MACRO1 MJ#(0) ARGF1",
+        "ARCON",
+        "MOVL C00004 BC00004 V=4.2  +MOVJ EC00004 VJ=0.78",
+        "WVOF",
+        "ARCOF",
+        "MOVJ C00005 BC00005 VJ=0.78  +MOVJ EC00005 VJ=0.78"
+      ]
+    },
+    {
+      "file": "12.JBI",
+      "bytes": 3576,
+      "name": "12",
+      "npos": "25,25,25,0,0,0",
+      "tool": 0,
+      "groups": [
+        "RB1,BS1",
+        "ST2"
+      ],
+      "flags": {
+        "ARCON": true,
+        "ARCOF": true,
+        "WVON": false,
+        "MACRO": true,
+        "CALL": false,
+        "PULSE": true,
+        "RECTAN": false,
+        "SRCH": false
+      },
+      "first_inst": [
+        "MOVJ C00000 BC00000 VJ=90.00  +MOVJ EC00000 VJ=90.00",
+        "MOVJ C00001 BC00001 VJ=90.00  +MOVJ EC00001 VJ=90.00",
+        "MOVJ C00002 BC00002 VJ=90.00  +MOVJ EC00002 VJ=90.00",
+        "MOVJ C00003 BC00003 VJ=90.00  +MOVJ EC00003 VJ=90.00",
+        "MACRO1 MJ#(0) ARGF1",
+        "ARCON",
+        "MOVL C00004 BC00004 V=5.0  +MOVJ EC00004 VJ=90.00",
+        "MOVL C00005 BC00005 V=5.0  +MOVJ EC00005 VJ=90.00",
+        "ARCOF",
+        "MOVJ C00006 BC00006 VJ=90.00  +MOVJ EC00006 VJ=90.00",
+        "MOVJ C00007 BC00007 VJ=90.00  +MOVJ EC00007 VJ=90.00",
+        "ARCON"
+      ]
+    },
+    {
+      "file": "123.JBI",
+      "bytes": 5695,
+      "name": "123",
+      "npos": "42,42,42,0,0,0",
+      "tool": 0,
+      "groups": [
+        "RB1,BS1",
+        "ST3"
+      ],
+      "flags": {
+        "ARCON": false,
+        "ARCOF": false,
+        "WVON": false,
+        "MACRO": true,
+        "CALL": false,
+        "PULSE": true,
+        "RECTAN": false,
+        "SRCH": false
+      },
+      "first_inst": [
+        "MOVJ C00000 BC00000 VJ=0.78 DEC=20  +MOVJ EC00000 VJ=0.78",
+        "MOVJ C00001 BC00001 VJ=0.78  +MOVJ EC00001 VJ=0.78",
+        "MOVJ C00002 BC00002 VJ=90.00  +MOVJ EC00002 VJ=0.78",
+        "MOVJ C00003 BC00003 VJ=90.00  +MOVJ EC00003 VJ=0.78",
+        "MOVJ C00004 BC00004 VJ=90.00  +MOVJ EC00004 VJ=0.78",
+        "MACRO1 MJ#(0) ARGF1",
+        "MOVL C00005 BC00005 V=2.5  +MOVJ EC00005 VJ=0.78",
+        "MOVL C00006 BC00006 V=3.3  +MOVJ EC00006 VJ=0.78",
+        "MOVJ C00007 BC00007 VJ=20.00  +MOVJ EC00007 VJ=20.00",
+        "MOVJ C00008 BC00008 VJ=20.00  +MOVJ EC00008 VJ=20.00",
+        "MOVJ C00009 BC00009 VJ=20.00  +MOVJ EC00009 VJ=20.00",
+        "MOVJ C00010 BC00010 VJ=20.00  +MOVJ EC00010 VJ=20.00"
+      ]
+    },
+    {
+      "file": "123123.JBI",
+      "bytes": 1232,
+      "name": "123123",
+      "npos": "8,8,8,0,0,0",
+      "tool": 0,
+      "groups": [
+        "RB1,BS1",
+        "ST2"
+      ],
+      "flags": {
+        "ARCON": false,
+        "ARCOF": false,
+        "WVON": false,
+        "MACRO": false,
+        "CALL": false,
+        "PULSE": true,
+        "RECTAN": false,
+        "SRCH": false
+      },
+      "first_inst": [
+        "MOVJ C00000 BC00000 VJ=90.00  +MOVJ EC00000 VJ=90.00",
+        "MOVS C00001 BC00001 V=11.0  +MOVJ EC00001 VJ=0.78",
+        "MOVS C00002 BC00002 V=11.0  +MOVJ EC00002 VJ=0.78",
+        "MOVJ C00003 BC00003 VJ=90.00  +MOVJ EC00003 VJ=90.00",
+        "MOVJ C00004 BC00004 VJ=90.00  +MOVJ EC00004 VJ=90.00",
+        "MOVJ C00005 BC00005 VJ=90.00  +MOVJ EC00005 VJ=90.00",
+        "MOVL C00006 BC00006 V=1.7  +MOVJ EC00006 VJ=90.00",
+        "MOVJ C00007 BC00007 VJ=90.00  +MOVJ EC00007 VJ=90.00"
+      ]
+    },
+    {
+      "file": "1B.JBI",
+      "bytes": 22341,
+      "name": "1B",
+      "npos": "156,156,156,0,0,0",
+      "tool": 0,
+      "groups": [
+        "RB1,BS1",
+        "ST1"
+      ],
+      "flags": {
+        "ARCON": true,
+        "ARCOF": true,
+        "WVON": false,
+        "MACRO": true,
+        "CALL": false,
+        "PULSE": true,
+        "RECTAN": false,
+        "SRCH": false
+      },
+      "first_inst": [
+        "MOVJ C00000 BC00000 VJ=70.00 DEC=20  +MOVJ EC00000 VJ=70.00",
+        "MOVJ C00001 BC00001 VJ=40.00 DEC=20  +MOVJ EC00001 VJ=0.78",
+        "MOVJ C00002 BC00002 VJ=70.00 DEC=20  +MOVJ EC00002 VJ=70.00",
+        "MOVJ C00003 BC00003 VJ=40.00 DEC=20  +MOVJ EC00003 VJ=70.00",
+        "MOVJ C00004 BC00004 VJ=40.00 DEC=20  +MOVJ EC00004 VJ=70.00",
+        "MACRO1 MJ#(0) ARGF6",
+        "ARCON",
+        "MOVC C00005 BC00005 V=5.0 DEC=20  +MOVJ EC00005 VJ=40.00",
+        "MOVC C00006 BC00006 V=5.0 DEC=20  +MOVJ EC00006 VJ=40.00",
+        "MOVC C00007 BC00007 V=5.0 DEC=20  +MOVJ EC00007 VJ=40.00",
+        "MOVJ C00008 BC00008 VJ=70.00 DEC=20  +MOVJ EC00008 VJ=40.00",
+        "MOVC C00009 BC00009 V=5.0 DEC=20  +MOVJ EC00009 VJ=40.00"
+      ]
+    },
+    {
+      "file": "1C.JBI",
+      "bytes": 22387,
+      "name": "1C",
+      "npos": "158,158,158,0,0,0",
+      "tool": 0,
+      "groups": [
+        "RB1,BS1",
+        "ST1"
+      ],
+      "flags": {
+        "ARCON": true,
+        "ARCOF": true,
+        "WVON": false,
+        "MACRO": true,
+        "CALL": false,
+        "PULSE": true,
+        "RECTAN": false,
+        "SRCH": false
+      },
+      "first_inst": [
+        "MOVJ C00000 BC00000 VJ=70.00 DEC=20  +MOVJ EC00000 VJ=70.00",
+        "MOVJ C00001 BC00001 VJ=40.00 DEC=20  +MOVJ EC00001 VJ=40.00",
+        "MOVJ C00002 BC00002 VJ=70.00 DEC=20  +MOVJ EC00002 VJ=70.00",
+        "MOVJ C00003 BC00003 VJ=40.00 DEC=20  +MOVJ EC00003 VJ=70.00",
+        "MACRO1 MJ#(0) ARGF5",
+        "ARCON",
+        "MOVC C00004 BC00004 V=4.2 DEC=20  +MOVJ EC00004 VJ=70.00",
+        "MOVC C00005 BC00005 V=4.2 DEC=20  +MOVJ EC00005 VJ=30.00",
+        "MOVC C00006 BC00006 V=4.2 DEC=20  +MOVJ EC00006 VJ=30.00",
+        "MOVC C00007 BC00007 V=4.2 DEC=20  +MOVJ EC00007 VJ=30.00",
+        "MOVC C00008 BC00008 V=4.2 DEC=20  +MOVJ EC00008 VJ=30.00",
+        "MOVC C00009 BC00009 V=4.2 DEC=20  +MOVJ EC00009 VJ=30.00"
+      ]
+    },
+    {
+      "file": "1KT.JBI",
+      "bytes": 1026,
+      "name": "1KT",
+      "npos": "6,6,6,0,0,0",
+      "tool": 0,
+      "groups": [
+        "RB1,BS1",
+        "ST4"
+      ],
+      "flags": {
+        "ARCON": true,
+        "ARCOF": true,
+        "WVON": true,
+        "MACRO": false,
+        "CALL": false,
+        "PULSE": true,
+        "RECTAN": false,
+        "SRCH": false
+      },
+      "first_inst": [
+        "MOVJ C00000 BC00000 VJ=0.78 PL=0  +MOVJ EC00000 VJ=0.78",
+        "MOVJ C00001 BC00001 VJ=0.78 PL=0  +MOVJ EC00001 VJ=0.78",
+        "MOVJ C00002 BC00002 VJ=100.00 PL=0  +MOVJ EC00002 VJ=0.78",
+        "MOVJ C00003 BC00003 VJ=100.00 PL=0  +MOVJ EC00003 VJ=0.78",
+        "ARCON",
+        "WVON WEV#(15)",
+        "MOVL C00004 BC00004 V=3.3 PL=0  +MOVJ EC00004 VJ=0.78",
+        "WVOF",
+        "ARCOF",
+        "MOVJ C00005 BC00005 VJ=0.78 PL=0  +MOVJ EC00005 VJ=0.78"
+      ]
+    }
+  ],
+  "dat_files_here": {
+    "ABSO.DAT": {
+      "bytes": 1225,
+      "path": "ABSO.DAT"
+    },
+    "ALMHIST.DAT": {
+      "bytes": 87895,
+      "path": "ALMHIST.DAT"
+    },
+    "ARCSUP.DAT": {
+      "bytes": 1304,
+      "path": "ARCSUP.DAT"
+    },
+    "EIOALLOC.DAT": {
+      "bytes": 18954,
+      "path": "EIOALLOC.DAT"
+    },
+    "ENCHEAT.DAT": {
+      "bytes": 6007,
+      "path": "ENCHEAT.DAT"
+    },
+    "EXIONAME.DAT": {
+      "bytes": 10268,
+      "path": "EXIONAME.DAT"
+    },
+    "HOME2.DAT": {
+      "bytes": 829,
+      "path": "HOME2.DAT"
+    },
+    "IFPANEL.DAT": {
+      "bytes": 20763,
+      "path": "IFPANEL.DAT"
+    },
+    "IOAXIS.DAT": {
+      "bytes": 1872,
+      "path": "IOAXIS.DAT"
+    },
+    "IOMNAME.DAT": {
+      "bytes": 2018,
+      "path": "IOMNAME.DAT"
+    },
+    "IOMSGHST.DAT": {
+      "bytes": 77112,
+      "path": "IOMSGHST.DAT"
+    },
+    "IONAME.DAT": {
+      "bytes": 10818,
+      "path": "IONAME.DAT"
+    },
+    "IPNETCFG.DAT": {
+      "bytes": 133,
+      "path": "IPNETCFG.DAT"
+    },
+    "KEYALLOC.DAT": {
+      "bytes": 51662,
+      "path": "KEYALLOC.DAT"
+    },
+    "LOGDATA.DAT": {
+      "bytes": 130733,
+      "path": "LOGDATA.DAT"
+    },
+    "MACRO.DAT": {
+      "bytes": 22480,
+      "path": "MACRO.DAT"
+    },
+    "OPEORG.DAT": {
+      "bytes": 1071,
+      "path": "OPEORG.DAT"
+    },
+    "PMLOG.DAT": {
+      "bytes": 8107,
+      "path": "PMLOG.DAT"
+    },
+    "PMTMMNG.DAT": {
+      "bytes": 60503,
+      "path": "PMTMMNG.DAT"
+    },
+    "PMTRQDB.DAT": {
+      "bytes": 213617,
+      "path": "PMTRQDB.DAT"
+    },
+    "PSEUDOIN.DAT": {
+      "bytes": 92,
+      "path": "PSEUDOIN.DAT"
+    },
+    "RBCALIB.DAT": {
+      "bytes": 1661,
+      "path": "RBCALIB.DAT"
+    },
+    "RBSTPFCT.DAT": {
+      "bytes": 9209,
+      "path": "RBSTPFCT.DAT"
+    },
+    "SETTM.DAT": {
+      "bytes": 2270,
+      "path": "SETTM.DAT"
+    },
+    "SVMON.DAT": {
+      "bytes": 1305,
+      "path": "SVMON.DAT"
+    },
+    "TMNAME.DAT": {
+      "bytes": 384,
+      "path": "TMNAME.DAT"
+    },
+    "TMVAR.DAT": {
+      "bytes": 287,
+      "path": "TMVAR.DAT"
+    },
+    "TRQDAT.DAT": {
+      "bytes": 183,
+      "path": "TRQDAT.DAT"
+    },
+    "USERMENU.DAT": {
+      "bytes": 610,
+      "path": "USERMENU.DAT"
+    },
+    "UWORD.DAT": {
+      "bytes": 160,
+      "path": "UWORD.DAT"
+    },
+    "VAR.DAT": {
+      "bytes": 6764,
+      "path": "VAR.DAT"
+    },
+    "VARNAME.DAT": {
+      "bytes": 80172,
+      "path": "VARNAME.DAT"
+    },
+    "WELDER.DAT": {
+      "bytes": 2160,
+      "path": "WELDER.DAT"
+    },
+    "WELDUDEF.DAT": {
+      "bytes": 15178,
+      "path": "WELDUDEF.DAT"
+    },
+    "YSFLOGIC.DAT": {
+      "bytes": 4738,
+      "path": "YSFLOGIC.DAT"
+    }
+  },
+  "cnd_files_here": {
+    "ARCEND.CND": {
+      "bytes": 227893,
+      "path": "ARCEND.CND"
+    },
+    "ARCSRT.CND": {
+      "bytes": 246893,
+      "path": "ARCSRT.CND"
+    },
+    "CUBEINTF.CND": {
+      "bytes": 6594,
+      "path": "CUBEINTF.CND"
+    },
+    "PMCOND.CND": {
+      "bytes": 1995,
+      "path": "PMCOND.CND"
+    },
+    "SHOCKLVL.CND": {
+      "bytes": 6850,
+      "path": "SHOCKLVL.CND"
+    },
+    "TOOL.CND": {
+      "bytes": 7443,
+      "path": "TOOL.CND"
+    },
+    "WEAV.CND": {
+      "bytes": 27128,
+      "path": "WEAV.CND"
+    }
   }
 }

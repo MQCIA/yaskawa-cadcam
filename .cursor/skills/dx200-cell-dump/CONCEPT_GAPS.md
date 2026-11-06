@@ -41,7 +41,7 @@ This skill + dump catalog cover the **CF text dump**. A complete “production c
 
 - [x] IO map for curtains/gates (names + `STACJA_*` CALL pattern) — `docs/CELL_IO.md`; SOUT/SIN # still TODO vs CIO/schematic
 - [ ] Cube / interference zones named ↔ `CUBEINTF` ↔ station masters (partial: STACJA_1/2 named)
-- [ ] Safety logic summary (`YSFLOGIC.DAT`) in plain language
+- [x] Safety logic summary (`YSFLOGIC.DAT`) in plain language — short integrator note in `docs/CELL_IO.md` §6 (ASCII dump insufficient for bit map)
 
 ### Ops packaging
 
