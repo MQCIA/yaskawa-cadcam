@@ -95,12 +95,15 @@ planning or the INFORM postprocessor.
 
 ```bash
 pip install -r backend/requirements-hses.txt
-# Linux: install .NET 8 runtime, then:
-export PYTHONNET_RUNTIME=coreclr
+# Linux: .NET 8 runtime (user install is enough):
+curl -fsSL https://dot.net/v1/dotnet-install.sh | bash -s -- --channel 8.0 --runtime dotnet
+export DOTNET_ROOT=$HOME/.dotnet PATH="$HOME/.dotnet:$PATH" PYTHONNET_RUNTIME=coreclr
 export YASKAWA_ROBOT_HOST=192.168.x.x
 # without a robot on the LAN:
 export YASKAWA_UA_DRY_RUN=1
 ```
+
+The backend auto-detects ``$HOME/.dotnet`` when probing the SDK.
 
 API: `GET /api/hses`, `GET /api/hses/status`, `POST /api/hses/upload-jbi`,
 `POST /api/hses/start-job`. UI: Robot dock → **HSES · UnderAutomation**.

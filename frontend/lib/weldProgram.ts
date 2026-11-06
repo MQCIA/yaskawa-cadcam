@@ -1324,12 +1324,111 @@ export function optimizeSequence(prog: WeldProgram): WeldProgram {
   );
 }
 
-/** Re-run coarse motion checks and refresh planner flags. */
+const CLEARANCE_Z_LIFT_M = 0.15;
+const CLEARANCE_LATERAL_M = 0.15;
+
+function airHitsObstacles(prog: WeldProgram, a: Vec3, b: Vec3): boolean {
+  const obstacles = [...cellObstacles(), ...plateObstacles(prog)];
+  return obstacles.some((box) => segmentHitsAabb(a, b, box, 16));
+}
+
+/**
+ * Insert MOVJ clearance vias between weld runs when the retract→approach chord
+ * clips the part / cell AABB or spans a long lateral hop (backend safe_travel).
+ */
+export function insertSafeTravelClearance(prog: WeldProgram): WeldProgram {
+  const wps = prog.waypoints;
+  const runs = weldRuns(wps);
+  if (runs.length < 2) return prog;
+
+  const out: Waypoint[] = [];
+  let i = 0;
+
+  for (let r = 0; r < runs.length; r++) {
+    const run = runs[r];
+    let retractIdx = run.end;
+    for (let j = run.end + 1; j < wps.length; j++) {
+      if (wps[j].kind === "retract") {
+        retractIdx = j;
+        break;
+      }
+      if (wps[j].kind === "weld") break;
+    }
+
+    // Copy through this seam's retract.
+    out.push(...wps.slice(i, retractIdx + 1));
+
+    if (r === runs.length - 1) {
+      i = retractIdx + 1;
+      break;
+    }
+
+    const next = runs[r + 1];
+    let approachIdx = next.start;
+    for (let j = next.start - 1; j > run.end; j--) {
+      if (wps[j].kind === "approach") {
+        approachIdx = j;
+        break;
+      }
+      if (wps[j].kind === "weld") break;
+    }
+
+    const from = wps[retractIdx];
+    const to = wps[approachIdx];
+    const gap = wps.slice(retractIdx + 1, approachIdx);
+    const alreadyClearance = gap.some(
+      (w) => w.kind === "clearance" || w.kind === "index_safe",
+    );
+    const lateral = Math.hypot(to.pos[0] - from.pos[0], to.pos[2] - from.pos[2]);
+    const needs =
+      !alreadyClearance &&
+      (airHitsObstacles(prog, from.pos, to.pos) || lateral > CLEARANCE_LATERAL_M);
+
+    if (alreadyClearance) {
+      // Keep existing vias between retract and next approach.
+      out.push(...gap);
+    } else if (needs) {
+      const zSafe =
+        Math.max(from.pos[1], to.pos[1], prog.mount[1] + 0.15) + CLEARANCE_Z_LIFT_M;
+      const highA: Vec3 = [from.pos[0], zSafe, from.pos[2]];
+      const highB: Vec3 = [to.pos[0], zSafe, to.pos[2]];
+      const mid: Vec3 = [
+        (highA[0] + highB[0]) / 2,
+        zSafe,
+        (highA[2] + highB[2]) / 2,
+      ];
+      const pull = norm([-mid[0], 0, -mid[2]]);
+      mid[0] += pull[0] * 0.08;
+      mid[2] += pull[2] * 0.08;
+      const mk = (pos: Vec3, vj: string): Waypoint => ({
+        id: "TMP",
+        pos,
+        move: "MOVJ",
+        speedLabel: vj,
+        arc: false,
+        kind: "clearance",
+        bc: from.bc ?? to.bc,
+        ec: from.ec ?? to.ec,
+      });
+      out.push(mk(highA, "VJ=80.00"));
+      if (lateral > CLEARANCE_LATERAL_M) out.push(mk(mid, "VJ=80.00"));
+      out.push(mk(highB, "VJ=50.00"));
+    }
+    // else: short clear air hop — leave gap empty (direct retract→approach)
+
+    i = approachIdx;
+  }
+
+  if (i < wps.length) out.push(...wps.slice(i));
+  return finalizeWaypoints(prog, out);
+}
+
+/** Re-run coarse motion checks, insert clearance vias, refresh planner flags. */
 export function planMotions(prog: WeldProgram): WeldProgram {
   try {
     const withSense = ensureTouchSense(prog);
-    // Ensure durations / ARCON tags are consistent after edits.
-    const cleaned = finalizeWaypoints(withSense, withSense.waypoints);
+    const withTravel = insertSafeTravelClearance(withSense);
+    const cleaned = finalizeWaypoints(withTravel, withTravel.waypoints);
     return refreshMeta(
       withMeta(cleaned, {
         sequenceOptimized: withSense.meta?.sequenceOptimized ?? true,

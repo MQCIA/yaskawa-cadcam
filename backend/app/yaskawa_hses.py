@@ -30,18 +30,33 @@ def _env_bool(name: str, default: bool = False) -> bool:
     return raw in ("1", "true", "yes", "on")
 
 
+def _ensure_dotnet_env() -> None:
+    """Point pythonnet at a user-local .NET install when present."""
+    if os.name == "nt":
+        return
+    os.environ.setdefault("PYTHONNET_RUNTIME", "coreclr")
+    if os.environ.get("DOTNET_ROOT"):
+        return
+    home = Path.home() / ".dotnet"
+    if home.is_dir() and (home / "dotnet").exists():
+        os.environ["DOTNET_ROOT"] = str(home)
+        path = os.environ.get("PATH", "")
+        root = str(home)
+        if root not in path.split(os.pathsep):
+            os.environ["PATH"] = root + os.pathsep + path
+
+
 def sdk_probe() -> dict[str, Any]:
     """Report whether the commercial SDK can be imported in this process."""
     try:
-        # Prefer CoreCLR on Linux before the package auto-loads Mono.
-        if os.name != "nt" and not os.environ.get("PYTHONNET_RUNTIME"):
-            os.environ.setdefault("PYTHONNET_RUNTIME", "coreclr")
+        _ensure_dotnet_env()
         from underautomation.yaskawa.yaskawa_robot import YaskawaRobot  # noqa: F401
 
         return {
             "available": True,
             "package": "UnderAutomation.Yaskawa",
             "runtime": os.environ.get("PYTHONNET_RUNTIME") or "default",
+            "dotnet_root": os.environ.get("DOTNET_ROOT"),
             "hint": None,
         }
     except Exception as exc:  # noqa: BLE001 — surface any CLR / import failure
@@ -49,9 +64,11 @@ def sdk_probe() -> dict[str, Any]:
             "available": False,
             "package": "UnderAutomation.Yaskawa",
             "runtime": os.environ.get("PYTHONNET_RUNTIME") or "unset",
+            "dotnet_root": os.environ.get("DOTNET_ROOT"),
             "hint": (
-                "pip install UnderAutomation.Yaskawa && "
-                "install .NET 8 runtime, then: export PYTHONNET_RUNTIME=coreclr"
+                "pip install -r requirements-hses.txt && "
+                "install .NET 8 (dotnet-install.sh --runtime dotnet), then: "
+                "export DOTNET_ROOT=$HOME/.dotnet PYTHONNET_RUNTIME=coreclr"
             ),
             "error": f"{type(exc).__name__}: {exc}",
         }
